@@ -1,0 +1,65 @@
+<div class="auth-shell">
+  <!-- ── Brand showcase (desktop) ── -->
+  <aside class="brand">
+    <div class="brand__bg" aria-hidden="true">
+      <span class="orb orb--1"></span>
+      <span class="orb orb--2"></span>
+      <span class="orb orb--3"></span>
+      <span class="mesh"></span>
+      <svg class="waves" viewBox="0 0 600 240" preserveAspectRatio="none">
+        <path class="wave wave--1" d="M0 170 C 120 90, 220 210, 330 140 S 520 60, 600 110" />
+        <path class="wave wave--2" d="M0 200 C 140 130, 250 235, 360 170 S 530 100, 600 150" />
+        <path class="wave wave--3" d="M0 225 C 150 175, 270 245, 390 200 S 540 140, 600 185" />
+      </svg>
+    </div>
+
+    <header class="brand__top anim" style="--i: 0">
+      <img class="brand__logo" src="assets/img/logo.png" alt="Hegamty" width="250" height="170" />
+    </header>
+
+    <div class="brand__body">
+      <span class="eyebrow anim" style="--i: 1">
+        <span class="eyebrow__dot"></span>
+        منصة إدارة عيادات الحجامة
+      </span>
+
+      <h1 class="brand__title anim" style="--i: 2">
+        كل جلسة وكل مريض،
+        <span class="brand__title-accent">بتنظيم احترافي متكامل.</span>
+      </h1>
+
+      <p class="brand__lead anim" style="--i: 3">
+        مساحة عمل واحدة وآمنة لإدارة الحجوزات والمعالجين ورعاية المرضى في جميع فروع Hegamty.
+      </p>
+
+      <ul class="features">
+        @for (f of features; track f.title; let i = $index) {
+          <li class="feature anim" [style.--i]="4 + i">
+            <span class="feature__ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                @for (d of f.paths; track $index) {
+                  <path [attr.d]="d" />
+                }
+              </svg>
+            </span>
+            <span class="feature__txt">
+              <strong>{{ f.title }}</strong>
+              <span>{{ f.text }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <footer class="brand__foot anim" style="--i: 7">
+      <span>© {{ year }} Hegamty. جميع الحقوق محفوظة.</span>
+      <span class="brand__ver">v{{ version }}</span>
+    </footer>
+  </aside>
+
+  <!-- ── Form area ── -->
+  <main class="form-side">
+    <router-outlet />
+  </main>
+</div>

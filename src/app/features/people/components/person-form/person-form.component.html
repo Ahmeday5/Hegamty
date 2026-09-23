@@ -1,0 +1,104 @@
+<app-modal [open]="open()" [title]="title()" size="lg" (closed)="closed.emit()">
+  <form id="person-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="span-2">
+      <label class="form-label" for="pf-country">الدولة</label>
+      <select id="pf-country" class="form-select" formControlName="countryId" [class.is-invalid]="invalid('countryId')">
+        <option value="" disabled>اختر الدولة</option>
+        @for (c of countries(); track c.id) {
+          <option [value]="c.id">{{ c.name }}{{ c.active ? '' : ' (غير مفعّلة)' }}</option>
+        }
+      </select>
+      <app-form-error [control]="form.controls.countryId" label="الدولة" />
+    </div>
+
+    <div class="span-2">
+      <label class="form-label" for="pf-name">الاسم الكامل</label>
+      <input id="pf-name" class="form-control" formControlName="name" placeholder="مثال: أحمد محمد الغامدي"
+        [class.is-invalid]="invalid('name')" />
+      <app-form-error [control]="form.controls.name" label="الاسم" />
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-phone">
+        رقم الجوال @if (country(); as c) { <small class="text-muted" dir="ltr">({{ c.phoneCode }} · {{ c.phoneLength }} أرقام)</small> }
+      </label>
+      <input id="pf-phone" class="form-control" formControlName="phone" inputmode="tel" dir="ltr"
+        [placeholder]="'X'.repeat(country()?.phoneLength ?? 10)" [class.is-invalid]="invalid('phone')" />
+      <app-form-error [control]="form.controls.phone" label="رقم الجوال" />
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-email">البريد الإلكتروني</label>
+      <input id="pf-email" class="form-control" type="email" formControlName="email" dir="ltr"
+        placeholder="name@email.com" [class.is-invalid]="invalid('email')" />
+      <app-form-error [control]="form.controls.email" label="البريد الإلكتروني" />
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-city">المدينة</label>
+      <select id="pf-city" class="form-select" formControlName="city" [class.is-invalid]="invalid('city')">
+        <option value="" disabled>{{ country() ? 'اختر المدينة' : 'اختر الدولة أولًا' }}</option>
+        @for (c of cities(); track c) { <option [value]="c">{{ c }}</option> }
+      </select>
+      <app-form-error [control]="form.controls.city" label="المدينة" />
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-district">الحي</label>
+      <input id="pf-district" class="form-control" formControlName="district" placeholder="مثال: النزهة" />
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-gender">الجنس</label>
+      <select id="pf-gender" class="form-select" formControlName="gender">
+        <option value="male">ذكر</option>
+        <option value="female">أنثى</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label" for="pf-status">حالة الحساب</label>
+      <select id="pf-status" class="form-select" formControlName="status">
+        @for (s of statuses; track s.id) { <option [value]="s.id">{{ s.label }}</option> }
+      </select>
+    </div>
+
+    @if (kind() === 'drivers') {
+      <div>
+        <label class="form-label" for="pf-vehicle">المركبة</label>
+        <input id="pf-vehicle" class="form-control" formControlName="vehicle" placeholder="مثال: تويوتا كامري 2023" />
+      </div>
+      <div>
+        <label class="form-label" for="pf-plate">رقم اللوحة</label>
+        <input id="pf-plate" class="form-control" formControlName="plate" placeholder="مثال: أ ب ج 1234" />
+      </div>
+    }
+
+    @if (kind() === 'technicians') {
+      <div>
+        <label class="form-label" for="pf-specialty">التخصص</label>
+        <select id="pf-specialty" class="form-select" formControlName="specialty">
+          @for (s of specialties; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="pf-exp">سنوات الخبرة</label>
+        <input id="pf-exp" class="form-control" type="number" min="0" max="50" formControlName="experienceYears"
+          [class.is-invalid]="invalid('experienceYears')" />
+        <app-form-error [control]="form.controls.experienceYears" label="سنوات الخبرة" />
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" (click)="closed.emit()">إلغاء</button>
+    <button type="submit" form="person-form" class="btn btn-pr" [disabled]="saving()">
+      @if (saving()) {
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        جارٍ الحفظ…
+      } @else {
+        {{ person() ? 'حفظ التغييرات' : 'إضافة' }}
+      }
+    </button>
+  </ng-container>
+</app-modal>

@@ -1,0 +1,17 @@
+<div class="app-layout">
+  @if (layout.mobileOpen()) {
+    <div class="sidebar-overlay" (click)="layout.closeMobile()"></div>
+  }
+  <div class="sidebar-wrapper">
+    <app-sidebar />
+  </div>
+
+  <main class="main-content">
+    <app-topbar />
+    <div class="content-body">
+      <router-outlet />
+    </div>
+  </main>
+</div>
+
+<app-confirm-dialog />

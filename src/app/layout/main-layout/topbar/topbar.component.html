@@ -1,0 +1,151 @@
+<header class="topbar">
+  <!-- Mobile drawer / desktop collapse -->
+  <button type="button" class="icon-btn icon-btn--outline t-mobile" (click)="layout.toggleMobile()" aria-label="القائمة">
+    <app-icon [name]="layout.mobileOpen() ? 'x' : 'menu'" [size]="20" />
+  </button>
+  <button type="button" class="icon-btn icon-btn--outline t-desktop" (click)="layout.toggleCollapsed()"
+    [attr.aria-label]="layout.collapsed() ? 'توسيع القائمة' : 'طي القائمة'"
+    [attr.data-tip]="layout.collapsed() ? 'توسيع القائمة' : 'طي القائمة'">
+    <app-icon name="panel" [size]="19" />
+  </button>
+
+  <!-- Global search -->
+  <div class="t-search" [class.is-open]="showResults()">
+    <label class="search">
+      <app-icon name="search" [size]="18" />
+      <input #searchInput type="search" [value]="term()" placeholder="ابحث عن عميل أو فني أو سائق…"
+        aria-label="بحث عام" autocomplete="off" (input)="onSearchInput($any($event.target).value)"
+        (focus)="searchFocused.set(true)" (blur)="onSearchBlur()" (keydown)="onSearchKey($event)" />
+      <kbd class="t-kbd">Ctrl K</kbd>
+    </label>
+
+    @if (showResults()) {
+      <div class="t-results" role="listbox">
+        @for (r of results(); track r.person.id; let i = $index) {
+          <button type="button" class="t-result" role="option" [class.is-active]="i === activeIndex()"
+            (mouseenter)="activeIndex.set(i)" (mousedown)="$event.preventDefault()" (click)="openPerson(r.person)">
+            <app-avatar [name]="r.person.name" [size]="34" />
+            <span class="t-result__txt">
+              <strong>{{ r.person.name }}</strong>
+              <span><bdi>{{ r.person.phone }}</bdi> · {{ r.person.city }}</span>
+            </span>
+            <span class="chip chip--slate"><app-icon [name]="r.icon" [size]="13" /> {{ r.kindLabel }}</span>
+          </button>
+        } @empty {
+          <div class="t-noresult">
+            <app-icon name="search" [size]="22" />
+            لا توجد نتائج لـ "{{ term() }}"
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="t-end">
+    <span class="t-date"><app-icon name="calendar" [size]="16" /> {{ today }}</span>
+
+    <!-- Country scope -->
+    <div class="t-menu-wrap">
+      <button type="button" class="t-country" [class.is-on]="openMenu() === 'country'" aria-label="اختيار الدولة"
+        (click)="toggleMenu('country', $event)">
+        @if (scope.country(); as c) {
+          <app-country-flag [code]="c.id" [size]="24" />
+        } @else {
+          <span class="t-country__globe"><app-icon name="globe" [size]="17" /></span>
+        }
+        <span class="t-country__txt">
+          <small>الدولة</small>
+          <strong>{{ scope.label() }}</strong>
+        </span>
+        <app-icon class="t-user__chev" name="chevron-down" [size]="16" />
+      </button>
+
+      @if (openMenu() === 'country') {
+        <div class="menu t-countries" (click)="$event.stopPropagation()">
+          <div class="t-countries__head">عرض البيانات حسب الدولة</div>
+          <button type="button" class="menu__item" [class.is-sel]="scope.isAll()" (click)="selectCountry(ALL)">
+            <span class="t-country__globe"><app-icon name="globe" [size]="16" /></span>
+            <span class="t-countries__name">كل الدول<small>التقارير بالعملة الأساسية</small></span>
+            @if (scope.isAll()) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
+          </button>
+          <div class="menu__sep"></div>
+          @for (c of countries(); track c.id) {
+            <button type="button" class="menu__item" [class.is-sel]="scope.selected() === c.id" (click)="selectCountry(c.id)">
+              <app-country-flag [code]="c.id" [size]="24" />
+              <span class="t-countries__name">{{ c.name }}<small>{{ c.currencyCode }}{{ c.active ? '' : ' · غير مفعّلة' }}</small></span>
+              @if (scope.selected() === c.id) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Notifications -->
+    <div class="t-menu-wrap">
+      <button type="button" class="icon-btn icon-btn--outline t-bell" [class.is-on]="openMenu() === 'notes'"
+        aria-label="الإشعارات" (click)="toggleMenu('notes', $event)">
+        <app-icon name="bell" [size]="19" />
+        @if (unread()) { <span class="t-badge">{{ unread() }}</span> }
+      </button>
+
+      @if (openMenu() === 'notes') {
+        <div class="menu t-notes" (click)="$event.stopPropagation()">
+          <div class="t-notes__head">
+            <strong>الإشعارات</strong>
+            @if (unread()) {
+              <button type="button" class="btn btn-ghost btn-sm" (click)="markAllRead()">تعليم الكل كمقروء</button>
+            }
+          </div>
+          <ul class="t-notes__list">
+            @for (n of notes(); track n.id) {
+              <li class="t-note" [class.is-unread]="!n.read">
+                <span class="tile tile--sm tile--{{ n.tone }}"><app-icon [name]="n.icon" [size]="16" /></span>
+                <div>
+                  <strong>{{ n.title }}</strong>
+                  <p>{{ n.text }}</p>
+                  <time>{{ n.date | relTime }}</time>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- User -->
+    <div class="t-menu-wrap">
+      <button type="button" class="t-user" [class.is-on]="openMenu() === 'user'" aria-label="قائمة المستخدم"
+        (click)="toggleMenu('user', $event)">
+        <app-avatar [name]="currentUser()?.name ?? '?'" [size]="38" />
+        <span class="t-user__txt">
+          <strong>{{ currentUser()?.name }}</strong>
+          <span>{{ roleLabel() }}</span>
+        </span>
+        <app-icon class="t-user__chev" name="chevron-down" [size]="16" />
+      </button>
+
+      @if (openMenu() === 'user') {
+        <div class="menu" (click)="$event.stopPropagation()">
+          <div class="t-usercard">
+            <app-avatar [name]="currentUser()?.name ?? '?'" [size]="44" />
+            <div>
+              <strong>{{ currentUser()?.name }}</strong>
+              <span>{{ currentUser()?.email }}</span>
+            </div>
+          </div>
+          <div class="menu__sep"></div>
+          <button type="button" class="menu__item" disabled>
+            <app-icon name="user" [size]="18" /> الملف الشخصي <span class="t-soon">قريبًا</span>
+          </button>
+          <button type="button" class="menu__item" disabled>
+            <app-icon name="settings" [size]="18" /> الإعدادات <span class="t-soon">قريبًا</span>
+          </button>
+          <div class="menu__sep"></div>
+          <button type="button" class="menu__item menu__item--danger" (click)="logout()">
+            <app-icon name="logout" [size]="18" /> تسجيل الخروج
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

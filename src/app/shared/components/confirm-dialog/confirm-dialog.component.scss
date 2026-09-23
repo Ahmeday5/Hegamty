@@ -1,0 +1,35 @@
+.cd {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.cd-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  animation: cd-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  &--danger  { background: var(--re-l); color: var(--re); }
+  &--warning { background: var(--am-l); color: var(--am); }
+  &--info    { background: var(--pr-l); color: var(--pr); }
+}
+
+.cd-message {
+  font-size: 14px;
+  color: var(--txt2);
+  line-height: 1.8;
+  margin: 4px 0 0;
+}
+
+.cd-title-danger  { color: var(--re); }
+.cd-title-warning { color: #b45309; }
+.cd-title-info    { color: var(--pr); }
+
+@keyframes cd-pop {
+  from { opacity: 0; scale: 0.6; rotate: -10deg; }
+  to { opacity: 1; scale: 1; rotate: 0deg; }
+}

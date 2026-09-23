@@ -1,0 +1,129 @@
+@if (count() > 0) {
+<div class="pg" [class.pg--busy]="disabled()" [attr.aria-busy]="disabled() ? 'true' : null">
+
+  <!-- Record range + page-size picker -->
+  <div class="pg-meta">
+    <span class="pg-range">
+      عرض
+      <strong>{{ fromIndex() }}</strong>–<strong>{{ toIndex() }}</strong>
+      من
+      <strong>{{ count() }}</strong>
+      نتيجة
+    </span>
+
+    @if (showPageSize()) {
+      <label class="pg-size-label">
+        <span>عدد الصفوف</span>
+        <select
+          class="pg-size-select"
+          [value]="pageSize()"
+          [disabled]="disabled()"
+          (change)="onPageSizeChange($any($event.target).value)"
+          aria-label="عدد الصفوف في الصفحة"
+        >
+          @for (opt of pageSizeOptions(); track opt) {
+            <option [value]="opt" [selected]="opt === pageSize()">{{ opt }}</option>
+          }
+        </select>
+      </label>
+    }
+  </div>
+
+  <!-- Navigation -->
+  @if (totalPages() > 1) {
+    <nav class="pg-nav" aria-label="التنقل بين الصفحات">
+
+      <button
+        type="button"
+        class="pg-btn pg-btn--edge"
+        [disabled]="!canFirst() || disabled()"
+        (click)="goToFirst()"
+        aria-label="الصفحة الأولى"
+        title="الصفحة الأولى"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M10 3L6 7l4 4M5 3v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="pg-btn pg-btn--step"
+        [disabled]="!canPrev() || disabled()"
+        (click)="prev()"
+        aria-label="الصفحة السابقة"
+        title="السابق"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M8.5 3.5L5 7l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      @for (item of windowItems(); track $index) {
+        @if (item.page === null) {
+          <span class="pg-ellipsis" aria-hidden="true">···</span>
+        } @else {
+          <button
+            type="button"
+            class="pg-btn"
+            [class.pg-btn--active]="item.active"
+            [disabled]="disabled()"
+            [attr.aria-current]="item.active ? 'page' : null"
+            [attr.aria-label]="'صفحة ' + item.page"
+            (click)="goTo(item.page)"
+          >{{ item.page }}</button>
+        }
+      }
+
+      <button
+        type="button"
+        class="pg-btn pg-btn--step"
+        [disabled]="!canNext() || disabled()"
+        (click)="next()"
+        aria-label="الصفحة التالية"
+        title="التالي"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="pg-btn pg-btn--edge"
+        [disabled]="!canLast() || disabled()"
+        (click)="goToLast()"
+        aria-label="الصفحة الأخيرة"
+        title="الصفحة الأخيرة"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M4 3l4 4-4 4M9 3v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+    </nav>
+  }
+
+  <!-- Jump-to-page -->
+  @if (totalPages() > 2) {
+    <div class="pg-jump" role="group" aria-label="الانتقال إلى صفحة">
+      <span class="pg-jump-label">انتقل إلى</span>
+      <input
+        class="pg-jump-input"
+        type="number"
+        min="1"
+        [max]="totalPages()"
+        [disabled]="disabled()"
+        [value]="jumpInput()"
+        placeholder="{{ pageIndex() }}"
+        aria-label="رقم الصفحة"
+        (input)="jumpInput.set($any($event.target).value)"
+        (keydown)="onJumpKeydown($event)"
+        (blur)="commitJump()"
+      />
+      <span class="pg-jump-total">/ {{ totalPages() }}</span>
+    </div>
+  }
+
+</div>
+}

@@ -1,0 +1,61 @@
+:host { display: block; }
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--brd);
+
+  .seg { max-width: 100%; overflow-x: auto; }
+}
+
+.result-count {
+  font-size: 12.5px;
+  color: var(--txt3);
+  font-weight: 500;
+}
+
+.th {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.th-actions { text-align: end !important; }
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &__txt {
+    display: grid;
+    gap: 3px;
+
+    strong { font-weight: 600; color: var(--black); }
+    span { font-size: 12px; color: var(--txt3); }
+  }
+}
+
+.with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  .muted { color: var(--txt3); }
+}
+
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+
+  app-icon { color: #f59e0b; }
+}
+
+.skel-row { animation: none !important; }
+.skel-row td { padding-block: 16px; }

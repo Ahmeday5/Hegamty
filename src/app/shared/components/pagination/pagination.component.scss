@@ -1,0 +1,192 @@
+// ── Layout ───────────────────────────────────────────────────────────────────
+.pg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 2px 2px;
+  font-size: 12px;
+  color: var(--txt2);
+  transition: opacity 0.15s;
+
+  &--busy {
+    opacity: 0.6;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+// ── Meta (range + page-size picker) ──────────────────────────────────────────
+.pg-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pg-range {
+  strong {
+    color: var(--txt);
+    font-weight: 600;
+  }
+}
+
+.pg-size-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.pg-size-select {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 28px 4px 8px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+  appearance: auto;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--bl);
+    outline-offset: 1px;
+  }
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+.pg-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+// Base button
+.pg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd);
+  background: var(--bg2);
+  color: var(--txt2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s, box-shadow 0.1s;
+  line-height: 1;
+
+  &:hover:not(:disabled):not(.pg-btn--active) {
+    background: var(--bg3);
+    border-color: var(--brd2);
+    color: var(--txt);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bl);
+    outline-offset: 1px;
+  }
+
+  &:active:not(:disabled):not(.pg-btn--active) {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.12);
+  }
+
+  &:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+
+  // Active / current page
+  &--active {
+    background: var(--bl);
+    color: #fff;
+    border-color: var(--bl);
+    font-weight: 600;
+    cursor: default;
+    box-shadow: 0 1px 4px rgba(0,0,0,.18);
+  }
+
+  // Prev / Next arrows
+  &--step {
+    color: var(--txt2);
+  }
+
+  // First / Last edge buttons — slightly muted
+  &--edge {
+    color: var(--txt3);
+
+    &:hover:not(:disabled) {
+      color: var(--txt);
+    }
+  }
+}
+
+// Arrow glyphs are drawn LTR — mirror them so "previous" points to the inline-start
+:host-context([dir='rtl']) .pg-btn svg { scale: -1 1; }
+
+.pg-size-select { padding-inline: 8px 28px; }
+
+// ── Ellipsis ──────────────────────────────────────────────────────────────────
+.pg-ellipsis {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 24px;
+  height: 32px;
+  padding-bottom: 4px;
+  color: var(--txt3);
+  font-size: 11px;
+  letter-spacing: 1px;
+  user-select: none;
+}
+
+// ── Jump-to-page ──────────────────────────────────────────────────────────────
+.pg-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pg-jump-label {
+  white-space: nowrap;
+}
+
+.pg-jump-input {
+  font-family: inherit;
+  font-size: 12px;
+  width: 46px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+  text-align: center;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  -moz-appearance: textfield;
+
+  &::placeholder { color: var(--txt3); }
+
+  &:focus-visible {
+    outline: 2px solid var(--bl);
+    outline-offset: 1px;
+    border-color: var(--bl);
+  }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.pg-jump-total {
+  white-space: nowrap;
+  color: var(--txt3);
+}

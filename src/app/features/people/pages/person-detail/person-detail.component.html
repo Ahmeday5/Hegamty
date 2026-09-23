@@ -1,0 +1,402 @@
+@if (person(); as p) {
+<section class="page">
+  <!-- ── Header ── -->
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a [routerLink]="['/', kind()]">{{ cfg().title }}</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">{{ p.name }}</span>
+      </nav>
+      <h1 class="page-head__title">{{ p.name }}</h1>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="btn" (click)="openNotify()">
+        <app-icon name="bell" [size]="17" /> إرسال إشعار
+      </button>
+      @if (p.status === 'blocked') {
+        <button type="button" class="btn btn-soft" (click)="toggleBlock()">
+          <app-icon name="unlock" [size]="17" /> إلغاء الحظر
+        </button>
+      } @else {
+        <button type="button" class="btn btn-danger-soft" (click)="toggleBlock()">
+          <app-icon name="ban" [size]="17" /> حظر
+        </button>
+      }
+      <button type="button" class="btn btn-pr" (click)="formOpen.set(true)">
+        <app-icon name="edit" [size]="17" /> تعديل
+      </button>
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--red" data-tip="حذف" aria-label="حذف"
+        (click)="remove()">
+        <app-icon name="trash" [size]="18" />
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Profile hero ── -->
+  <div class="profile panel fx" style="--d: 1">
+    <div class="profile__cover" aria-hidden="true">
+      <span class="profile__orb profile__orb--1"></span>
+      <span class="profile__orb profile__orb--2"></span>
+    </div>
+    <div class="profile__body">
+      <app-avatar class="profile__avatar" [name]="p.name" [size]="92" [ring]="true" />
+      <div class="profile__info">
+        <h2 class="profile__name">{{ p.name }}</h2>
+        <p class="profile__meta">
+          <span><app-icon name="mail" [size]="15" /> {{ p.email }}</span>
+          <span><app-icon name="phone" [size]="15" /> <bdi>{{ p.phone }}</bdi></span>
+        </p>
+        <div class="profile__chips">
+          <span class="chip chip--dot {{ statusMeta[p.status].chip }}">{{ statusMeta[p.status].label }}</span>
+          <span class="chip chip--slate chip--flag"><app-country-flag [code]="p.countryId" [size]="18" /> {{ p.countryId | countryName }}</span><span class="chip chip--blue"><app-icon name="map-pin" [size]="13" /> {{ p.city }}</span>
+          <span class="chip chip--slate">{{ p.id }}</span>
+          @if (p.specialty) { <span class="chip chip--purple">{{ p.specialty }}</span> }
+          @if (p.vehicle) { <span class="chip chip--teal"><app-icon name="car" [size]="13" /> {{ p.vehicle }}</span> }
+        </div>
+      </div>
+      <dl class="profile__stats">
+        <div>
+          <dt>{{ cfg().countLabel }}</dt>
+          <dd [appCountUp]="p.bookings"></dd>
+        </div>
+        <div>
+          <dt>{{ cfg().balanceLabel }}</dt>
+          <dd><span [appCountUp]="p.balance"></span> <small>{{ p.countryId | ccy }}</small></dd>
+        </div>
+        <div>
+          <dt>التقييم</dt>
+          <dd class="profile__rating"><app-icon name="star" [size]="18" /> {{ p.rating || '—' }}</dd>
+        </div>
+        <div>
+          <dt>تاريخ العضوية</dt>
+          <dd class="profile__date">{{ p.joinedAt | arDate }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <nav class="tabs fx" style="--d: 2" role="tablist" aria-label="أقسام الملف">
+    @for (t of cfg().tabs; track t.id) {
+      <button type="button" class="tabs__btn" role="tab" [class.is-on]="activeTab() === t.id"
+        [attr.aria-selected]="activeTab() === t.id" (click)="selectTab(t.id)">
+        <app-icon [name]="t.icon" [size]="17" />
+        {{ t.label }}
+        @if (tabCounts()[t.id]; as c) { <span class="tabs__count">{{ c }}</span> }
+      </button>
+    }
+  </nav>
+
+  @if (data(); as d) {
+    @switch (activeTab()) {
+      @case ('overview') {
+        <div class="tab-pane">
+          <div class="grid grid--2">
+            <div class="panel fx" style="--d: 0">
+              <div class="panel__head"><h3 class="panel__title">المعلومات الشخصية</h3></div>
+              <div class="panel__body">
+                <div class="kv"><span class="kv__k"><app-icon name="user" [size]="16" /> الاسم الكامل</span><span class="kv__v">{{ p.name }}</span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="phone" [size]="16" /> رقم الجوال</span><span class="kv__v"><bdi>{{ p.phone }}</bdi></span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="mail" [size]="16" /> البريد الإلكتروني</span><span class="kv__v">{{ p.email }}</span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="map-pin" [size]="16" /> الدولة / المدينة</span><span class="kv__v">{{ p.countryId | countryName }} — {{ p.city }}</span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="home" [size]="16" /> الحي</span><span class="kv__v">{{ p.district || '—' }}</span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="users" [size]="16" /> الجنس</span><span class="kv__v">{{ p.gender === 'female' ? 'أنثى' : 'ذكر' }}</span></div>
+                @if (p.vehicle) {
+                  <div class="kv"><span class="kv__k"><app-icon name="car" [size]="16" /> المركبة</span><span class="kv__v">{{ p.vehicle }}</span></div>
+                  <div class="kv"><span class="kv__k"><app-icon name="file" [size]="16" /> رقم اللوحة</span><span class="kv__v">{{ p.plate || '—' }}</span></div>
+                }
+                @if (p.specialty) {
+                  <div class="kv"><span class="kv__k"><app-icon name="stethoscope" [size]="16" /> التخصص</span><span class="kv__v">{{ p.specialty }}</span></div>
+                  <div class="kv"><span class="kv__k"><app-icon name="award" [size]="16" /> سنوات الخبرة</span><span class="kv__v">{{ p.experienceYears }} سنوات</span></div>
+                }
+                <div class="kv"><span class="kv__k"><app-icon name="calendar" [size]="16" /> تاريخ الانضمام</span><span class="kv__v">{{ p.joinedAt | arDate }}</span></div>
+                <div class="kv"><span class="kv__k"><app-icon name="clock" [size]="16" /> آخر نشاط</span><span class="kv__v">{{ p.lastActiveAt | relTime }}</span></div>
+              </div>
+            </div>
+
+            <div class="panel fx" style="--d: 1">
+              <div class="panel__head"><h3 class="panel__title">الإحصائيات</h3></div>
+              <div class="panel__body">
+                <div class="kv"><span class="kv__k">إجمالي {{ cfg().countLabel }}</span><span class="kv__v">{{ p.bookings | num }}</span></div>
+                <div class="kv"><span class="kv__k">المكتملة</span><span class="kv__v text-ok">{{ p.completed | num }}</span></div>
+                <div class="kv"><span class="kv__k">الملغاة</span><span class="kv__v text-bad">{{ p.cancelled | num }}</span></div>
+                <div class="kv"><span class="kv__k">{{ cfg().balanceLabel }}</span><span class="kv__v">{{ p.balance | cmoney: p.countryId }}</span></div>
+                <div class="kv"><span class="kv__k">{{ cfg().totalLabel }}</span><span class="kv__v">{{ p.total | cmoney: p.countryId }}</span></div>
+                <div class="kv"><span class="kv__k">عدد التقييمات</span><span class="kv__v">{{ p.reviewsCount | num }}</span></div>
+
+                <div class="rate">
+                  <div class="rate__head">
+                    <span>نسبة الإنجاز</span>
+                    <strong>{{ completionRate() }}%</strong>
+                  </div>
+                  <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="completionRate()"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid--main">
+            <div class="panel fx" style="--d: 2">
+              <div class="panel__head">
+                <div>
+                  <h3 class="panel__title">{{ cfg().countLabel }} خلال آخر 6 أشهر</h3>
+                  <p class="panel__sub">عدد {{ cfg().countLabel }} شهريًا</p>
+                </div>
+              </div>
+              <div class="panel__body">
+                <app-bar-chart [labels]="monthLabels()" [values]="d.monthly" [height]="230" />
+              </div>
+            </div>
+
+            <div class="panel fx" style="--d: 3">
+              <div class="panel__head">
+                <h3 class="panel__title">آخر النشاطات</h3>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="selectTab('activity')">عرض الكل</button>
+              </div>
+              <div class="panel__body">
+                <ol class="timeline">
+                  @for (a of d.activity.slice(0, 5); track a.id; let i = $index) {
+                    <li class="timeline__item" [style.--d]="i">
+                      <span class="tile tile--sm tile--{{ activityMeta[a.kind].tone }}"><app-icon [name]="activityMeta[a.kind].icon" [size]="16" /></span>
+                      <div><p>{{ a.text }}</p><time>{{ a.date | relTime }}</time></div>
+                    </li>
+                  }
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+      @case ('bookings') {
+        <div class="tab-pane panel">
+          <div class="panel__head">
+            <div>
+              <h3 class="panel__title">سجل {{ cfg().countLabel }}</h3>
+              <p class="panel__sub">جميع {{ cfg().countLabel }} المرتبطة بهذا الحساب</p>
+            </div>
+            <div class="seg">
+              @for (t of bookingTabs(); track t.id) {
+                <button type="button" class="seg__btn" [class.is-on]="bookingFilter() === t.id" (click)="bookingFilter.set(t.id)">
+                  {{ t.label }} <span class="seg__count">{{ t.count }}</span>
+                </button>
+              }
+            </div>
+          </div>
+          <div class="dtable-wrap mt">
+            <table class="dtable">
+              <thead>
+                <tr><th>رقم الحجز</th><th>الخدمة</th><th>{{ cfg().partyLabel }}</th><th>التاريخ</th><th>المبلغ</th><th>الحالة</th></tr>
+              </thead>
+              <tbody>
+                @for (b of bookings(); track b.id; let i = $index) {
+                  <tr [style.--d]="i">
+                    <td class="num">{{ b.id }}</td>
+                    <td><span class="with-icon"><span class="tile tile--sm tile--green"><app-icon name="droplet" [size]="15" /></span>{{ b.service }}</span></td>
+                    <td>{{ b.party }}</td>
+                    <td class="muted">{{ b.date | arDate: true }}</td>
+                    <td class="num">{{ b.amount | cmoney: p.countryId }}</td>
+                    <td><span class="chip chip--dot {{ bookingMeta[b.status].chip }}">{{ bookingMeta[b.status].label }}</span></td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="6"><div class="empty"><span class="empty__icon"><app-icon name="calendar" [size]="26" /></span><p class="empty__title">لا توجد سجلات</p></div></td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+      @case ('transactions') {
+        <div class="tab-pane">
+          <div class="grid grid--3">
+            <app-kpi-card class="fx" style="--d: 0" label="إجمالي الوارد" [value]="txSummary().incoming" icon="download" tone="green" [suffix]="p.countryId | ccy" />
+            <app-kpi-card class="fx" style="--d: 1" label="إجمالي الصادر" [value]="txSummary().outgoing" icon="send" tone="blue" [suffix]="p.countryId | ccy" />
+            <app-kpi-card class="fx" style="--d: 2" label="عدد العمليات" [value]="txSummary().count" icon="card" tone="purple" />
+          </div>
+          <div class="panel fx" style="--d: 3">
+            <div class="panel__head"><h3 class="panel__title">سجل العمليات المالية</h3></div>
+            <div class="dtable-wrap mt">
+              <table class="dtable">
+                <thead>
+                  <tr><th>العملية</th><th>رقم العملية</th><th>طريقة الدفع</th><th>التاريخ</th><th>المبلغ</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                  @for (t of d.transactions; track t.id; let i = $index) {
+                    <tr [style.--d]="i">
+                      <td>
+                        <span class="with-icon">
+                          <span class="tile tile--sm tile--{{ txMeta[t.type].tone }}"><app-icon [name]="txMeta[t.type].icon" [size]="15" /></span>
+                          {{ txMeta[t.type].label }}
+                        </span>
+                      </td>
+                      <td class="muted">{{ t.id }} <small>{{ t.ref }}</small></td>
+                      <td>{{ t.method }}</td>
+                      <td class="muted">{{ t.date | arDate: true }}</td>
+                      <td class="num" [class.text-ok]="txMeta[t.type].sign > 0" [class.text-bad]="txMeta[t.type].sign < 0">
+                        <bdi>{{ txMeta[t.type].sign > 0 ? '+' : '−' }}{{ t.amount | cmoney: p.countryId }}</bdi>
+                      </td>
+                      <td>
+                        <span class="chip chip--dot" [class.chip--green]="t.status === 'success'"
+                          [class.chip--amber]="t.status === 'pending'" [class.chip--red]="t.status === 'failed'">
+                          {{ t.status === 'success' ? 'ناجحة' : t.status === 'pending' ? 'معلّقة' : 'فاشلة' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+      @case ('reviews') {
+        <div class="tab-pane grid grid--reviews">
+          <div class="panel rating-card fx" style="--d: 0">
+            <div class="panel__body">
+              <p class="rating-card__big">{{ p.rating || '—' }}</p>
+              <div class="stars">
+                @for (on of stars(p.rating); track $index) { <app-icon name="star" [size]="20" [filled]="on" [class.on]="on" /> }
+              </div>
+              <p class="rating-card__count">بناءً على {{ p.reviewsCount | num }} تقييم</p>
+              <div class="breakdown">
+                @for (r of ratingBreakdown(); track r.stars; let i = $index) {
+                  <div class="breakdown__row">
+                    <span>{{ r.stars }} <app-icon name="star" [size]="13" /></span>
+                    <div class="bar"><span class="bar__fill breakdown__fill" [style.width.%]="r.pct" [style.--d]="i"></span></div>
+                    <span class="muted">{{ r.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="reviews">
+            @for (r of d.reviews; track r.id; let i = $index) {
+              <article class="panel review fx" [style.--d]="i + 1">
+                <header class="review__head">
+                  <app-avatar [name]="r.author" [size]="40" />
+                  <div>
+                    <strong>{{ r.author }}</strong>
+                    <time>{{ r.date | arDate }}</time>
+                  </div>
+                  <div class="stars stars--sm">
+                    @for (on of stars(r.rating); track $index) { <app-icon name="star" [size]="15" [filled]="on" [class.on]="on" /> }
+                  </div>
+                </header>
+                <p class="review__text">{{ r.comment }}</p>
+                <span class="chip chip--green">{{ r.service }}</span>
+              </article>
+            } @empty {
+              <div class="panel empty"><span class="empty__icon"><app-icon name="star" [size]="26" /></span><p class="empty__title">لا توجد تقييمات بعد</p></div>
+            }
+          </div>
+        </div>
+      }
+      @case ('notifications') {
+        <div class="tab-pane panel">
+          <div class="panel__head">
+            <div>
+              <h3 class="panel__title">الإشعارات المرسلة</h3>
+              <p class="panel__sub">آخر الإشعارات التي وصلت إلى هذا الحساب</p>
+            </div>
+            <div class="page-head__actions">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="markAllRead()">
+                <app-icon name="check" [size]="15" /> تعليم الكل كمقروء
+              </button>
+              <button type="button" class="btn btn-soft btn-sm" (click)="openNotify()">
+                <app-icon name="send" [size]="15" /> إشعار جديد
+              </button>
+            </div>
+          </div>
+          <div class="panel__body">
+            <ul class="notes">
+              @for (n of notifications(); track n.id; let i = $index) {
+                <li class="note fx" [class.is-unread]="!n.read" [style.--d]="i">
+                  <span class="tile tile--sm tile--{{ channelMeta[n.channel].tone }}"><app-icon [name]="channelMeta[n.channel].icon" [size]="16" /></span>
+                  <div class="note__body">
+                    <div class="note__top">
+                      <strong>{{ n.title }}</strong>
+                      <time>{{ n.date | relTime }}</time>
+                    </div>
+                    <p>{{ n.body }}</p>
+                    <span class="note__channel">{{ channelMeta[n.channel].label }}</span>
+                  </div>
+                  @if (!n.read) { <span class="note__dot" aria-label="غير مقروء"></span> }
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+      @case ('activity') {
+        <div class="tab-pane panel">
+          <div class="panel__head">
+            <div>
+              <h3 class="panel__title">سجل النشاط</h3>
+              <p class="panel__sub">جميع الإجراءات المسجلة على الحساب بالترتيب الزمني</p>
+            </div>
+          </div>
+          <div class="panel__body">
+            <ol class="timeline timeline--full">
+              @for (a of d.activity; track a.id; let i = $index) {
+                <li class="timeline__item" [style.--d]="i">
+                  <span class="tile tile--sm tile--{{ activityMeta[a.kind].tone }}"><app-icon [name]="activityMeta[a.kind].icon" [size]="16" /></span>
+                  <div><p>{{ a.text }}</p><time>{{ a.date | arDate: true }} · {{ a.date | relTime }}</time></div>
+                </li>
+              }
+            </ol>
+          </div>
+        </div>
+      }
+    }
+  }
+
+  <app-person-form [kind]="kind()" [open]="formOpen()" [person]="p" (closed)="formOpen.set(false)" />
+
+  <!-- ── Send notification ── -->
+  <app-modal [open]="notifyOpen()" [title]="'إرسال إشعار إلى ' + p.name" size="md" (closed)="notifyOpen.set(false)">
+    <div class="form-grid">
+      <div class="span-2">
+        <span class="form-label">قناة الإرسال</span>
+        <div class="seg seg--full">
+          @for (c of channels; track c) {
+            <button type="button" class="seg__btn" [class.is-on]="notifyDraft.channel === c"
+              (click)="notifyDraft.channel = c">
+              <app-icon [name]="channelMeta[c].icon" [size]="15" /> {{ channelMeta[c].label }}
+            </button>
+          }
+        </div>
+      </div>
+      <div class="span-2">
+        <label class="form-label" for="nt-title">عنوان الإشعار</label>
+        <input id="nt-title" class="form-control" [(ngModel)]="notifyDraft.title" placeholder="مثال: عرض خاص لك" maxlength="60" />
+      </div>
+      <div class="span-2">
+        <label class="form-label" for="nt-body">نص الرسالة</label>
+        <textarea id="nt-body" class="form-control" rows="4" [(ngModel)]="notifyDraft.body" maxlength="300"
+          placeholder="اكتب محتوى الإشعار هنا…"></textarea>
+        <small class="muted">{{ notifyDraft.body.length }} / 300</small>
+      </div>
+    </div>
+    <ng-container modal-footer>
+      <button type="button" class="btn btn-ghost" (click)="notifyOpen.set(false)">إلغاء</button>
+      <button type="button" class="btn btn-pr" [disabled]="sending() || !notifyDraft.title.trim() || !notifyDraft.body.trim()"
+        (click)="sendNotification()">
+        @if (sending()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الإرسال… }
+        @else { <app-icon name="send" [size]="16" /> إرسال }
+      </button>
+    </ng-container>
+  </app-modal>
+</section>
+} @else {
+  <section class="page">
+    <div class="panel empty fx">
+      <span class="empty__icon"><app-icon name="user" [size]="28" /></span>
+      <p class="empty__title">الحساب غير موجود</p>
+      <p class="empty__text">ربما تم حذف هذا الحساب أو أن الرابط غير صحيح.</p>
+      <a class="btn btn-pr btn-sm" [routerLink]="['/', kind()]">العودة إلى {{ cfg().title }}</a>
+    </div>
+  </section>
+}

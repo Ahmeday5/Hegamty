@@ -1,0 +1,23 @@
+<app-modal
+  [open]="isOpen()"
+  [title]="config().title"
+  size="sm"
+  [titleColorClass]="titleClass()"
+  (closed)="cancel()"
+>
+  <div class="cd">
+    <span class="cd-icon cd-icon--{{ config().type ?? 'danger' }}">
+      <app-icon [name]="icon()" [size]="26" />
+    </span>
+    <p class="cd-message">{{ config().message }}</p>
+  </div>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" (click)="cancel()">
+      {{ config().cancelText }}
+    </button>
+    <button type="button" [class]="confirmBtnClass()" (click)="confirm()">
+      {{ config().confirmText }}
+    </button>
+  </ng-container>
+</app-modal>

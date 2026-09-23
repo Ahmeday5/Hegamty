@@ -1,0 +1,252 @@
+/* ════════════════════════════════
+   SIDEBAR — brand-gradient rail, desktop collapse + mobile drawer
+   ════════════════════════════════ */
+
+.sidebar {
+  --sb-width: 264px;
+  --sb-collapsed-width: 84px;
+  --sb-ease: 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  isolation: isolate;
+  width: var(--sb-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--grad-side);
+  color: var(--white);
+  transition: width var(--sb-ease);
+
+  /* ── Desktop collapsed ── */
+  &.collapsed {
+    width: var(--sb-collapsed-width);
+
+    .sb-logo { width: 52px; }
+    .sb-sec { opacity: 0; height: 12px; padding-block: 0; }
+    .sbi { justify-content: center; padding-inline: 0; }
+    .sbi-label, .sbi-arrow { opacity: 0; width: 0; }
+    .sb-help { opacity: 0; pointer-events: none; transform: translateY(12px); }
+    .sb-ver { opacity: 0; }
+  }
+
+  /* ── Mobile: slides in from the inline-start (right in RTL) ── */
+  @media (max-width: 991px) {
+    position: fixed;
+    top: 0;
+    inset-inline-start: 0;
+    bottom: 0;
+    width: 280px !important;
+    z-index: 1300;
+    transform: translateX(102%);
+    transition: transform var(--sb-ease), box-shadow var(--sb-ease);
+
+    &.open {
+      transform: translateX(0);
+      box-shadow: -18px 0 48px rgba(0, 0, 0, 0.28);
+    }
+  }
+}
+
+/* ── Decorative background ── */
+.sb-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 16px 16px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 45%);
+  }
+}
+.sb-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  animation: sb-drift 16s ease-in-out infinite alternate;
+
+  &--1 { width: 220px; height: 220px; top: -80px; inset-inline-end: -90px; background: #2fb457; opacity: 0.45; }
+  &--2 { width: 200px; height: 200px; bottom: 60px; inset-inline-start: -110px; background: #48c56d; opacity: 0.2; animation-delay: -6s; }
+}
+.sb-waves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 160px;
+  fill: none;
+
+  path { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1.4; }
+}
+
+/* ── Brand ── */
+.sb-brand {
+  display: flex;
+  justify-content: center;
+  padding: 26px 20px 18px;
+  text-decoration: none;
+}
+.sb-logo {
+  width: 112px;
+  height: auto;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.2));
+  transition: width var(--sb-ease), transform 0.3s;
+  animation: sb-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sb-brand:hover .sb-logo { transform: scale(1.04); }
+
+/* ── Nav ── */
+.sb-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 14px 16px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.sb-sec {
+  padding: 16px 12px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s, height 0.2s, padding 0.2s;
+}
+
+.sbi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, padding var(--sb-ease), transform 0.2s;
+  animation: sb-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--d, 0) * 50ms + 120ms);
+
+  &:hover {
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.09);
+    .sbi-arrow { opacity: 0.8; translate: -3px 0; }
+  }
+
+  &.on {
+    color: var(--pr-d);
+    background: var(--white);
+    font-weight: 700;
+    box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.45);
+
+    .sbi-icon { background: var(--grad-pr); color: var(--white); }
+    .sbi-arrow { opacity: 1; color: var(--pr); }
+  }
+}
+
+.sbi-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s, color 0.2s;
+}
+
+.sbi-label {
+  flex: 1;
+  overflow: hidden;
+  transition: opacity 0.2s, width 0.2s;
+}
+
+.sbi-arrow {
+  opacity: 0;
+  transition: opacity 0.2s, translate 0.2s;
+}
+
+/* ── Help card ── */
+.sb-help {
+  position: relative;
+  margin: 0 16px 12px;
+  padding: 18px 16px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  transition: opacity 0.25s, transform 0.25s;
+
+  &__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 8px;
+    border-radius: 14px;
+    background: var(--white);
+    color: var(--pr);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+  }
+  strong { display: block; font-size: 14px; }
+  p { margin: 4px 0 12px; font-size: 12px; line-height: 1.6; color: rgba(255, 255, 255, 0.7); }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 11px;
+    background: var(--white);
+    color: var(--pr-d);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5); color: var(--pr-d); }
+  }
+
+  @media (max-height: 760px) { display: none; }
+}
+
+.sb-ver {
+  padding: 0 16px 16px;
+  font-size: 11px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+@keyframes sb-in {
+  from { opacity: 0; translate: 16px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sb-pop {
+  from { opacity: 0; scale: 0.8; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes sb-drift {
+  to { transform: translate3d(-30px, 40px, 0) scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sbi, .sb-logo, .sb-orb { animation: none; }
+}

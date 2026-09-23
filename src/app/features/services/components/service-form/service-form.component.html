@@ -1,0 +1,114 @@
+<app-modal [open]="open()" [title]="title()" size="lg" (closed)="closed.emit()">
+  <form id="service-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <!-- Live preview -->
+    <div class="span-2 sf-preview tone-{{ form.controls.tone.value }}">
+      <span class="sf-preview__icon"><app-icon [name]="form.controls.icon.value" [size]="24" /></span>
+      <div>
+        <strong>{{ form.controls.name.value || 'اسم الخدمة' }}</strong>
+        <span>{{ form.controls.price.value || 0 }} {{ currency() }} · {{ form.controls.durationMin.value || 0 }} دقيقة</span>
+      </div>
+    </div>
+
+    <div class="span-2">
+      <label class="form-label" for="sf-country">الدولة</label>
+      <select id="sf-country" class="form-select" formControlName="countryId" [class.is-invalid]="invalid('countryId')">
+        <option value="" disabled>اختر الدولة</option>
+        @for (c of countries(); track c.id) {
+          <option [value]="c.id">{{ c.name }} — {{ c.currencyCode }}{{ c.active ? '' : ' (غير مفعّلة)' }}</option>
+        }
+      </select>
+      <app-form-error [control]="form.controls.countryId" label="الدولة" />
+    </div>
+
+    <div class="span-2">
+      <label class="form-label" for="sf-name">اسم الخدمة</label>
+      <input id="sf-name" class="form-control" formControlName="name" placeholder="مثال: حجامة رطبة" [class.is-invalid]="invalid('name')" />
+      <app-form-error [control]="form.controls.name" label="اسم الخدمة" />
+    </div>
+
+    <div class="span-2">
+      <span class="form-label">التصنيف</span>
+      <div class="seg seg--full">
+        @for (c of categories; track c.id) {
+          <button type="button" class="seg__btn" [class.is-on]="form.controls.category.value === c.id" (click)="set('category', c.id)">{{ c.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div>
+      <label class="form-label" for="sf-price">السعر ({{ currency() }})</label>
+      <input id="sf-price" type="number" min="1" class="form-control" formControlName="price" [class.is-invalid]="invalid('price')" />
+      <app-form-error [control]="form.controls.price" label="السعر" />
+    </div>
+
+    <div>
+      <label class="form-label" for="sf-duration">المدة (دقيقة)</label>
+      <input id="sf-duration" type="number" min="5" class="form-control" formControlName="durationMin" [class.is-invalid]="invalid('durationMin')" />
+      <app-form-error [control]="form.controls.durationMin" label="المدة" />
+    </div>
+
+    <div class="span-2 sf-toggle">
+      <div>
+        <strong>متاحة كزيارة منزلية</strong>
+        <span>يمكن للعميل حجز الخدمة في منزله مع فني وسائق</span>
+      </div>
+      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.homeVisit.value"
+        [attr.aria-checked]="form.controls.homeVisit.value" aria-label="زيارة منزلية"
+        (click)="set('homeVisit', !form.controls.homeVisit.value)"></button>
+    </div>
+
+    @if (form.controls.homeVisit.value) {
+      <div class="span-2">
+        <label class="form-label" for="sf-fee">رسوم الزيارة المنزلية ({{ currency() }})</label>
+        <input id="sf-fee" type="number" min="0" class="form-control" formControlName="homeFee" [class.is-invalid]="invalid('homeFee')" />
+        <app-form-error [control]="form.controls.homeFee" label="رسوم الزيارة" />
+      </div>
+    }
+
+    <div class="span-2">
+      <label class="form-label" for="sf-desc">وصف الخدمة</label>
+      <textarea id="sf-desc" class="form-control" rows="3" formControlName="description" maxlength="200"
+        placeholder="وصف مختصر يظهر للعملاء في التطبيق…" [class.is-invalid]="invalid('description')"></textarea>
+      <app-form-error [control]="form.controls.description" label="الوصف" />
+    </div>
+
+    <div>
+      <span class="form-label">اللون</span>
+      <div class="sf-swatches">
+        @for (t of tones; track t) {
+          <button type="button" class="sf-swatch tone-{{ t }}" [class.is-on]="form.controls.tone.value === t"
+            [attr.aria-label]="t" (click)="set('tone', t)"></button>
+        }
+      </div>
+    </div>
+
+    <div>
+      <span class="form-label">الأيقونة</span>
+      <div class="sf-icons">
+        @for (ic of icons; track ic) {
+          <button type="button" class="sf-icon" [class.is-on]="form.controls.icon.value === ic" [attr.aria-label]="ic" (click)="set('icon', ic)">
+            <app-icon [name]="ic" [size]="18" />
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="span-2 sf-toggle">
+      <div>
+        <strong>الخدمة مفعّلة</strong>
+        <span>الخدمات الموقوفة لا تظهر للعملاء ولا يمكن حجزها</span>
+      </div>
+      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value"
+        [attr.aria-checked]="form.controls.active.value" aria-label="تفعيل الخدمة"
+        (click)="set('active', !form.controls.active.value)"></button>
+    </div>
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" (click)="closed.emit()">إلغاء</button>
+    <button type="submit" form="service-form" class="btn btn-pr" [disabled]="saving()">
+      @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
+      @else { {{ service() ? 'حفظ التغييرات' : 'إضافة الخدمة' }} }
+    </button>
+  </ng-container>
+</app-modal>

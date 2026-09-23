@@ -1,0 +1,165 @@
+@if (booking(); as b) {
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a routerLink="/bookings">الحجوزات</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">{{ b.id }}</span>
+      </nav>
+      <h1 class="page-head__title title-row">
+        تفاصيل الحجز <span class="bk-id">{{ b.id }}</span>
+        <span class="chip chip--dot {{ bookingMeta[b.status].chip }}">{{ bookingMeta[b.status].label }}</span>
+        <span class="chip chip--slate chip--flag"><app-country-flag [code]="b.countryId" [size]="18" /> {{ b.countryId | countryName }}</span>
+      </h1>
+      <p class="page-head__sub">تم الإنشاء {{ b.createdAt | relTime }} · {{ b.createdAt | arDate: true }}</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="btn" (click)="print()"><app-icon name="file" [size]="17" /> طباعة الفاتورة</button>
+      @if (b.status === 'scheduled' || b.status === 'in_progress') {
+        <button type="button" class="btn btn-danger-soft" (click)="actions.cancel(b)"><app-icon name="ban" [size]="17" /> إلغاء الحجز</button>
+      }
+      <button type="button" class="btn" (click)="formOpen.set(true)"><app-icon name="edit" [size]="17" /> تعديل</button>
+      @if (actions.nextStep(b); as step) {
+        <button type="button" class="btn btn-pr" (click)="actions.advance(b)"><app-icon [name]="step.icon" [size]="17" /> {{ step.label }}</button>
+      }
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove()">
+        <app-icon name="trash" [size]="18" />
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Progress ── -->
+  <div class="panel bk-progress fx" style="--d: 1" [class.is-cancelled]="b.status === 'cancelled'">
+    <div class="bk-progress__head">
+      <span class="tile" [class.tile--brand]="b.status !== 'cancelled'" [class.tile--red]="b.status === 'cancelled'">
+        <app-icon [name]="b.status === 'cancelled' ? 'ban' : 'clock'" [size]="22" />
+      </span>
+      <div>
+        <strong>{{ timing() }}</strong>
+        <span>{{ b.date | arDate: true }} — {{ b.durationMin }} دقيقة</span>
+      </div>
+    </div>
+    <ol class="steps" [style.--p]="stepIndex() / (steps.length - 1)">
+      @for (s of steps; track s.label; let i = $index) {
+        <li class="steps__item" [class.is-done]="i < stepIndex() || (i === stepIndex() && b.status === 'completed')"
+          [class.is-current]="i === stepIndex() && b.status !== 'completed'" [style.--d]="i">
+          <span class="steps__dot"><app-icon [name]="s.icon" [size]="16" [stroke]="2.2" /></span>
+          <span class="steps__label">{{ s.label }}</span>
+        </li>
+      }
+    </ol>
+  </div>
+
+  <div class="grid grid--main">
+    <!-- ── Main column ── -->
+    <div class="col">
+      <div class="panel fx" style="--d: 2">
+        <div class="panel__head"><h2 class="panel__title">تفاصيل الجلسة</h2></div>
+        <div class="panel__body">
+          <div class="facts">
+            <div class="fact"><span class="tile tile--sm tile--green"><app-icon name="droplet" [size]="16" /></span><div><small>الخدمة</small><strong>{{ b.serviceName }}</strong></div></div>
+            <div class="fact"><span class="tile tile--sm tile--blue"><app-icon name="calendar" [size]="16" /></span><div><small>التاريخ</small><strong>{{ b.date | arDate }}</strong></div></div>
+            <div class="fact"><span class="tile tile--sm tile--purple"><app-icon name="clock" [size]="16" /></span><div><small>المدة</small><strong>{{ b.durationMin }} دقيقة</strong></div></div>
+            <div class="fact"><span class="tile tile--sm tile--amber"><app-icon name="activity" [size]="16" /></span><div><small>الوقت</small><strong>{{ timeRange() }}</strong></div></div>
+            <div class="fact"><span class="tile tile--sm tile--pink"><app-icon [name]="locationMeta[b.location].icon" [size]="16" /></span><div><small>مكان الجلسة</small><strong>{{ locationMeta[b.location].label }}</strong></div></div>
+            <div class="fact"><span class="tile tile--sm tile--teal"><app-icon name="map-pin" [size]="16" /></span><div><small>{{ b.location === 'home' ? 'العنوان' : 'الفرع' }}</small><strong>{{ b.address }}</strong></div></div>
+          </div>
+          @if (b.notes) {
+            <div class="note-box"><app-icon name="alert" [size]="18" /><div><strong>ملاحظات</strong><p>{{ b.notes }}</p></div></div>
+          }
+          @if (b.rating) {
+            <div class="rated">
+              <span>تقييم العميل للجلسة</span>
+              <span class="stars">
+                @for (i of [1, 2, 3, 4, 5]; track i) { <app-icon name="star" [size]="18" [filled]="i <= b.rating!" [class.on]="i <= b.rating!" /> }
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel fx" style="--d: 3">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">سجل الحجز</h2>
+            <p class="panel__sub">كل ما حدث على هذا الحجز بالترتيب الزمني</p>
+          </div>
+        </div>
+        <div class="panel__body">
+          <ol class="timeline">
+            @for (e of b.events; track e.id + e.date; let i = $index) {
+              <li class="timeline__item" [style.--d]="i">
+                <span class="tile tile--sm tile--{{ eventMeta[e.kind].tone }}"><app-icon [name]="eventMeta[e.kind].icon" [size]="16" /></span>
+                <div><p>{{ e.text }}</p><time>{{ e.date | arDate: true }} · {{ e.date | relTime }}</time></div>
+              </li>
+            }
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Side column ── -->
+    <div class="col">
+      <div class="panel fx" style="--d: 2">
+        <div class="panel__head"><h2 class="panel__title">أطراف الحجز</h2></div>
+        <div class="panel__body parties">
+          <a class="party" [routerLink]="['/customers', b.customerId]">
+            <app-avatar [name]="b.customerName" [size]="44" />
+            <div><small>العميل</small><strong>{{ b.customerName }}</strong><span><bdi>{{ b.customerPhone }}</bdi></span></div>
+            <app-icon class="party__go" name="chevron-left" [size]="18" />
+          </a>
+          <a class="party" [routerLink]="['/technicians', b.technicianId]">
+            <app-avatar [name]="b.technicianName" [size]="44" />
+            <div><small>الفني المسؤول</small><strong>{{ b.technicianName }}</strong><span>{{ b.serviceName }}</span></div>
+            <app-icon class="party__go" name="chevron-left" [size]="18" />
+          </a>
+          @if (b.driverId) {
+            <a class="party" [routerLink]="['/drivers', b.driverId]">
+              <app-avatar [name]="b.driverName ?? ''" [size]="44" />
+              <div><small>السائق</small><strong>{{ b.driverName }}</strong><span>زيارة منزلية</span></div>
+              <app-icon class="party__go" name="chevron-left" [size]="18" />
+            </a>
+          }
+        </div>
+      </div>
+
+      <div class="panel invoice fx" style="--d: 3">
+        <div class="panel__head">
+          <h2 class="panel__title">الفاتورة</h2>
+          <span class="chip {{ paymentMeta[b.paymentStatus].chip }}">{{ paymentMeta[b.paymentStatus].label }}</span>
+        </div>
+        <div class="panel__body">
+          <dl class="invoice__rows">
+            <div><dt>سعر الخدمة</dt><dd>{{ b.price | cmoney: b.countryId }}</dd></div>
+            @if (b.homeFee) { <div><dt>رسوم الزيارة المنزلية</dt><dd>{{ b.homeFee | cmoney: b.countryId }}</dd></div> }
+            @if (b.discount) { <div class="is-discount"><dt>الخصم</dt><dd>−{{ b.discount | cmoney: b.countryId }}</dd></div> }
+            <div><dt>المجموع الفرعي</dt><dd>{{ subtotal() | cmoney: b.countryId }}</dd></div>
+            <div><dt>ضريبة القيمة المضافة {{ vatPct() }}%</dt><dd>{{ b.vat | cmoney: b.countryId }}</dd></div>
+          </dl>
+          <div class="invoice__total"><span>الإجمالي</span><strong>{{ b.total | cmoney: b.countryId }}</strong></div>
+          <div class="invoice__method"><app-icon name="card" [size]="16" /> طريقة الدفع: <strong>{{ b.paymentMethod }}</strong></div>
+          @if (b.paymentStatus === 'pending' && b.status !== 'cancelled') {
+            <button type="button" class="btn btn-soft invoice__pay" (click)="markPaid()">
+              <app-icon name="check" [size]="16" [stroke]="2.2" /> تسجيل الدفع
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <app-booking-form [open]="formOpen()" [booking]="b" (closed)="formOpen.set(false)" />
+</section>
+} @else {
+  <section class="page">
+    <div class="panel empty fx">
+      <span class="empty__icon"><app-icon name="calendar" [size]="28" /></span>
+      <p class="empty__title">الحجز غير موجود</p>
+      <p class="empty__text">ربما تم حذف هذا الحجز أو أن الرابط غير صحيح.</p>
+      <a class="btn btn-pr btn-sm" routerLink="/bookings">العودة إلى الحجوزات</a>
+    </div>
+  </section>
+}

@@ -1,0 +1,123 @@
+<div class="login-page">
+  <section class="login" [class.login--shake]="shake()" (animationend)="onShakeEnd($event)"
+    aria-labelledby="login-title">
+    <img class="login__logo" src="assets/img/logoo.png" alt="Hegamty" width="210" height="210" />
+
+    <header class="login__head step" style="--s: 0">
+      <span class="login__badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6l-7-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        بوابة الإدارة
+      </span>
+      <h2 id="login-title" class="login__title">مرحبًا بعودتك</h2>
+      <p class="login__subtitle">سجّل الدخول للمتابعة إلى لوحة تحكم Hegamty.</p>
+    </header>
+
+    <form class="login__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <!-- Email -->
+      <div class="field step" style="--s: 1">
+        <label class="field__label" for="login-email">البريد الإلكتروني</label>
+        <div class="input-icon input-icon--lg" [class.is-invalid]="isInvalid('email')">
+          <svg class="input-icon__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2.5" />
+            <path d="m4 7 8 6 8-6" />
+          </svg>
+          <input #emailInput id="login-email" type="email" class="form-control" formControlName="email"
+            autocomplete="username" inputmode="email" spellcheck="false" placeholder="name@company.com"
+            [class.is-invalid]="isInvalid('email')" [attr.aria-invalid]="isInvalid('email') || null" />
+        </div>
+        <app-form-error [control]="form.controls.email" label="البريد الإلكتروني" />
+      </div>
+
+      <!-- Password -->
+      <div class="field step" style="--s: 2">
+        <div class="field__row">
+          <label class="field__label">كلمة المرور</label>
+          <button type="button" class="link-btn" (click)="toggleResetHint()"
+            [attr.aria-expanded]="showResetHint()" aria-controls="reset-hint">
+            نسيت كلمة المرور؟
+          </button>
+        </div>
+        <div class="input-icon input-icon--lg" [class.is-invalid]="isInvalid('password')"
+          (keydown)="onPasswordKey($event)" (keyup)="onPasswordKey($event)">
+          <svg class="input-icon__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="10.5" width="16" height="10" rx="2.5" />
+            <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+            <path d="M12 14.5v2" />
+          </svg>
+          <app-password-input formControlName="password" placeholder="أدخل كلمة المرور"
+            autocomplete="current-password" />
+        </div>
+
+        @if (capsLockOn()) {
+          <p class="hint hint--warn" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4 4 12h4v4h8v-4h4l-8-8Z" /><path d="M8 20h8" />
+            </svg>
+            زر Caps Lock مفعّل
+          </p>
+        }
+        <app-form-error [control]="form.controls.password" label="كلمة المرور" />
+
+        @if (showResetHint()) {
+          <div id="reset-hint" class="notice" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" />
+            </svg>
+            <span>تتم إعادة تعيين كلمة المرور عن طريق مسؤول النظام. تواصل معه لاستعادة الوصول إلى حسابك.</span>
+          </div>
+        }
+      </div>
+
+      <!-- Remember me -->
+      <label class="check step" style="--s: 3">
+        <input type="checkbox" class="check__input" formControlName="rememberMe" />
+        <span class="check__box" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        </span>
+        <span class="check__label">تذكرني على هذا الجهاز</span>
+      </label>
+
+      @if (serverError(); as msg) {
+        <div class="alert-inline" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.3 3.9 2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+            <path d="M12 9v4M12 17h.01" />
+          </svg>
+          <span>{{ msg }}</span>
+        </div>
+      }
+
+      <button type="submit" class="btn btn-pr submit step" style="--s: 4" [disabled]="isSubmitting()"
+        [attr.aria-busy]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span class="submit__spin" aria-hidden="true"></span>
+          <span>جارٍ تسجيل الدخول…</span>
+        } @else {
+          <span>تسجيل الدخول</span>
+          <svg class="submit__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        }
+      </button>
+    </form>
+
+    <p class="login__foot step" style="--s: 5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="10.5" width="16" height="10" rx="2.5" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      </svg>
+      للموظفين المصرّح لهم فقط · تحتاج صلاحية وصول؟ تواصل مع مسؤول النظام.
+    </p>
+  </section>
+</div>

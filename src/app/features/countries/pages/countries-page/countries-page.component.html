@@ -1,0 +1,96 @@
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">الدول</span>
+      </nav>
+      <h1 class="page-head__title">الدول والأسواق</h1>
+      <p class="page-head__sub">كل دولة لها عملتها وضريبتها ومدنها، والتطبيق يعرض للعميل خدمات وفنيي وسائقي دولته فقط</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="btn btn-pr" (click)="openCreate()">
+        <app-icon name="plus" [size]="17" [stroke]="2.2" /> إضافة دولة
+      </button>
+    </div>
+  </header>
+
+  <div class="grid grid--4">
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي الدول" [value]="kpis().total" icon="globe" tone="green" hint="الأسواق المسجلة" />
+    <app-kpi-card class="fx" style="--d: 2" label="الدول المفعّلة" [value]="kpis().active" icon="check-circle" tone="blue"
+      [hint]="(kpis().total - kpis().active) + ' غير مفعّلة'" />
+    <app-kpi-card class="fx" style="--d: 3" label="المدن المغطاة" [value]="kpis().cities" icon="map-pin" tone="teal" hint="في جميع الدول" />
+    <app-kpi-card class="fx" style="--d: 4" label="العملات" [value]="kpis().currencies" icon="wallet" tone="purple"
+      [hint]="'التقارير المجمّعة بعملة ' + base.symbol" />
+  </div>
+
+  <div class="cards">
+    @for (r of rows(); track r.country.id; let i = $index) {
+      <article class="ctry-card tone-{{ r.country.tone }}" [class.is-off]="!r.country.active" [style.--d]="i">
+        <div class="ctry-card__cover" aria-hidden="true"></div>
+        <header class="ctry-card__head">
+          <app-country-flag [code]="r.country.id" [size]="52" />
+          <div class="ctry-card__title">
+            <h3>{{ r.country.name }}</h3>
+            <span dir="ltr">{{ r.country.id }} · {{ r.country.phoneCode }}</span>
+          </div>
+          <button type="button" class="switch" role="switch" [class.is-on]="r.country.active" [attr.aria-checked]="r.country.active"
+            [attr.aria-label]="(r.country.active ? 'إيقاف ' : 'تفعيل ') + r.country.name" (click)="toggleActive(r.country)"></button>
+        </header>
+
+        <div class="ctry-card__chips">
+          <span class="chip chip--green">{{ r.country.currencyCode }} · {{ r.country.currencySymbol }}</span>
+          <span class="chip chip--blue">ضريبة {{ r.vatPct }}%</span>
+          @if (r.country.id !== base.countryId) {
+            <span class="chip chip--slate">1 {{ r.country.currencySymbol }} = {{ r.country.rateToBase }} {{ base.symbol }}</span>
+          } @else {
+            <span class="chip chip--purple">العملة الأساسية</span>
+          }
+          @if (!r.country.active) { <span class="chip chip--amber">غير مفعّلة</span> }
+        </div>
+
+        <dl class="ctry-card__stats">
+          <div><dt>العملاء</dt><dd>{{ r.customers | num }}</dd></div>
+          <div><dt>الفنيون</dt><dd>{{ r.technicians | num }}</dd></div>
+          <div><dt>السائقون</dt><dd>{{ r.drivers | num }}</dd></div>
+          <div><dt>الخدمات</dt><dd>{{ r.services | num }}</dd></div>
+          <div><dt>الحجوزات</dt><dd>{{ r.bookings | num }}</dd></div>
+        </dl>
+
+        <div class="ctry-card__cities">
+          <span class="ctry-card__label"><app-icon name="map-pin" [size]="14" /> {{ r.country.cities.length }} مدن</span>
+          <div class="ctry-card__tags">
+            @for (c of r.country.cities.slice(0, 6); track c) { <span>{{ c }}</span> }
+            @if (r.country.cities.length > 6) { <span class="more">+{{ r.country.cities.length - 6 }}</span> }
+          </div>
+        </div>
+
+        @if (!r.services && r.country.active) {
+          <div class="ctry-card__warn">
+            <app-icon name="alert" [size]="16" /> لا توجد خدمات مفعّلة — لن يتمكن العملاء من الحجز في هذه الدولة
+          </div>
+        }
+
+        <footer class="ctry-card__foot">
+          <div class="ctry-card__links">
+            <button type="button" class="btn btn-soft btn-sm" (click)="viewIn(r.country, '/dashboard')"><app-icon name="grid" [size]="15" /> لوحتها</button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="viewIn(r.country, '/services')"><app-icon name="droplet" [size]="15" /> الخدمات</button>
+          </div>
+          <div class="actions">
+            <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(r.country)"><app-icon name="edit" [size]="17" /></button>
+            <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(r.country)"><app-icon name="trash" [size]="17" /></button>
+          </div>
+        </footer>
+      </article>
+    }
+
+    <button type="button" class="ctry-add" [style.--d]="rows().length" (click)="openCreate()">
+      <span><app-icon name="globe" [size]="26" /></span>
+      <strong>إطلاق دولة جديدة</strong>
+      <small>أضف الدولة ثم أضف خدماتها وفنييها وسائقيها</small>
+    </button>
+  </div>
+
+  <app-country-form [open]="formOpen()" [country]="editing()" (closed)="formOpen.set(false)" />
+</section>

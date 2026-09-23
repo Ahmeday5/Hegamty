@@ -1,0 +1,65 @@
+/* ── MAIN LAYOUT ── */
+.app-layout {
+  display: flex;
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+// ─── Mobile Sidebar Overlay ──────────────────────────────────
+.sidebar-overlay {
+  display: none;
+
+  @media (max-width: 991px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1250; // above the topbar, just below the drawer (1300)
+    background: rgba(4, 24, 10, 0.45);
+    backdrop-filter: blur(3px);
+    cursor: pointer;
+    animation: fx-fade 0.25s ease both;
+  }
+}
+
+// ─── Sidebar Wrapper ─────────────────────────────────────────
+.sidebar-wrapper {
+  flex-shrink: 0;
+  height: 100%;
+
+  // On mobile the sidebar is position:fixed, so the wrapper takes no space.
+  @media (max-width: 991px) {
+    width: 0;
+    min-width: 0;
+    overflow: visible;
+  }
+}
+
+// ─── Main Content ────────────────────────────────────────────
+.main-content {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  // The soft brand gradient, ending on the page tone instead of pure white
+  // so there's no seam where the wash stops.
+  background: linear-gradient(180deg, rgba(38, 166, 74, 0.19) -46.27%, var(--bg) 26.87%, var(--bg) 100%);
+
+  app-topbar { flex-shrink: 0; }
+}
+
+// ─── Scrollable Page Area ────────────────────────────────────
+.content-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 28px 28px 40px;
+
+  @media (max-width: 767px) { padding: 18px 14px 32px; }
+}

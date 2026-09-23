@@ -1,0 +1,275 @@
+:host {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+.login-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 5vw, 56px) 20px;
+}
+
+.login {
+  width: 100%;
+  max-width: 420px;
+
+  &--shake { animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+  &__logo {
+    display: none;
+    width: 104px;
+    height: auto;
+    margin: 0 auto 20px;
+    animation: pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    @media (max-width: 991.98px) { display: block; }
+  }
+
+  &__head {
+    margin-bottom: 30px;
+
+    @media (max-width: 991.98px) { text-align: center; }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--pr);
+    background: var(--pr-l);
+    border: 1px solid rgba(32, 132, 61, 0.15);
+
+    svg { width: 14px; height: 14px; }
+  }
+
+  &__title {
+    margin: 16px 0 8px;
+    font-size: clamp(26px, 3vw, 32px);
+    font-weight: 700;
+    color: var(--black);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 14.5px;
+    color: var(--txt2);
+  }
+
+  &__form {
+    display: grid;
+    gap: 20px;
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 28px 0 0;
+    font-size: 12px;
+    color: var(--txt3);
+    text-align: center;
+
+    svg { width: 14px; height: 14px; flex-shrink: 0; }
+  }
+}
+
+/* ── Fields ── */
+.field {
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--black);
+  }
+
+  ::ng-deep .app-form-error { font-size: 12px; margin-top: 6px; }
+}
+
+.link-btn {
+  margin-bottom: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pr);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s;
+
+  &:hover { color: var(--pr-d); text-decoration: underline; text-underline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--pr-ring); outline-offset: 2px; }
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  animation: fade-down 0.25s ease both;
+
+  svg { width: 14px; height: 14px; }
+  &--warn { color: var(--am); }
+}
+
+.notice,
+.alert-inline {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: fade-down 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+}
+
+.notice {
+  margin-top: 12px;
+  color: var(--pr-d);
+  background: var(--pr-l);
+  border: 1px solid rgba(32, 132, 61, 0.18);
+}
+
+.alert-inline {
+  color: var(--re);
+  background: var(--re-l);
+  border: 1px solid rgba(163, 45, 45, 0.18);
+}
+
+/* ── Custom checkbox ── */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  justify-self: start;
+
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  &__box {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid #cfd7d2;
+    background: var(--white);
+    color: var(--white);
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+
+    svg {
+      width: 13px;
+      height: 13px;
+      stroke-dasharray: 24;
+      stroke-dashoffset: 24;
+      transition: stroke-dashoffset 0.3s ease 0.05s;
+    }
+  }
+
+  &__label {
+    font-size: 13px;
+    color: var(--txt2);
+  }
+
+  &:hover &__box { border-color: var(--pr); }
+
+  &__input:checked + &__box {
+    background: var(--grad-pr);
+    border-color: var(--pr);
+    svg { stroke-dashoffset: 0; }
+  }
+
+  &__input:focus-visible + &__box { box-shadow: 0 0 0 4px var(--pr-ring); }
+}
+
+/* ── Submit ── */
+.submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 50px;
+  margin-top: 4px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+
+  &__arrow {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover:not(:disabled) &__arrow { transform: translateX(4px); }
+
+  &__spin {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: var(--white);
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+:host-context([dir='rtl']) .submit__arrow { scale: -1 1; }
+
+/* ── Staggered entrance ── */
+.step {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--s, 0) * 70ms + 150ms);
+}
+
+@keyframes rise {
+  from { opacity: 0; translate: 0 14px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes pop {
+  from { opacity: 0; scale: 0.85; }
+  to   { opacity: 1; scale: 1; }
+}
+@keyframes fade-down {
+  from { opacity: 0; translate: 0 -6px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step, .login__logo, .hint, .notice, .alert-inline, .login--shake { animation: none; }
+  .check__box svg, .submit__arrow { transition: none; }
+}

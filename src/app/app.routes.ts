@@ -1,0 +1,84 @@
+import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/guards/auth.guard';
+import { guestGuard } from './core/auth/guards/guest.guard';
+
+export const routes: Routes = [
+  // Auth area — only reachable when NOT signed in
+  {
+    path: 'auth',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./layout/auth-layout/auth-layout.component').then(
+        (m) => m.AuthLayoutComponent,
+      ),
+    children: [
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/auth/pages/login/login.component').then(
+            (m) => m.LoginComponent,
+          ),
+      },
+      { path: '', redirectTo: 'login', pathMatch: 'full' },
+      { path: '**', redirectTo: 'login' },
+    ],
+  },
+
+  // Authenticated app shell
+  {
+    path: '',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    loadComponent: () =>
+      import('./layout/main-layout/main-layout.component').then(
+        (m) => m.MainLayoutComponent,
+      ),
+    children: [
+      {
+        path: 'dashboard',
+        title: 'لوحة التحكم · Hegamty',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent,
+          ),
+      },
+      {
+        path: 'bookings',
+        title: 'الحجوزات · Hegamty',
+        loadChildren: () => import('./features/bookings/bookings.routes').then((m) => m.bookingsRoutes),
+      },
+      {
+        path: 'services',
+        title: 'الخدمات · Hegamty',
+        loadComponent: () =>
+          import('./features/services/pages/services-page/services-page.component').then((m) => m.ServicesPageComponent),
+      },
+      {
+        path: 'countries',
+        title: 'الدول · Hegamty',
+        loadComponent: () =>
+          import('./features/countries/pages/countries-page/countries-page.component').then((m) => m.CountriesPageComponent),
+      },
+      {
+        path: 'customers',
+        title: 'العملاء · Hegamty',
+        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('customers')),
+      },
+      {
+        path: 'technicians',
+        title: 'الفنيون · Hegamty',
+        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('technicians')),
+      },
+      {
+        path: 'drivers',
+        title: 'السائقون · Hegamty',
+        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('drivers')),
+      },
+      // Guard a feature with permissions like:
+      //   canActivate: [permissionGuard('Users.Manage')]
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    ],
+  },
+
+  { path: '**', redirectTo: '/dashboard' },
+];
