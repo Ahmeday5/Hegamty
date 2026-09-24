@@ -69,12 +69,19 @@ let openCount = 0;
       :host { display: contents; }
       .app-modal-body { font-size: 12px; color: var(--txt); }
       .app-modal-footer:empty { display: none; }
+      /* Actions stay reachable at the bottom however long the form is */
       .app-modal-footer {
+        position: sticky;
+        bottom: calc(var(--modal-pad) * -1);
+        z-index: 2;
         display: flex;
         gap: 8px;
         justify-content: flex-end;
-        margin-top: 16px;
         flex-wrap: wrap;
+        margin: 16px calc(var(--modal-pad) * -1) calc(var(--modal-pad) * -1);
+        padding: 12px var(--modal-pad) calc(12px + env(safe-area-inset-bottom, 0px));
+        background: var(--white);
+        border-top: 1px solid var(--brd);
       }
     `,
   ],
@@ -98,6 +105,7 @@ export class ModalComponent {
 
   private readonly renderer = inject(Renderer2);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
    * True only while body has been locked by THIS modal instance.
@@ -108,6 +116,14 @@ export class ModalComponent {
   private hasLockedBody = false;
 
   constructor() {
+    // Portal: move the host to <body> so the dialog is never trapped under an
+    // ancestor's stacking context (animated/transformed page sections, the
+    // sticky topbar) or clipped by an `overflow` container. Angular keeps the
+    // bindings working because only the DOM node moves, not the view.
+    const el = this.host.nativeElement;
+    document.body.appendChild(el);
+    this.destroyRef.onDestroy(() => el.remove());
+
     // Keep body scroll-lock state in sync with `open`. Reads `open()` (signal)
     // but only writes the plain `hasLockedBody` field — no NG0600 hazard.
     effect(() => {

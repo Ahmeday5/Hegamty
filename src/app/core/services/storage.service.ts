@@ -42,6 +42,40 @@ export class StorageService {
     }
   }
 
+  // ─────────── sessionStorage (tab-scoped, cleared when the browser closes) ───────────
+
+  private get session(): Storage | null {
+    try {
+      return typeof sessionStorage !== 'undefined' ? sessionStorage : null;
+    } catch {
+      return null;
+    }
+  }
+
+  getSession(key: string): string | null {
+    try {
+      return this.session?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  setSession(key: string, value: string): void {
+    try {
+      this.session?.setItem(key, value);
+    } catch {
+      /* quota / disabled — ignore */
+    }
+  }
+
+  removeSession(key: string): void {
+    try {
+      this.session?.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+
   getJson<T>(key: string): T | null {
     const raw = this.get(key);
     if (!raw) return null;

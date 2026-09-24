@@ -134,6 +134,19 @@
 
 .pg-size-select { padding-inline: 8px 28px; }
 
+// ── Small screens: stack, center, wrap and shrink so nothing overflows ──
+@media (max-width: 767.98px) {
+  .pg { flex-direction: column; justify-content: center; gap: 10px; }
+  .pg-meta { justify-content: center; text-align: center; }
+  .pg-nav { flex-wrap: wrap; justify-content: center; max-width: 100%; }
+}
+@media (max-width: 575.98px) {
+  .pg-btn { min-width: 28px; height: 28px; padding: 0 4px; font-size: 11.5px; }
+  .pg-btn--edge { display: none; }
+  .pg-ellipsis { min-width: 16px; height: 28px; }
+  .pg-jump-input { height: 28px; }
+}
+
 // ── Ellipsis ──────────────────────────────────────────────────────────────────
 .pg-ellipsis {
   display: inline-flex;

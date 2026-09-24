@@ -8,8 +8,6 @@ export const AUTH_ENDPOINTS = {
   login: 'auth/login',
   logout: 'auth/logout',
   refresh: 'auth/refresh-token',
-  /** Authoritative current-user + permissions endpoint, fetched after login. */
-  me: 'auth/me',
 } as const;
 
 /** Default route to send an authenticated user to after login/guard redirects. */

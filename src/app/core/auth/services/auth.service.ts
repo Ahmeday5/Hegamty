@@ -21,7 +21,6 @@ import {
   AuthTokens,
   LoginRequest,
   LogoutRequest,
-  MePermissionsData,
   RefreshTokenRequest,
   User,
   UserRole,
@@ -35,6 +34,8 @@ import {
 import { getJwtExpiry } from '../utils/jwt.util';
 
 const USER_KEY = 'app_user';
+/** "1" = remember me (localStorage), "0" = this browser session only. */
+const REMEMBER_KEY = 'app_remember';
 /** Refresh this many ms BEFORE the access token actually expires. */
 const REFRESH_BUFFER_MS = 60 * 1000;
 /** Lower bound for the proactive refresh timer to avoid timer storms on edge cases. */
@@ -136,6 +137,11 @@ export class AuthService {
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   constructor() {
+    // A session minted by the old UI-only mock login is meaningless to the
+    // real API — drop it so the user signs in against the backend.
+    if (!environment.mockAuth && this.getRefreshToken()?.startsWith('mock-refresh')) {
+      this.clearLocalSession();
+    }
     this.initCrossTabSync();
     this.initVisibilityRecovery();
     if (this.isLoggedIn()) {
@@ -162,8 +168,13 @@ export class AuthService {
         context: withInlineHandling(withSkipAuth()),
       })
       .pipe(
-        tap((data) => this.persistSession(data, true)),
-        switchMap((data) => this.hydratePermissions(this.toUser(data)))
+        // The login payload carries the full user (id, email, name, role) —
+        // there is no separate "me" endpoint to hydrate from.
+        map((data) => {
+          this.setPersistent(input.rememberMe);
+          this.persistSession(data, true);
+          return this.currentUserSignal() ?? this.toUser(data);
+        }),
       );
   }
 
@@ -200,40 +211,36 @@ export class AuthService {
     );
   }
 
-  /**
-   * The login payload's permission list isn't always guaranteed complete, so
-   * we optionally follow up with the authoritative "me" endpoint and merge
-   * the role + permissions into the cached user. Best-effort: if the call
-   * fails the login still succeeds with the login-derived user.
-   *
-   * If your backend already returns full role/permissions on login, delete
-   * this call and just return `of(baseUser)`.
-   */
-  private hydratePermissions(baseUser: User): Observable<User> {
-    return this.api
-      .get<MePermissionsData>(AUTH_ENDPOINTS.me, {
-        context: withInlineHandling(),
-      })
-      .pipe(
-        map((data) => this.applyPermissions(baseUser, data)),
-        catchError(() => of(baseUser))
-      );
+  // ─────────── token storage ("remember me") ───────────
+  // Remembered sessions live in localStorage (survive restarts, shared by
+  // tabs); otherwise in sessionStorage (gone when the browser closes). Reads
+  // check both so a mode switch never strands a session.
+
+  private isPersistent(): boolean {
+    return this.storage.get(REMEMBER_KEY) !== '0';
   }
 
-  private applyPermissions(baseUser: User, data: MePermissionsData): User {
-    const role = data?.role ? this.normalizeRole(data.role) : baseUser.role;
-    const name = data?.userName?.trim() || baseUser.name;
-    const merged: User = {
-      ...baseUser,
-      role,
-      name,
-      email: data?.email || baseUser.email,
-      avatar: this.deriveAvatar(name),
-      permissions: this.resolvePermissions(data?.permissions),
-    };
-    this.storage.setJson(USER_KEY, merged);
-    this.currentUserSignal.set(merged);
-    return merged;
+  private setPersistent(persistent: boolean): void {
+    this.storage.set(REMEMBER_KEY, persistent ? '1' : '0');
+  }
+
+  private readKey(key: string): string | null {
+    return this.storage.get(key) ?? this.storage.getSession(key);
+  }
+
+  private writeKey(key: string, value: string): void {
+    if (this.isPersistent()) {
+      this.storage.set(key, value);
+      this.storage.removeSession(key);
+    } else {
+      this.storage.setSession(key, value);
+      this.storage.remove(key);
+    }
+  }
+
+  private removeKey(key: string): void {
+    this.storage.remove(key);
+    this.storage.removeSession(key);
   }
 
   logout(opts: LogoutOptions = {}): void {
@@ -248,9 +255,14 @@ export class AuthService {
     if (callApi && refreshToken && !environment.mockAuth) {
       const payload: LogoutRequest = { refreshToken };
       // Fire-and-forget — never block redirect on the network roundtrip.
+      // SKIP_AUTH + a manual header: the auth interceptor must NOT try to
+      // refresh an expired access token here — that would rotate the very
+      // refresh token we're about to revoke.
+      const access = this.getAccessToken();
       this.api
         .post<unknown>(AUTH_ENDPOINTS.logout, payload, {
-          context: withInlineHandling(),
+          context: withInlineHandling(withSkipAuth()),
+          headers: access ? { Authorization: `Bearer ${access}` } : undefined,
         })
         .subscribe({ error: () => {} });
     }
@@ -313,11 +325,11 @@ export class AuthService {
   }
 
   getAccessToken(): string | null {
-    return this.storage.get(environment.tokenKey);
+    return this.readKey(environment.tokenKey);
   }
 
   getRefreshToken(): string | null {
-    return this.storage.get(environment.refreshTokenKey);
+    return this.readKey(environment.refreshTokenKey);
   }
 
   isLoggedIn(): boolean {
@@ -507,12 +519,12 @@ export class AuthService {
     // successful 2xx is never thrown away. Login always returns both.
     const fallbackRefreshToken = updateUser ? null : this.getRefreshToken();
     const tokens = this.extractTokens(data, fallbackRefreshToken);
-    this.storage.set(environment.tokenKey, tokens.accessToken);
-    this.storage.set(environment.refreshTokenKey, tokens.refreshToken);
+    this.writeKey(environment.tokenKey, tokens.accessToken);
+    this.writeKey(environment.refreshTokenKey, tokens.refreshToken);
 
     if (updateUser && data.userId) {
       const user = this.toUser(data);
-      this.storage.setJson(USER_KEY, user);
+      this.writeKey(USER_KEY, JSON.stringify(user));
       this.currentUserSignal.set(user);
     } else if (!this.currentUserSignal()) {
       // Stale tab booting up after a previous refresh — rehydrate the user
@@ -529,9 +541,9 @@ export class AuthService {
   }
 
   private clearLocalSession(): void {
-    this.storage.remove(environment.tokenKey);
-    this.storage.remove(environment.refreshTokenKey);
-    this.storage.remove(USER_KEY);
+    this.removeKey(environment.tokenKey);
+    this.removeKey(environment.refreshTokenKey);
+    this.removeKey(USER_KEY);
     this.currentUserSignal.set(null);
     this.cancelScheduledRefresh();
     this.inflightRefresh = null;
@@ -543,7 +555,13 @@ export class AuthService {
 
   private loadStoredUser(): User | null {
     if (!this.getAccessToken() || !this.getRefreshToken()) return null;
-    return this.storage.getJson<User>(USER_KEY);
+    const raw = this.readKey(USER_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as User;
+    } catch {
+      return null;
+    }
   }
 
   // ────────────────────── mappers ──────────────────────
@@ -574,7 +592,9 @@ export class AuthService {
   }
 
   private toUser(data: AuthResponseData): User {
-    const userName = data.userName?.trim() || data.email?.split('@')[0] || 'مستخدم';
+    // The API echoes the email as `userName` — show its local part instead.
+    const rawName = data.userName?.trim() ?? '';
+    const userName = (rawName && !rawName.includes('@') ? rawName : '') || (rawName || data.email || '').split('@')[0] || 'مستخدم';
     const role = this.normalizeRole(data.role);
     return {
       id: data.userId,

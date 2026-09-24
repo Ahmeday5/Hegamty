@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiError, ApiResponse } from '../models/api-response.model';
 
 export interface RequestOptions {
   params?: Record<string, unknown>;
@@ -106,10 +106,24 @@ export class ApiService {
     return params;
   }
 
-  /** Normalize both `{ data, success, ... }` envelopes and raw `<T>` payloads. */
+  /**
+   * Normalize `{ statusCode, message, data }` envelopes and raw `<T>` payloads.
+   * A 2xx HTTP response whose envelope reports a failure (`statusCode >= 400`
+   * or `success: false`) is surfaced as a normalized `ApiError`, so callers
+   * never mistake it for data.
+   */
   private unwrap<T>(res: ApiResponse<T> | T): T {
-    if (res && typeof res === 'object' && 'data' in (res as object)) {
+    if (res && typeof res === 'object' && ('data' in (res as object) || 'statusCode' in (res as object))) {
       const env = res as ApiResponse<T>;
+      if ((env.statusCode ?? 200) >= 400 || env.success === false) {
+        const error: ApiError = {
+          status: env.statusCode ?? 400,
+          message: env.message?.trim() || 'تعذّر تنفيذ الطلب',
+          fieldErrors: env.errors,
+          raw: env,
+        };
+        throw error;
+      }
       return (env.data ?? (env as unknown as T)) as T;
     }
     return res as T;

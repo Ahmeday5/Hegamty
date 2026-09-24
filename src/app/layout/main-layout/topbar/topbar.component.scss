@@ -276,6 +276,27 @@
   color: var(--txt3);
 }
 
+/* ── Phones: every dropdown spans the screen under the bar ──
+   The topbar (backdrop-filter) is the containing block for fixed children,
+   so `top: 100%` lands right under it and inset-inline keeps both edges. */
+@media (max-width: 575.98px) {
+  .menu,
+  .t-notes,
+  .t-countries,
+  .t-results {
+    position: fixed;
+    top: calc(100% + 6px);
+    inset-inline: 8px;
+    width: auto;
+    min-width: 0;
+    max-height: calc(100dvh - 90px);
+    overflow-y: auto;
+  }
+  .t-notes__list { max-height: none; }
+  .t-search { position: static; }
+  .topbar { gap: 8px; }
+}
+
 @keyframes t-down { from { opacity: 0; translate: 0 -12px; } }
 @keyframes t-line { from { scale: 0 1; } }
 @keyframes t-ping {

@@ -524,21 +524,31 @@ body {
   inset: 0;
   background: rgba(6, 30, 14, 0.42);
   backdrop-filter: blur(4px);
-  z-index: 1055;
+  /* Above the mobile topbar (1100) and drawer (1300) — modals are portalled to <body> */
+  z-index: 1500;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   animation: app-modal-fade 0.2s ease-out;
+
+  /* Phones: bottom sheet using the full width */
+  @media (max-width: 575.98px) {
+    align-items: flex-end;
+    padding: 12px 0 0;
+  }
 }
 
 .app-modal {
+  --modal-pad: 20px;
   background: var(--bg2);
   border-radius: var(--rxl);
-  padding: 20px;
+  padding: var(--modal-pad);
   width: 100%;
   max-width: 560px;
-  max-height: 90vh;
+  /* Always fits the real visible viewport (mobile URL bar included) */
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
@@ -550,15 +560,31 @@ body {
   &--lg { max-width: 760px; }
   &--xl { max-width: 980px; }
 
-  @media (max-width: 576px) {
-    padding: 16px;
+  @media (max-width: 575.98px) {
+    --modal-pad: 16px;
+    max-width: 100% !important;
+    max-height: calc(100vh - 12px);
+    max-height: calc(100dvh - 12px);
+    border-radius: 20px 20px 0 0;
+    animation-name: app-modal-sheet;
   }
 }
+@keyframes app-modal-sheet {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 
+/* Title pinned to the top while the body scrolls (sticky inside .app-modal) */
 .app-modal-title {
+  position: sticky;
+  top: calc(var(--modal-pad) * -1);
+  z-index: 2;
+  margin: calc(var(--modal-pad) * -1) calc(var(--modal-pad) * -1) 14px;
+  padding: var(--modal-pad) var(--modal-pad) 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--brd);
   font-size: 16px;
   font-weight: 700;
-  margin-bottom: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
