@@ -51,7 +51,7 @@
     grid-template-columns: repeat(5, 1fr);
     margin: 0;
     border-radius: 12px;
-    background: #f8faf9;
+    background: #f7fafa;
     border: 1px solid var(--brd);
     > div { padding: 8px 4px; text-align: center; border-inline-start: 1px solid var(--brd); }
     > div:first-child { border-inline-start: none; }
@@ -100,8 +100,8 @@
   gap: 6px;
   min-height: 300px;
   border-radius: 18px;
-  border: 2px dashed #cfe0d5;
-  background: #f8fcf9;
+  border: 2px dashed #c9e2e4;
+  background: #f5fbfb;
   font-family: inherit;
   color: var(--pr);
   cursor: pointer;

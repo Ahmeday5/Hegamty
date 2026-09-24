@@ -4,7 +4,7 @@
     <div class="hero__bg" aria-hidden="true">
       <span class="hero__orb hero__orb--1"></span>
       <span class="hero__orb hero__orb--2"></span>
-      <img class="hero__mark" src="assets/img/logo.png" alt="" />
+      <img class="hero__mark" src="assets/img/logo.jpg" alt="" />
       <svg class="hero__waves" viewBox="0 0 800 200" preserveAspectRatio="none">
         <path d="M0 140 C 160 60, 280 190, 430 120 S 690 50, 800 100" />
         <path d="M0 170 C 170 100, 300 210, 460 150 S 700 90, 800 135" />
@@ -19,7 +19,7 @@
           @else { <app-icon name="globe" [size]="14" /> كل الدول }
         </span>
       </div>
-      <h1 class="hero__title">{{ greeting }}، {{ user()?.name }}</h1>
+      <h1 class="hero__title">{{ greeting }}، <span class="hero__name">{{ user()?.name }}</span></h1>
       <p class="hero__text">
         لديك <strong>{{ hero().liveNow | num }} جلسة</strong> جارية الآن و<strong>{{ hero().pendingJoins }} حساب</strong>
         جديد بانتظار التفعيل{{ scope.country() ? ' في ' + scope.label() : '' }}.

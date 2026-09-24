@@ -15,7 +15,7 @@ const FLAGS: Record<string, string> = {
 };
 
 /** Brand-green badge with initials for markets added from the dashboard. */
-const FALLBACK_BG = 'linear-gradient(135deg, #1e6d34, #014f17)';
+const FALLBACK_BG = 'linear-gradient(135deg, #0c6a72, #064a50)';
 
 @Component({
   selector: 'app-country-flag',

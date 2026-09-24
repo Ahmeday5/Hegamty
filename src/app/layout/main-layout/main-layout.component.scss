@@ -15,7 +15,7 @@
     position: fixed;
     inset: 0;
     z-index: 1250; // above the topbar, just below the drawer (1300)
-    background: rgba(4, 24, 10, 0.45);
+    background: rgba(3, 30, 33, 0.45);
     backdrop-filter: blur(3px);
     cursor: pointer;
     animation: fx-fade 0.25s ease both;
@@ -46,7 +46,7 @@
   overflow: hidden;
   // The soft brand gradient, ending on the page tone instead of pure white
   // so there's no seam where the wash stops.
-  background: linear-gradient(180deg, rgba(38, 166, 74, 0.19) -46.27%, var(--bg) 26.87%, var(--bg) 100%);
+  background: linear-gradient(180deg, rgba(15, 124, 132, 0.19) -46.27%, var(--bg) 26.87%, var(--bg) 100%);
 
   app-topbar { flex-shrink: 0; }
 }

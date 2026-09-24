@@ -36,7 +36,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        title: 'لوحة التحكم · Hegamty',
+        title: 'لوحة التحكم · HiCan',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent,
@@ -44,46 +44,46 @@ export const routes: Routes = [
       },
       {
         path: 'bookings',
-        title: 'الحجوزات · Hegamty',
+        title: 'الحجوزات · HiCan',
         loadChildren: () => import('./features/bookings/bookings.routes').then((m) => m.bookingsRoutes),
       },
       {
         path: 'services',
-        title: 'الخدمات · Hegamty',
+        title: 'الخدمات · HiCan',
         loadComponent: () =>
           import('./features/services/pages/services-page/services-page.component').then((m) => m.ServicesPageComponent),
       },
       {
         path: 'service-categories',
-        title: 'تصنيفات الخدمات · Hegamty',
+        title: 'تصنيفات الخدمات · HiCan',
         loadComponent: () =>
           import('./features/services/pages/categories-page/categories-page.component').then((m) => m.CategoriesPageComponent),
       },
       {
         path: 'packages',
-        title: 'الباقات · Hegamty',
+        title: 'الباقات · HiCan',
         loadComponent: () =>
           import('./features/packages/pages/packages-page/packages-page.component').then((m) => m.PackagesPageComponent),
       },
       {
         path: 'countries',
-        title: 'الدول · Hegamty',
+        title: 'الدول · HiCan',
         loadComponent: () =>
           import('./features/countries/pages/countries-page/countries-page.component').then((m) => m.CountriesPageComponent),
       },
       {
         path: 'customers',
-        title: 'العملاء · Hegamty',
+        title: 'العملاء · HiCan',
         loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('customers')),
       },
       {
         path: 'technicians',
-        title: 'الفنيون · Hegamty',
+        title: 'الفنيون · HiCan',
         loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('technicians')),
       },
       {
         path: 'drivers',
-        title: 'السائقون · Hegamty',
+        title: 'السائقون · HiCan',
         loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('drivers')),
       },
       // Guard a feature with permissions like:

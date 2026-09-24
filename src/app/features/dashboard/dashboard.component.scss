@@ -26,16 +26,18 @@
     filter: blur(60px);
     animation: hero-drift 16s ease-in-out infinite alternate;
 
-    &--1 { width: 380px; height: 380px; top: -180px; inset-inline-start: 18%; background: #2fb457; opacity: 0.5; }
-    &--2 { width: 300px; height: 300px; bottom: -200px; inset-inline-end: 8%; background: #48c56d; opacity: 0.3; animation-delay: -7s; }
+    &--1 { width: 380px; height: 380px; top: -180px; inset-inline-start: 18%; background: #1fb5bf; opacity: 0.5; }
+    &--2 { width: 300px; height: 300px; bottom: -200px; inset-inline-end: 8%; background: #3cc6cf; opacity: 0.3; animation-delay: -7s; }
   }
   &__mark {
     position: absolute;
     inset-inline-end: 44%;
     top: 50%;
-    width: 170px;
+    width: 150px;
+    border-radius: 50%;
     translate: 0 -50%;
-    opacity: 0.07;
+    opacity: 0.1;
+    mix-blend-mode: screen;
     rotate: -8deg;
   }
   &__waves {
@@ -68,6 +70,13 @@
     font-weight: 500;
   }
   &__title { margin: 8px 0 4px; font-size: clamp(18px, 1.7vw, 22px); font-weight: 700; }
+  /* Name in the logo's warm orange → gold */
+  &__name {
+    background: linear-gradient(90deg, #ffb46b 0%, #f6d36b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   &__text {
     margin: 0 0 12px;
     font-size: 13px;
@@ -131,7 +140,8 @@
     height: 36px;
     border-radius: 11px;
     background: var(--white);
-    color: var(--pr);
+    color: var(--ac);
+    box-shadow: 0 0 0 2px var(--gold);
     flex-shrink: 0;
   }
   > div { min-width: 0; }
@@ -155,7 +165,7 @@
   padding: 14px;
   border-radius: 16px;
   border: 1px solid var(--brd);
-  background: #fafcfb;
+  background: #f9fbfb;
   font-family: inherit;
   text-align: start;
   cursor: pointer;
@@ -163,7 +173,7 @@
   animation: fx-rise 0.5s var(--ease) both;
   animation-delay: calc(var(--d, 0) * 60ms + 150ms);
 
-  &:hover { border-color: #cfe0d5; transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  &:hover { border-color: #c9e2e4; transform: translateY(-3px); box-shadow: var(--shadow-md); }
   &.is-off { opacity: 0.6; }
 
   &__head {
@@ -223,7 +233,7 @@
     font-weight: 700;
     color: var(--txt2);
     flex-shrink: 0;
-    &.is-gold { background: linear-gradient(135deg, #fde68a, #f59e0b); color: #78350f; }
+    &.is-gold { background: var(--grad-gold); color: #fff; }
   }
   &__info {
     flex: 1;
@@ -243,10 +253,11 @@
     gap: 4px;
     padding: 3px 8px;
     border-radius: 8px;
-    background: var(--am-l);
-    color: #b45309;
+    background: #fbf3dc;
+    color: #9a6b06;
     font-size: 12.5px;
     font-weight: 700;
+    app-icon { color: var(--gold); }
   }
 }
 
@@ -271,7 +282,7 @@
     gap: 4px;
     padding: 12px;
     border-radius: 14px;
-    background: #f8faf9;
+    background: #f7fafa;
     border: 1px solid var(--brd);
   }
   p { margin: 6px 0 0; font-size: 12px; color: var(--txt3); }

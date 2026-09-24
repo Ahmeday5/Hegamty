@@ -19,7 +19,7 @@
     inset-inline: 0;
     bottom: -1px;
     height: 2px;
-    background: var(--grad-pr);
+    background: var(--grad-brand);
     opacity: 0.9;
     transform-origin: right;
     animation: t-line 1s var(--ease) 0.2s both;
@@ -66,7 +66,7 @@
   border-radius: 16px;
   background: var(--white);
   border: 1px solid var(--brd);
-  box-shadow: 0 24px 48px -12px rgba(16, 40, 24, 0.22);
+  box-shadow: 0 24px 48px -12px rgba(10, 38, 42, 0.22);
   animation: fx-pop 0.2s var(--ease) both;
   transform-origin: top;
 }
@@ -137,7 +137,7 @@
   height: 20px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--re);
+  background: var(--grad-ac);
   color: var(--white);
   font-size: 11px;
   font-weight: 700;
@@ -176,7 +176,7 @@
   transition: background 0.15s;
 
   &:hover { background: var(--bg3); }
-  &.is-unread { background: #f4faf6; }
+  &.is-unread { background: #f1f9f9; }
   strong { font-size: 13.5px; }
   p { margin: 2px 0 4px; font-size: 12.5px; color: var(--txt2); line-height: 1.6; }
   time { font-size: 11.5px; color: var(--txt3); }
@@ -195,7 +195,7 @@
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 
-  &:hover, &.is-on { border-color: #cfe0d5; box-shadow: 0 6px 16px -10px rgba(1, 79, 23, 0.4); }
+  &:hover, &.is-on { border-color: #c9e2e4; box-shadow: 0 6px 16px -10px rgba(6, 74, 80, 0.4); }
   &__txt {
     display: grid;
     text-align: start;
@@ -236,7 +236,7 @@
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 
-  &:hover, &.is-on { border-color: #cfe0d5; box-shadow: 0 6px 16px -10px rgba(1, 79, 23, 0.4); }
+  &:hover, &.is-on { border-color: #c9e2e4; box-shadow: 0 6px 16px -10px rgba(6, 74, 80, 0.4); }
   &.is-on .t-user__chev { rotate: 180deg; }
 
   &__globe {

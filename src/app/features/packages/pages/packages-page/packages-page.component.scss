@@ -33,9 +33,10 @@
   &.is-off { opacity: 0.6; }
   &.is-featured {
     border-color: transparent;
-    background: linear-gradient(var(--white), var(--white)) padding-box, var(--grad-pr) border-box;
+    /* Featured plan framed in the logo's gold ring */
+    background: linear-gradient(var(--white), var(--white)) padding-box, var(--grad-gold) border-box;
     border: 2px solid transparent;
-    box-shadow: 0 18px 36px -20px rgba(1, 79, 23, 0.55);
+    box-shadow: 0 18px 36px -20px rgba(179, 125, 14, 0.55);
   }
 
   &__badge {
@@ -44,11 +45,12 @@
     inset-inline-start: 16px;
     padding: 3px 12px;
     border-radius: 999px;
-    background: var(--grad-pr);
+    background: var(--grad-gold);
     color: var(--white);
     font-size: 11px;
     font-weight: 700;
-    box-shadow: 0 6px 14px -6px rgba(1, 79, 23, 0.6);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 14px -6px rgba(179, 125, 14, 0.7);
   }
   &__head {
     display: flex;
@@ -57,7 +59,7 @@
     gap: 8px;
     h3 { margin: 2px 0 0; font-size: 15px; font-weight: 700; }
   }
-  &__period { font-size: 11px; font-weight: 700; color: var(--pr); }
+  &__period { font-size: 11px; font-weight: 700; color: var(--ac); }
   &__price {
     margin: 0;
     display: flex;
@@ -96,8 +98,8 @@
   gap: 8px;
   min-height: 260px;
   border-radius: 18px;
-  border: 2px dashed #cfe0d5;
-  background: #f8fcf9;
+  border: 2px dashed #c9e2e4;
+  background: #f5fbfb;
   font-family: inherit;
   color: var(--pr);
   cursor: pointer;

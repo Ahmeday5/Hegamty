@@ -37,9 +37,13 @@
   }
 
   &__logo {
-    width: 132px;
+    width: 116px;
     height: auto;
-    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.18));
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.16), 0 14px 30px -10px rgba(0, 0, 0, 0.45);
   }
 
   &__body {
@@ -55,7 +59,7 @@
 
   &__title-accent {
     display: block;
-    background: linear-gradient(270deg, #ffffff 0%, #b9f2c9 100%);
+    background: linear-gradient(270deg, #ffb46b 0%, #f6d36b 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -103,7 +107,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #7ee2a0;
+    background: #ffa65c;
 
     &::after {
       content: '';
@@ -187,9 +191,9 @@
   opacity: 0.55;
   animation: drift 18s ease-in-out infinite alternate;
 
-  &--1 { width: 420px; height: 420px; top: -140px; inset-inline-end: -120px; background: #2fb457; }
-  &--2 { width: 360px; height: 360px; bottom: -160px; inset-inline-start: -100px; background: #0b7a2c; animation-duration: 22s; animation-delay: -6s; }
-  &--3 { width: 220px; height: 220px; top: 42%; inset-inline-start: 55%; background: #48c56d; opacity: 0.3; animation-duration: 26s; animation-delay: -12s; }
+  &--1 { width: 420px; height: 420px; top: -140px; inset-inline-end: -120px; background: #1fb5bf; }
+  &--2 { width: 360px; height: 360px; bottom: -160px; inset-inline-start: -100px; background: #0a6d75; animation-duration: 22s; animation-delay: -6s; }
+  &--3 { width: 220px; height: 220px; top: 42%; inset-inline-start: 55%; background: #3cc6cf; opacity: 0.3; animation-duration: 26s; animation-delay: -12s; }
 }
 
 .mesh {

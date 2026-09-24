@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 const TONES = [
-  ['#e9f5ec', '#20843d'],
+  ['#e3f3f4', '#0f7c84'],
   ['#e8efff', '#2563eb'],
   ['#fef3e2', '#d97706'],
   ['#f1ebff', '#7c3aed'],
@@ -33,7 +33,7 @@ const TONES = [
       line-height: 1;
       user-select: none;
     }
-    .av--ring { box-shadow: 0 0 0 4px #fff, 0 10px 24px -8px rgba(1, 79, 23, 0.35); }
+    .av--ring { box-shadow: 0 0 0 4px #fff, 0 10px 24px -8px rgba(6, 74, 80, 0.35); }
   `],
 })
 export class AvatarComponent {

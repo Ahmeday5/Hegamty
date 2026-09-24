@@ -86,7 +86,7 @@ export const STATUS_META: Record<PersonStatus, { label: string; chip: string }> 
 export const BOOKING_META: Record<BookingStatus, { label: string; chip: string; color: string }> = {
   scheduled: { label: 'مؤكد', chip: 'chip--blue', color: '#2563eb' },
   in_progress: { label: 'قيد التنفيذ', chip: 'chip--amber', color: '#f59e0b' },
-  completed: { label: 'مكتمل', chip: 'chip--green', color: '#20843d' },
+  completed: { label: 'مكتمل', chip: 'chip--green', color: '#0f7c84' },
   cancelled: { label: 'ملغي', chip: 'chip--red', color: '#ef4444' },
 };
 

@@ -11,6 +11,6 @@ export const PERIODS: { id: Period; label: string }[] = [
   { id: 'year', label: 'سنة' },
 ];
 
-export const SERIES_COLORS = { current: '#20843d', previous: '#93c5fd' } as const;
+export const SERIES_COLORS = { current: '#0f7c84', previous: '#f7b27a' } as const;
 
-export const SHARE_COLORS = ['#20843d', '#2563eb', '#7c3aed', '#0d9488', '#db2777', '#d97706'] as const;
+export const SHARE_COLORS = ['#0f7c84', '#2563eb', '#7c3aed', '#0d9488', '#db2777', '#d97706'] as const;

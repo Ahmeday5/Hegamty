@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appName: 'Hegamty',
+  appName: 'HiCan',
   appVersion: '1.0.0',
   defaultLang: 'ar',
 

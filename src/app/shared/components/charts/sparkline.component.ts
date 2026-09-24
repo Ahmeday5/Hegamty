@@ -40,7 +40,7 @@ const H = 40;
 })
 export class SparklineComponent {
   readonly values = input.required<readonly number[]>();
-  readonly color = input('#20843d');
+  readonly color = input('#0f7c84');
 
   protected readonly W = W;
   protected readonly H = H;

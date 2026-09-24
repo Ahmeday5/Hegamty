@@ -83,8 +83,8 @@
   filter: blur(50px);
   animation: sb-drift 16s ease-in-out infinite alternate;
 
-  &--1 { width: 220px; height: 220px; top: -80px; inset-inline-end: -90px; background: #2fb457; opacity: 0.45; }
-  &--2 { width: 200px; height: 200px; bottom: 60px; inset-inline-start: -110px; background: #48c56d; opacity: 0.2; animation-delay: -6s; }
+  &--1 { width: 220px; height: 220px; top: -80px; inset-inline-end: -90px; background: #1fb5bf; opacity: 0.45; }
+  &--2 { width: 200px; height: 200px; bottom: 60px; inset-inline-start: -110px; background: #3cc6cf; opacity: 0.2; animation-delay: -6s; }
 }
 .sb-waves {
   position: absolute;
@@ -104,10 +104,16 @@
   padding: 20px 16px 12px;
   text-decoration: none;
 }
+/* Round badge: the logo artwork has a white canvas with a gold ring */
 .sb-logo {
-  width: 96px;
+  width: 92px;
   height: auto;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.2));
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--white);
+  /* Gold ring echoing the logo's frame */
+  box-shadow: 0 0 0 3px #d9a21b, 0 0 0 6px rgba(217, 162, 27, 0.25), 0 12px 24px -8px rgba(0, 0, 0, 0.5);
   transition: width var(--sb-ease), transform 0.3s;
   animation: sb-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -163,8 +169,9 @@
     font-weight: 700;
     box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.45);
 
-    .sbi-icon { background: var(--grad-pr); color: var(--white); }
-    .sbi-arrow { opacity: 1; color: var(--pr); }
+    /* Active item picks up the logo's orange */
+    .sbi-icon { background: var(--grad-ac); color: var(--white); box-shadow: 0 6px 14px -6px rgba(224, 102, 26, 0.7); }
+    .sbi-arrow { opacity: 1; color: var(--ac); }
   }
 }
 

@@ -6,9 +6,9 @@ import { CountUpDirective } from '../../directives/count-up.directive';
 export type Tone = 'green' | 'blue' | 'amber' | 'purple' | 'teal' | 'pink' | 'red';
 
 const TONE_COLOR: Record<Tone, string> = {
-  green: '#20843d',
+  green: '#0f7c84',
   blue: '#2563eb',
-  amber: '#d97706',
+  amber: '#ea7317',
   purple: '#7c3aed',
   teal: '#0d9488',
   pink: '#db2777',

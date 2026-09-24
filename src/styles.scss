@@ -1,29 +1,39 @@
 /* ============================================ */
-/*  Hegamty — Global Styles              */
+/*  HiCan — Global Styles              */
 /* Component styles → each component SCSS file  */
 /* ============================================ */
 
 /* ── CSS VARIABLES (design tokens) ── */
 :root {
   /* Brand — the three base colors + the two brand gradients */
-  --pr: #20843d;
-  --pr-d: #014f17;
-  --pr-m: #1e6d34;
-  --pr-l: #e9f5ec;
-  --pr-ring: rgba(32, 132, 61, 0.14);
+  --pr: #0f7c84;
+  --pr-d: #064a50;
+  --pr-m: #0c6a72;
+  --pr-l: #e3f3f4;
+  --pr-ring: rgba(15, 124, 132, 0.14);
   --white: #ffffff;
   --black: #000000;
-  --grad-pr: linear-gradient(88.57deg, #1e6d34 1.06%, #014f17 98.64%);
-  --grad-soft: linear-gradient(180deg, rgba(38, 166, 74, 0.19) -46.27%, #ffffff 26.87%, #ffffff 100%);
+  --grad-pr: linear-gradient(88.57deg, #11868f 1.06%, #064a50 98.64%);
+  /* Logo accents: orange (the "An" + chimney) and the gold ring */
+  --ac: #f07b1f;
+  --ac-d: #c85d0c;
+  --ac-l: #fdeee2;
+  --gold: #d9a21b;
+  --grad-ac: linear-gradient(88.57deg, #f7963f 1.06%, #e0661a 98.64%);
+  --grad-brand: linear-gradient(90deg, #0f7c84 0%, #0f7c84 55%, #f07b1f 100%);
+  --grad-gold: linear-gradient(135deg, #f6d36b 0%, #d9a21b 50%, #b37d0e 100%);
+  --grad-warm: linear-gradient(90deg, #f07b1f 0%, #d9a21b 100%);
+  --grad-soft: linear-gradient(180deg, rgba(15, 124, 132, 0.19) -46.27%, #ffffff 26.87%, #ffffff 100%);
 
-  /* `--bl*` is the app-wide "primary" accent — mapped onto the brand green */
+  /* `--bl*` is the app-wide "primary" accent — mapped onto the brand teal */
   --bl: var(--pr);
   --bl-l: var(--pr-l);
   --bl-d: var(--pr-d);
   --gr: #16a34a;
   --gr-l: #e8f7ee;
-  --am: #d97706;
-  --am-l: #fef3e2;
+  /* "amber" tone = the logo orange, so warm accents stay on-brand */
+  --am: #ea7317;
+  --am-l: #fdeee2;
   --re: #dc2626;
   --re-l: #fdecec;
   --te: #0d9488;
@@ -38,22 +48,22 @@
   --sl-l: #eef1f5;
 
   /* Surfaces & text */
-  --bg: #f4f7f5;
+  --bg: #f3f7f7;
   --bg2: var(--white);
-  --bg3: #f1f4f2;
+  --bg3: #eff4f4;
   --txt: var(--black);
-  --txt2: #5b635e;
-  --txt3: #8a918c;
-  --brd: #e5ebe7;
-  --brd2: #d5ddd8;
+  --txt2: #56636a;
+  --txt3: #86919a;
+  --brd: #e2eaea;
+  --brd2: #d2dcdc;
   --r: 10px;
   --rl: 16px;
   --rxl: 22px;
-  --shadow: 0 1px 2px rgba(16, 40, 24, 0.04), 0 1px 3px rgba(16, 40, 24, 0.06);
-  --shadow-md: 0 8px 24px -8px rgba(16, 40, 24, 0.12), 0 2px 6px rgba(16, 40, 24, 0.04);
-  --shadow-lg: 0 24px 48px -16px rgba(1, 79, 23, 0.22);
+  --shadow: 0 1px 2px rgba(10, 38, 42, 0.04), 0 1px 3px rgba(10, 38, 42, 0.06);
+  --shadow-md: 0 8px 24px -8px rgba(10, 38, 42, 0.12), 0 2px 6px rgba(10, 38, 42, 0.04);
+  --shadow-lg: 0 24px 48px -16px rgba(6, 74, 80, 0.22);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --grad-side: linear-gradient(180deg, #1e6d34 0%, #0f5a26 48%, #014f17 100%);
+  --grad-side: linear-gradient(180deg, #0c6a72 0%, #0a5f66 48%, #064a50 100%);
   --font-base: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
   --app-height: 100dvh;
 }
@@ -90,7 +100,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: rgba(32, 132, 61, 0.18); }
+::selection { background: rgba(15, 124, 132, 0.18); }
 
 /* ═══════════════════════════════════════════ */
 /* BOOTSTRAP COMPONENT OVERRIDES               */
@@ -146,7 +156,7 @@ body {
     background: var(--pr-l);
     border-color: transparent;
     color: var(--pr);
-    &:hover { background: #d9efe0; color: var(--pr-d); border-color: transparent; }
+    &:hover { background: #d2ecee; color: var(--pr-d); border-color: transparent; }
   }
   &-danger-soft {
     background: var(--re-l);
@@ -174,7 +184,7 @@ body {
     background: var(--grad-pr);
     color: var(--white);
     border: none;
-    box-shadow: 0 8px 20px -8px rgba(1, 79, 23, 0.55);
+    box-shadow: 0 8px 20px -8px rgba(6, 74, 80, 0.55);
     transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
     /* Sheen that sweeps across on hover */
     &::after {
@@ -191,7 +201,7 @@ body {
       background: var(--grad-pr);
       color: var(--white);
       transform: translateY(-1px);
-      box-shadow: 0 14px 28px -10px rgba(1, 79, 23, 0.6);
+      box-shadow: 0 14px 28px -10px rgba(6, 74, 80, 0.6);
       &::after { transform: translateX(120%); }
     }
     &:active:not(:disabled) { transform: translateY(0); }
@@ -308,7 +318,7 @@ body {
   padding: 7px 11px;
   min-height: 38px;
   transition: border-color 0.18s, box-shadow 0.18s;
-  &::placeholder { color: #a3aaa5; }
+  &::placeholder { color: #a0abb0; }
   &:hover:not(:focus):not(:disabled) { border-color: var(--brd2); }
   &:focus {
     border-color: var(--pr);
@@ -363,7 +373,7 @@ body {
     background: var(--white);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
-    &::placeholder { color: #a8aea9; }
+    &::placeholder { color: #a0abb0; }
     &:hover:not(:focus):not(:disabled) { border-color: #c5cec8; }
     &:focus {
       border-color: var(--pr);
@@ -522,7 +532,7 @@ body {
 .app-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(6, 30, 14, 0.42);
+  background: rgba(3, 30, 33, 0.42);
   backdrop-filter: blur(4px);
   /* Above the mobile topbar (1100) and drawer (1300) — modals are portalled to <body> */
   z-index: 1500;
@@ -552,7 +562,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  box-shadow: 0 30px 80px -20px rgba(1, 40, 12, 0.35);
+  box-shadow: 0 30px 80px -20px rgba(2, 36, 40, 0.35);
   animation: app-modal-pop 0.32s var(--ease);
 
   &--sm { max-width: 380px; }
@@ -642,6 +652,7 @@ body.app-modal-open { overflow: hidden; }
   to   { opacity: 1; translate: 0 0; }
 }
 @keyframes fx-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes title-bar { from { scale: 0 1; } }
 @keyframes fx-shimmer { to { background-position: -200% 0; } }
 @keyframes fx-pop {
   from { opacity: 0; scale: 0.94; }
@@ -670,10 +681,26 @@ body.app-modal-open { overflow: hidden; }
   margin-bottom: 16px;
 
   &__title {
+    position: relative;
     margin: 3px 0 0;
+    padding-bottom: 8px;
     font-size: 20px;
     font-weight: 700;
     color: var(--black);
+
+    /* Signature underline in the logo's orange → gold */
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      inset-inline-start: 0;
+      width: 44px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--grad-warm);
+      transform-origin: right;
+      animation: title-bar 0.8s var(--ease) 0.2s both;
+    }
   }
   &__sub {
     margin: 3px 0 0;
@@ -806,7 +833,7 @@ body.app-modal-open { overflow: hidden; }
   &--purple { --c: var(--pu); --c-l: var(--pu-l); }
   &--teal   { --c: var(--te); --c-l: var(--te-l); }
   &--pink   { --c: var(--pi); --c-l: var(--pi-l); }
-  &--brand  { --c: var(--white); background: var(--grad-pr); box-shadow: 0 8px 18px -8px rgba(1, 79, 23, 0.6); }
+  &--brand  { --c: var(--white); background: var(--grad-pr); box-shadow: 0 8px 18px -8px rgba(6, 74, 80, 0.6); }
 }
 
 /* ── Segmented control ── */
@@ -838,7 +865,7 @@ body.app-modal-open { overflow: hidden; }
     &.is-on {
       background: var(--white);
       color: var(--pr);
-      box-shadow: 0 1px 3px rgba(16, 40, 24, 0.1), 0 1px 1px rgba(16, 40, 24, 0.04);
+      box-shadow: 0 1px 3px rgba(10, 38, 42, 0.1), 0 1px 1px rgba(10, 38, 42, 0.04);
     }
   }
   &__count {
@@ -887,7 +914,7 @@ body.app-modal-open { overflow: hidden; }
   translate: -50% 4px;
   padding: 5px 9px;
   border-radius: 7px;
-  background: #0d1f14;
+  background: #0b2427;
   color: var(--white);
   font-size: 11.5px;
   font-weight: 500;
@@ -935,7 +962,7 @@ body.app-modal-open { overflow: hidden; }
     color: var(--txt);
     transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 
-    &::placeholder { color: #a3aaa5; }
+    &::placeholder { color: #a0abb0; }
     &:focus {
       outline: none;
       border-color: var(--pr);
@@ -970,7 +997,7 @@ body.app-modal-open { overflow: hidden; }
     position: sticky;
     top: 0;
     padding: 10px 14px;
-    background: #f8faf9;
+    background: #f7fafa;
     border-bottom: 1px solid var(--brd);
     font-size: 12px;
     font-weight: 600;
@@ -984,7 +1011,7 @@ body.app-modal-open { overflow: hidden; }
 
   td {
     padding: 9px 14px;
-    border-bottom: 1px solid #eef2ef;
+    border-bottom: 1px solid #edf2f2;
     vertical-align: middle;
     white-space: nowrap;
     color: var(--txt);
@@ -995,7 +1022,7 @@ body.app-modal-open { overflow: hidden; }
     animation: fx-rise 0.45s var(--ease) both;
     animation-delay: calc(var(--d, 0) * 35ms);
   }
-  tbody tr:hover { background: #f7fbf8; }
+  tbody tr:hover { background: #f4fafa; }
   tbody tr.is-link { cursor: pointer; }
   tbody tr:last-child td { border-bottom: none; }
 
@@ -1015,7 +1042,7 @@ body.app-modal-open { overflow: hidden; }
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #eef2ef 0%, #f7faf8 40%, #eef2ef 80%);
+  background: linear-gradient(90deg, #edf2f2 0%, #f7faf8 40%, #edf2f2 80%);
   background-size: 200% 100%;
   animation: fx-shimmer 1.3s linear infinite;
 
@@ -1104,7 +1131,7 @@ body.app-modal-open { overflow: hidden; }
   border-radius: 16px;
   background: var(--white);
   border: 1px solid var(--brd);
-  box-shadow: 0 24px 48px -12px rgba(16, 40, 24, 0.22);
+  box-shadow: 0 24px 48px -12px rgba(10, 38, 42, 0.22);
   transform-origin: top left;
   animation: fx-pop 0.22s var(--ease) both;
 
@@ -1142,7 +1169,7 @@ body.app-modal-open { overflow: hidden; }
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: #d5ddd8;
+  background: #d2dcdc;
   cursor: pointer;
   transition: background 0.25s;
 

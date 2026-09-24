@@ -82,9 +82,9 @@ const PAD = { t: 16, r: 12, b: 30, l: 48 };
     :host { display: block; }
     .ac { position: relative; direction: ltr; }
     svg { display: block; width: 100%; height: auto; overflow: visible; font-family: inherit; }
-    .ac__grid { stroke: #edf1ee; stroke-dasharray: 4 6; }
-    .ac__ylabel { font-size: 11px; fill: #9aa39d; text-anchor: end; }
-    .ac__xlabel { font-size: 11px; fill: #9aa39d; text-anchor: middle; }
+    .ac__grid { stroke: #ecf1f1; stroke-dasharray: 4 6; }
+    .ac__ylabel { font-size: 11px; fill: #97a3a8; text-anchor: end; }
+    .ac__xlabel { font-size: 11px; fill: #97a3a8; text-anchor: middle; }
     .ac__area { opacity: 0; animation: ac-fade 0.9s ease 0.5s forwards; }
     .ac__line {
       fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
@@ -96,7 +96,7 @@ const PAD = { t: 16, r: 12, b: 30, l: 48 };
     .ac__hit { fill: transparent; cursor: crosshair; }
     .ac__tip {
       position: absolute; top: 8px; translate: 12px 0; min-width: 150px;
-      padding: 10px 12px; border-radius: 12px; background: #0d1f14; color: #fff;
+      padding: 10px 12px; border-radius: 12px; background: #0b2427; color: #fff;
       font-size: 12px; direction: rtl; pointer-events: none; z-index: 5;
       box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.35);
       animation: ac-fade 0.15s ease both;

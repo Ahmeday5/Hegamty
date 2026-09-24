@@ -19,12 +19,12 @@ const PAD = { t: 26, r: 8, b: 34, l: 8 };
       (mouseleave)="hover.set(null)">
       <defs>
         <linearGradient [attr.id]="gid" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2fb457" />
-          <stop offset="100%" stop-color="#014f17" />
+          <stop offset="0%" stop-color="#1fb5bf" />
+          <stop offset="100%" stop-color="#064a50" />
         </linearGradient>
         <linearGradient [attr.id]="gid + 'm'" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#cfe9d7" />
-          <stop offset="100%" stop-color="#e6f3ea" />
+          <stop offset="0%" stop-color="#cdebed" />
+          <stop offset="100%" stop-color="#e4f3f4" />
         </linearGradient>
       </defs>
 
@@ -47,15 +47,15 @@ const PAD = { t: 26, r: 8, b: 34, l: 8 };
     svg { display: block; width: 100%; height: auto; overflow: visible; font-family: inherit; }
     .bc__bar { cursor: default; transition: opacity 0.2s; }
     .bc__bar.is-dim { opacity: 0.55; }
-    .bc__bg { fill: #f6f8f7; }
+    .bc__bg { fill: #f5f8f8; }
     .bc__fill {
       transform-box: fill-box; transform-origin: bottom;
       animation: bc-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
       transition: fill 0.2s;
     }
-    .bc__val { font-size: 12px; font-weight: 700; fill: #8a918c; text-anchor: middle; transition: fill 0.2s; }
-    .bc__val.is-on { fill: #014f17; }
-    .bc__label { font-size: 12px; fill: #5b635e; text-anchor: middle; }
+    .bc__val { font-size: 12px; font-weight: 700; fill: #86919a; text-anchor: middle; transition: fill 0.2s; }
+    .bc__val.is-on { fill: #064a50; }
+    .bc__label { font-size: 12px; fill: #56636a; text-anchor: middle; }
     @keyframes bc-grow { from { scale: 1 0; } }
     @media (prefers-reduced-motion: reduce) { .bc__fill { animation: none; } }
   `],

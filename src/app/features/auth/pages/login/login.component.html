@@ -1,7 +1,7 @@
 <div class="login-page">
   <section class="login" [class.login--shake]="shake()" (animationend)="onShakeEnd($event)"
     aria-labelledby="login-title">
-    <img class="login__logo" src="assets/img/logoo.png" alt="Hegamty" width="210" height="210" />
+    <img class="login__logo" src="assets/img/logo.jpg" alt="HiCan" width="210" height="210" />
 
     <header class="login__head step" style="--s: 0">
       <span class="login__badge">
@@ -13,7 +13,7 @@
         بوابة الإدارة
       </span>
       <h2 id="login-title" class="login__title">مرحبًا بعودتك</h2>
-      <p class="login__subtitle">سجّل الدخول للمتابعة إلى لوحة تحكم Hegamty.</p>
+      <p class="login__subtitle">سجّل الدخول للمتابعة إلى لوحة تحكم HiCan.</p>
     </header>
 
     <form class="login__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
