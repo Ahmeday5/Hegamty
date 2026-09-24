@@ -65,14 +65,14 @@
           <div class="t-countries__head">عرض البيانات حسب الدولة</div>
           <button type="button" class="menu__item" [class.is-sel]="scope.isAll()" (click)="selectCountry(ALL)">
             <span class="t-country__globe"><app-icon name="globe" [size]="16" /></span>
-            <span class="t-countries__name">كل الدول<small>التقارير بالعملة الأساسية</small></span>
+            <span class="t-countries__name">كل الدول<small>نظرة مجمّعة على جميع الأسواق</small></span>
             @if (scope.isAll()) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
           </button>
           <div class="menu__sep"></div>
           @for (c of countries(); track c.id) {
             <button type="button" class="menu__item" [class.is-sel]="scope.selected() === c.id" (click)="selectCountry(c.id)">
               <app-country-flag [code]="c.id" [size]="24" />
-              <span class="t-countries__name">{{ c.name }}<small>{{ c.currencyCode }}{{ c.active ? '' : ' · غير مفعّلة' }}</small></span>
+              <span class="t-countries__name">{{ c.name }}<small>{{ c.currency }} · <bdi>{{ c.dialCode }}</bdi></small></span>
               @if (scope.selected() === c.id) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
             </button>
           }
@@ -116,7 +116,7 @@
     <div class="t-menu-wrap">
       <button type="button" class="t-user" [class.is-on]="openMenu() === 'user'" aria-label="قائمة المستخدم"
         (click)="toggleMenu('user', $event)">
-        <app-avatar [name]="currentUser()?.name ?? '?'" [size]="38" />
+        <app-avatar [name]="currentUser()?.name ?? '?'" [size]="32" />
         <span class="t-user__txt">
           <strong>{{ currentUser()?.name }}</strong>
           <span>{{ roleLabel() }}</span>

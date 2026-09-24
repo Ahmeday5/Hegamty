@@ -14,10 +14,8 @@ const FLAGS: Record<string, string> = {
   JO: 'linear-gradient(90deg, #ce1126 0 30%, transparent 30%), linear-gradient(#000 0 33.3%, #fff 33.3% 66.6%, #007a3d 66.6%)',
 };
 
-const TONE_BG: Record<string, string> = {
-  green: '#20843d', blue: '#2563eb', amber: '#d97706', purple: '#7c3aed',
-  teal: '#0d9488', pink: '#db2777', red: '#dc2626',
-};
+/** Brand-green badge with initials for markets added from the dashboard. */
+const FALLBACK_BG = 'linear-gradient(135deg, #1e6d34, #014f17)';
 
 @Component({
   selector: 'app-country-flag',
@@ -26,7 +24,7 @@ const TONE_BG: Record<string, string> = {
   template: `
     <span class="flag" [style.--w.px]="size()" [style.background]="bg()" [attr.title]="name()" role="img"
       [attr.aria-label]="name()">
-      @if (!known()) { <span class="flag__code">{{ code() }}</span> }
+      @if (!known()) { <span class="flag__code">{{ initial() }}</span> }
       @if (code() === 'SA') { <span class="flag__sa"></span> }
     </span>
   `,
@@ -54,7 +52,6 @@ export class CountryFlagComponent {
   private readonly countries = inject(CountriesStore);
   protected readonly known = computed(() => this.code() in FLAGS);
   protected readonly name = computed(() => this.countries.byId(this.code())?.name ?? this.code());
-  protected readonly bg = computed(
-    () => FLAGS[this.code()] ?? TONE_BG[this.countries.byId(this.code())?.tone ?? 'green'] ?? TONE_BG['green'],
-  );
+  protected readonly initial = computed(() => this.countries.byId(this.code())?.name.charAt(0) ?? '؟');
+  protected readonly bg = computed(() => FLAGS[this.code()] ?? FALLBACK_BG);
 }

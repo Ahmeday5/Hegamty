@@ -1,17 +1,14 @@
 import {
-  ActivityItem,
   AppNotification,
-  Booking,
   BookingStatus,
   Person,
-  PersonActivity,
+  PersonBooking,
+  PersonHistory,
   PersonKind,
   PersonStatus,
   Review,
-  Transaction,
-  TxType,
 } from './people.models';
-import { PEOPLE_CONFIG, SERVICES, SPECIALTIES } from './people.config';
+import { NEW_ACCOUNT_DAYS, PEOPLE_CONFIG, SERVICES, SPECIALTIES } from './people.config';
 import { hash, int, pick, rng } from '../../shared/utils/random.util';
 import { Country } from '../countries/countries.models';
 
@@ -20,7 +17,6 @@ import { Country } from '../countries/countries.models';
  * person and history, so detail pages survive reloads and deep links while
  * the backend doesn't exist yet. Delete this file once the API is wired.
  */
-
 
 const MALE: readonly [string, string][] = [
   ['أحمد', 'ahmed'], ['محمد', 'mohammed'], ['عبدالله', 'abdullah'], ['خالد', 'khaled'], ['فهد', 'fahad'],
@@ -44,14 +40,17 @@ const DISTRICTS: Record<string, readonly string[]> = {
   KW: ['السالمية', 'الجابرية', 'الروضة', 'الشويخ', 'المنقف'],
 };
 const FALLBACK_DISTRICTS = ['الحي الأول', 'وسط المدينة', 'الحي الشمالي'];
-/** Local mobile prefixes; the rest of `phoneLength` is random digits. */
-const PHONE_PREFIX: Record<string, readonly string[]> = {
-  SA: ['050', '053', '055', '056', '059'],
-  EG: ['010', '011', '012', '015'],
-  AE: ['050', '052', '055', '056'],
-  KW: ['5', '6', '9'],
+const PHONE_FORMAT: Record<string, { prefixes: readonly string[]; length: number }> = {
+  SA: { prefixes: ['050', '053', '055', '056', '059'], length: 10 },
+  EG: { prefixes: ['010', '011', '012', '015'], length: 11 },
+  AE: { prefixes: ['050', '052', '055', '056'], length: 10 },
+  KW: { prefixes: ['5', '6', '9'], length: 8 },
 };
-const VEHICLES = ['تويوتا كامري 2023', 'هيونداي إلنترا 2022', 'كيا K5 2023', 'نيسان صني 2021', 'شيفروليه ماليبو 2022', 'تويوتا هايلكس 2024'];
+/** Local price level vs. SA, used to author amounts in each currency. */
+export const PRICE_FACTOR: Record<string, number> = { SA: 1, EG: 5.6, AE: 1.05, KW: 0.085 };
+
+const VEHICLES = ['تويوتا كامري', 'هيونداي إلنترا', 'كيا K5', 'نيسان صني', 'شيفروليه ماليبو', 'تويوتا هايلكس'];
+const COLORS = ['أبيض', 'أسود', 'فضي', 'رمادي', 'أزرق', 'أحمر'];
 const PLATE_LETTERS = ['أ ب ج', 'د ر س', 'ص ط ع', 'ق ك ل', 'م ن هـ', 'و ي ب'];
 
 const COUNTS: Record<PersonKind, number> = { customers: 96, drivers: 38, technicians: 52 };
@@ -60,7 +59,7 @@ const COUNTRY_WEIGHTS: Record<string, number> = { SA: 0.45, EG: 0.25, AE: 0.18, 
 const DAY = 86400000;
 
 function pickCountry(r: () => number, countries: readonly Country[]): Country {
-  const weighted = countries.map((c) => ({ c, w: COUNTRY_WEIGHTS[c.id] ?? 0.1 }));
+  const weighted = countries.map((c) => ({ c, w: COUNTRY_WEIGHTS[c.id] ?? 0 })).filter((x) => x.w > 0);
   const total = weighted.reduce((a, x) => a + x.w, 0);
   let roll = r() * total;
   for (const x of weighted) {
@@ -70,10 +69,10 @@ function pickCountry(r: () => number, countries: readonly Country[]): Country {
   return weighted[weighted.length - 1].c;
 }
 
-function makePhone(r: () => number, country: Country): string {
-  const prefix = pick(r, PHONE_PREFIX[country.id] ?? ['0']);
-  const rest = Math.max(0, country.phoneLength - prefix.length);
-  return prefix + Array.from({ length: rest }, () => int(r, 0, 9)).join('');
+function makePhone(r: () => number, countryId: string): string {
+  const f = PHONE_FORMAT[countryId] ?? { prefixes: ['0'], length: 10 };
+  const prefix = pick(r, f.prefixes);
+  return prefix + Array.from({ length: f.length - prefix.length }, () => int(r, 0, 9)).join('');
 }
 
 function makePerson(kind: PersonKind, index: number, countries: readonly Country[]): Person {
@@ -83,42 +82,39 @@ function makePerson(kind: PersonKind, index: number, countries: readonly Country
   const country = pickCountry(r, countries);
   const female = kind === 'drivers' ? false : r() < (kind === 'technicians' ? 0.35 : 0.3);
   const [first, latin] = pick(r, female ? FEMALE : MALE);
-  const family = pick(r, FAMILIES);
-  const name = `${first} ${pick(r, FATHERS)} ${family}`;
+  const name = `${first} ${pick(r, FATHERS)} ${pick(r, FAMILIES)}`;
 
-  const statusRoll = r();
-  const status: PersonStatus =
-    statusRoll < 0.72 ? 'active' : statusRoll < 0.84 ? 'inactive' : statusRoll < 0.93 ? 'pending' : 'blocked';
-
-  const bookings = kind === 'customers' ? int(r, 0, 38) : int(r, 12, 240);
+  const joinedDaysAgo = int(r, 1, 900);
+  // Fresh registrations are usually still waiting for the admin's review.
+  const status: PersonStatus = joinedDaysAgo < NEW_ACCOUNT_DAYS ? (r() < 0.8 ? 'inactive' : 'active') : r() < 0.85 ? 'active' : 'inactive';
+  const bookings = joinedDaysAgo < NEW_ACCOUNT_DAYS ? 0 : kind === 'customers' ? int(r, 0, 38) : int(r, 12, 240);
   const cancelled = Math.floor(bookings * r() * 0.12);
   const completed = Math.max(0, bookings - cancelled - int(r, 0, 3));
-  const joined = Date.now() - int(r, 20, 900) * DAY;
-  const avgTicket = kind === 'customers' ? int(r, 180, 420) : kind === 'drivers' ? int(r, 35, 70) : int(r, 120, 260);
+  const birth = new Date(Date.now() - (int(r, 21, 58) * 365 + int(r, 0, 364)) * DAY);
 
   return {
     id,
     kind,
     countryId: country.id,
     name,
-    phone: makePhone(r, country),
+    phone: makePhone(r, country.id),
     email: `${latin}.${int(r, 10, 99)}@email.com`,
     city: pick(r, country.cities),
     district: pick(r, DISTRICTS[country.id] ?? FALLBACK_DISTRICTS),
     gender: female ? 'female' : 'male',
+    birthDate: birth.toISOString().slice(0, 10),
+    ...(kind !== 'customers' && { nationalId: String(int(r, 1000000000, 2999999999)) }),
     bookings,
     completed,
     cancelled,
-    // Fixture amounts are authored in the base currency, then localized.
-    balance: Math.round((kind === 'customers' ? int(r, 0, 60) * 10 : int(r, 10, 480) * 10) / country.rateToBase),
-    total: Math.round((completed * avgTicket) / country.rateToBase),
-    rating: +(3.6 + r() * 1.4).toFixed(1),
+    rating: bookings ? +(3.6 + r() * 1.4).toFixed(1) : 0,
     reviewsCount: Math.floor(completed * (0.4 + r() * 0.4)),
     status,
-    joinedAt: new Date(joined).toISOString(),
+    joinedAt: new Date(Date.now() - joinedDaysAgo * DAY - int(r, 0, 23) * 3600000).toISOString(),
     lastActiveAt: new Date(Date.now() - int(r, 0, 20 * 24 * 60) * 60000).toISOString(),
     ...(kind === 'drivers' && {
-      vehicle: pick(r, VEHICLES),
+      vehicle: `${pick(r, VEHICLES)} ${int(r, 2018, 2025)}`,
+      vehicleColor: pick(r, COLORS),
       plate: `${pick(r, PLATE_LETTERS)} ${int(r, 1000, 9999)}`,
     }),
     ...(kind === 'technicians' && {
@@ -129,7 +125,7 @@ function makePerson(kind: PersonKind, index: number, countries: readonly Country
 }
 
 export function generatePeople(kind: PersonKind, countries: readonly Country[]): Person[] {
-  if (!countries.length) return [];
+  if (!countries.some((c) => COUNTRY_WEIGHTS[c.id])) return [];
   return Array.from({ length: COUNTS[kind] }, (_, i) => makePerson(kind, i, countries)).sort(
     (a, b) => +new Date(b.joinedAt) - +new Date(a.joinedAt),
   );
@@ -146,45 +142,28 @@ const COMMENTS = [
   'جيد بشكل عام وأتمنى تحسين سرعة الرد.',
   'من أفضل التجارب، سأكرر الحجز بالتأكيد.',
 ];
-const METHODS = ['مدى', 'فيزا', 'Apple Pay', 'STC Pay', 'المحفظة'];
 
-export function generateActivity(p: Person, currency: string): PersonActivity {
+export function generateHistory(p: Person): PersonHistory {
   const r = rng(hash(p.id + ':history'));
   const now = Date.now();
+  const factor = PRICE_FACTOR[p.countryId] ?? 1;
   const partyPool = [...MALE, ...FEMALE].map(([n]) => `${n} ${pick(r, FAMILIES)}`);
 
-  const bookingCount = Math.min(Math.max(p.bookings, 3), 14);
-  const bookings: Booking[] = Array.from({ length: bookingCount }, (_, i) => {
-    const date = now - (i * int(r, 3, 12) - int(r, 0, 6)) * DAY;
+  const bookings: PersonBooking[] = Array.from({ length: Math.min(p.bookings, 14) }, (_, i) => {
+    const date = now - (i * int(r, 3, 12) + (i ? int(r, 0, 2) : 0)) * DAY - int(r, 1, 8) * 3600000;
     const roll = r();
-    const status: BookingStatus =
-      date > now ? 'scheduled' : i === 0 && roll < 0.4 ? 'in_progress' : roll < 0.12 ? 'cancelled' : 'completed';
+    const status: BookingStatus = i === 0 && roll < 0.4 ? 'in_progress' : roll < 0.12 ? 'cancelled' : 'completed';
     return {
       id: `BK-${int(r, 20000, 99999)}`,
       service: pick(r, SERVICES),
       party: pick(r, partyPool),
       date: new Date(date).toISOString(),
-      amount: int(r, 12, 45) * 10,
+      amount: Math.round(int(r, 12, 45) * 10 * factor),
       status,
-      city: p.city,
     };
   });
 
-  const txTypes: TxType[] = p.kind === 'customers' ? ['payment', 'payment', 'deposit', 'refund'] : ['payout', 'deposit'];
-  const transactions: Transaction[] = Array.from({ length: 10 }, (_, i) => {
-    const roll = r();
-    return {
-      id: `TX-${int(r, 100000, 999999)}`,
-      type: pick(r, txTypes),
-      amount: int(r, 5, 60) * 10,
-      method: pick(r, METHODS),
-      date: new Date(now - i * int(r, 2, 9) * DAY - int(r, 0, 23) * 3600000).toISOString(),
-      status: roll < 0.84 ? 'success' : roll < 0.94 ? 'pending' : 'failed',
-      ref: `#${int(r, 1000000, 9999999)}`,
-    };
-  });
-
-  const reviews: Review[] = Array.from({ length: Math.min(p.reviewsCount, 6) || 2 }, (_, i) => ({
+  const reviews: Review[] = Array.from({ length: Math.min(p.reviewsCount, 6) }, (_, i) => ({
     id: `RV-${i}`,
     author: p.kind === 'customers' ? `الفني ${pick(r, partyPool)}` : pick(r, partyPool),
     rating: Math.max(3, Math.min(5, Math.round(p.rating + (r() - 0.4)))),
@@ -193,38 +172,35 @@ export function generateActivity(p: Person, currency: string): PersonActivity {
     service: pick(r, SERVICES),
   }));
 
-  const notifications: AppNotification[] = [
-    { title: 'تأكيد الحجز', body: 'تم تأكيد حجزك القادم بنجاح، نتمنى لك تجربة مميزة.', channel: 'push' as const },
-    { title: 'تذكير بالموعد', body: 'تذكير: موعد جلستك غدًا الساعة 5:00 مساءً.', channel: 'sms' as const },
-    { title: 'عرض خاص', body: 'خصم 20% على جلسات الحجامة الرياضية هذا الأسبوع.', channel: 'push' as const },
-    { title: 'إيصال الدفع', body: 'تم استلام دفعتك بنجاح، يمكنك تحميل الفاتورة من التطبيق.', channel: 'email' as const },
-    { title: 'قيّم تجربتك', body: 'شاركنا رأيك في جلستك الأخيرة لنطوّر خدماتنا.', channel: 'push' as const },
-    { title: 'تحديث الحساب', body: 'تم تحديث بيانات ملفك الشخصي بنجاح.', channel: 'email' as const },
-  ].map((n, i) => ({
-    ...n,
+  const templates =
+    p.kind === 'technicians'
+      ? [
+          ['طلب حجز جديد', 'لديك طلب جلسة جديد في منطقتك، افتح التطبيق للقبول.'],
+          ['باقتك قاربت على الانتهاء', 'جدّد باقتك لتستمر في استقبال الطلبات دون انقطاع.'],
+          ['تقييم جديد', 'حصلت على تقييم جديد من أحد العملاء.'],
+          ['تم تفعيل حسابك', 'تمت مراجعة مستنداتك وتفعيل حسابك بنجاح.'],
+        ]
+      : p.kind === 'drivers'
+        ? [
+            ['طلب توصيل جديد', 'لديك طلب توصيل فني إلى موقع عميل، افتح التطبيق للتفاصيل.'],
+            ['تحديث المستندات', 'يرجى التأكد من صلاحية رخصة القيادة المرفوعة.'],
+            ['تم تفعيل حسابك', 'تمت مراجعة مستنداتك وتفعيل حسابك بنجاح.'],
+          ]
+        : [
+            ['تأكيد الحجز', 'تم قبول حجزك وسيصل الفني إليك قريبًا.'],
+            ['الفني في الطريق', 'الفني في طريقه إلى موقعك الآن.'],
+            ['قيّم تجربتك', 'شاركنا رأيك في جلستك الأخيرة لنطوّر خدماتنا.'],
+            ['عرض خاص', 'خصم على جلسات الحجامة الرياضية هذا الأسبوع.'],
+          ];
+  const notifications: AppNotification[] = templates.map(([title, body], i) => ({
     id: `NT-${i}`,
+    title,
+    body,
     date: new Date(now - (i * int(r, 1, 5) * DAY + int(r, 1, 20) * 3600000)).toISOString(),
-    read: i > 1,
+    read: i > 0,
   }));
 
-  const activityTemplates: [ActivityItem['kind'], string][] = [
-    ['login', 'سجّل الدخول من تطبيق iOS'],
-    ['booking', `أنشأ حجزًا جديدًا (${pick(r, SERVICES)})`],
-    ['payment', `أتم عملية دفع بقيمة ${int(r, 15, 45) * 10} ${currency}`],
-    ['review', 'أضاف تقييمًا جديدًا ★★★★★'],
-    ['profile', 'حدّث رقم الجوال في الملف الشخصي'],
-    ['booking', 'أعاد جدولة موعد الجلسة'],
-    ['login', 'سجّل الدخول من متصفح الويب'],
-    ['status', 'تم تفعيل الحساب من قبل الإدارة'],
-  ];
-  const activity: ActivityItem[] = activityTemplates.map(([kind, text], i) => ({
-    id: `AC-${i}`,
-    kind,
-    text,
-    date: new Date(now - (i * int(r, 6, 40) + int(r, 1, 5)) * 3600000).toISOString(),
-  }));
+  const monthly = Array.from({ length: 6 }, () => (p.bookings ? int(r, 1, p.kind === 'customers' ? 6 : 28) : 0));
 
-  const monthly = Array.from({ length: 6 }, () => int(r, 1, p.kind === 'customers' ? 6 : 28));
-
-  return { bookings, transactions, reviews, notifications, activity, monthly };
+  return { bookings, reviews, notifications, monthly };
 }

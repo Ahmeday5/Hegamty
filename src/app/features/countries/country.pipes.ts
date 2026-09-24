@@ -4,29 +4,25 @@ import { CountriesStore } from './countries.store';
 import { CountryScopeService } from './country-scope.service';
 
 /**
- * `{{ amount | cmoney: record.countryId }}` — an amount in the currency of the
- * country it belongs to. Impure so a currency edit on the countries page is
- * reflected immediately (the transform is a map lookup + number format).
+ * `{{ amount | cmoney: record.countryId }}` — amount in its country's
+ * currency. Impure so a currency edit on the countries page shows at once.
  */
 @Pipe({ name: 'cmoney', standalone: true, pure: false })
 export class CountryMoneyPipe implements PipeTransform {
   private readonly countries = inject(CountriesStore);
 
-  transform(value: number | null | undefined, countryId: string, decimals = 0): string {
-    return `${formatNumber(value ?? 0, decimals)} ${this.countries.symbol(countryId)}`.trim();
+  transform(value: number | null | undefined, countryId: string): string {
+    return `${formatNumber(value ?? 0)} ${this.countries.currency(countryId)}`.trim();
   }
 }
 
-/**
- * `{{ total | smoney }}` — an amount already expressed in the current scope
- * currency (see `CountryScopeService.sum`), labelled with that currency.
- */
+/** `{{ total | smoney }}` — amount in the currently selected country's currency. */
 @Pipe({ name: 'smoney', standalone: true, pure: false })
 export class ScopeMoneyPipe implements PipeTransform {
   private readonly scope = inject(CountryScopeService);
 
   transform(value: number | null | undefined): string {
-    return `${formatNumber(value ?? 0)} ${this.scope.currency()}`;
+    return `${formatNumber(value ?? 0)} ${this.scope.currency()}`.trim();
   }
 }
 
@@ -40,13 +36,13 @@ export class CountryNamePipe implements PipeTransform {
   }
 }
 
-/** `{{ record.countryId | ccy }}` — just the symbol (not `currency`, which Angular's CommonModule owns). */
+/** `{{ record.countryId | ccy }}` — the currency name only. */
 @Pipe({ name: 'ccy', standalone: true, pure: false })
 export class CountryCurrencyPipe implements PipeTransform {
   private readonly countries = inject(CountriesStore);
 
   transform(countryId: string | null | undefined): string {
-    return countryId ? this.countries.symbol(countryId) : '';
+    return countryId ? this.countries.currency(countryId) : '';
   }
 }
 

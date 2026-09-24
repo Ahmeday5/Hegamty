@@ -28,7 +28,7 @@ const TONE_COLOR: Record<Tone, string> = {
     <article class="kpi panel panel--hover" [style.--tone]="color()">
       <span class="kpi__glow" aria-hidden="true"></span>
       <header class="kpi__head">
-        <span class="tile tile--{{ tone() }}"><app-icon [name]="icon()" [size]="22" /></span>
+        <span class="tile tile--{{ tone() }}"><app-icon [name]="icon()" [size]="19" /></span>
         @if (trend() !== null) {
           <span class="chip" [class.chip--green]="trend()! >= 0" [class.chip--red]="trend()! < 0">
             <app-icon [name]="trend()! >= 0 ? 'trending-up' : 'trending-down'" [size]="14" [stroke]="2.2" />
@@ -53,7 +53,7 @@ const TONE_COLOR: Record<Tone, string> = {
   `,
   styles: [`
     :host { display: block; }
-    .kpi { position: relative; overflow: hidden; padding: 18px 20px; height: 100%; }
+    .kpi { position: relative; overflow: hidden; padding: 14px 16px; height: 100%; }
     .kpi:hover { transform: translateY(-3px); }
     .kpi { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.3s; }
     .kpi__glow {
@@ -62,16 +62,16 @@ const TONE_COLOR: Record<Tone, string> = {
       transition: opacity 0.3s, scale 0.4s;
     }
     .kpi:hover .kpi__glow { opacity: 0.13; scale: 1.2; }
-    .kpi__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .kpi__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .kpi__body { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
-    .kpi__label { margin: 0 0 4px; font-size: 13px; color: var(--txt2); font-weight: 500; }
+    .kpi__label { margin: 0 0 2px; font-size: 12px; color: var(--txt2); font-weight: 500; }
     .kpi__value {
-      margin: 0; font-size: 28px; font-weight: 700; color: var(--black); line-height: 1.2;
+      margin: 0; font-size: 22px; font-weight: 700; color: var(--black); line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
     .kpi__value small { font-size: 13px; font-weight: 600; color: var(--txt3); margin-inline-start: 4px; }
     .kpi__hint { margin: 4px 0 0; font-size: 12px; color: var(--txt3); }
-    .kpi__spark { width: 96px; height: 40px; flex-shrink: 0; }
+    .kpi__spark { width: 84px; height: 34px; flex-shrink: 0; }
   `],
 })
 export class KpiCardComponent {

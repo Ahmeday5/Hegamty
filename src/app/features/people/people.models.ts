@@ -1,17 +1,16 @@
 /**
- * Domain models shared by the customers / drivers / technicians pages. The
- * three entities differ only in labels and a couple of role-specific
- * fields, so one model + a per-kind config (see `people.config.ts`) drives
- * all six screens.
+ * Domain models shared by the customers / drivers / technicians pages.
+ * Accounts self-register from the mobile app and start `inactive`; the admin
+ * reviews their documents and activates them.
  */
 
 export type PersonKind = 'customers' | 'drivers' | 'technicians';
-export type PersonStatus = 'active' | 'inactive' | 'pending' | 'blocked';
+export type PersonStatus = 'active' | 'inactive';
 
 export interface Person {
   id: string;
   kind: PersonKind;
-  /** ISO code of the country this account operates in (see CountriesStore). */
+  /** Country the account operates in (see CountriesStore). */
   countryId: string;
   name: string;
   phone: string;
@@ -19,14 +18,13 @@ export interface Person {
   city: string;
   district: string;
   gender: 'male' | 'female';
-  /** Customers: bookings · Drivers: trips · Technicians: sessions. */
+  birthDate: string;
+  /** Technicians & drivers only. */
+  nationalId?: string;
+  /** Customers: bookings made · Technicians: sessions · Drivers: trips. */
   bookings: number;
   completed: number;
   cancelled: number;
-  /** Wallet balance (customers) or pending payout (drivers/technicians). */
-  balance: number;
-  /** Customers: total spend · Drivers/technicians: total earnings. */
-  total: number;
   rating: number;
   reviewsCount: number;
   status: PersonStatus;
@@ -34,6 +32,7 @@ export interface Person {
   lastActiveAt: string;
   /** Drivers only. */
   vehicle?: string;
+  vehicleColor?: string;
   plate?: string;
   /** Technicians only. */
   specialty?: string;
@@ -42,27 +41,14 @@ export interface Person {
 
 export type BookingStatus = 'completed' | 'scheduled' | 'in_progress' | 'cancelled';
 
-export interface Booking {
+export interface PersonBooking {
   id: string;
   service: string;
-  /** The counter-party shown in the row (technician for a customer, etc.). */
+  /** The counter-party (technician for a customer, customer otherwise). */
   party: string;
   date: string;
   amount: number;
   status: BookingStatus;
-  city: string;
-}
-
-export type TxType = 'deposit' | 'payment' | 'refund' | 'payout';
-
-export interface Transaction {
-  id: string;
-  type: TxType;
-  amount: number;
-  method: string;
-  date: string;
-  status: 'success' | 'pending' | 'failed';
-  ref: string;
 }
 
 export interface Review {
@@ -74,35 +60,32 @@ export interface Review {
   service: string;
 }
 
+/** In-app notification (the only channel the platform uses). */
 export interface AppNotification {
   id: string;
   title: string;
   body: string;
-  channel: 'push' | 'sms' | 'email';
   date: string;
   read: boolean;
 }
 
-export interface ActivityItem {
-  id: string;
-  kind: 'login' | 'booking' | 'payment' | 'review' | 'profile' | 'status';
-  text: string;
-  date: string;
-}
-
-export interface PersonActivity {
-  bookings: Booking[];
-  transactions: Transaction[];
+export interface PersonHistory {
+  bookings: PersonBooking[];
   reviews: Review[];
   notifications: AppNotification[];
-  activity: ActivityItem[];
   /** Last 6 months of bookings, oldest first. */
   monthly: number[];
 }
 
-/** Editable subset used by the add/edit form. */
+/** Uploaded identity / vehicle documents, per account kind. */
+export interface PersonDocument {
+  key: 'photo' | 'id_front' | 'id_back' | 'license';
+  label: string;
+}
+
+/** Editable subset used by the edit form. */
 export type PersonDraft = Pick<
   Person,
-  | 'countryId' | 'name' | 'phone' | 'email' | 'city' | 'district' | 'gender' | 'status'
-  | 'vehicle' | 'plate' | 'specialty' | 'experienceYears'
+  | 'countryId' | 'name' | 'phone' | 'email' | 'city' | 'district' | 'gender' | 'birthDate' | 'status'
+  | 'nationalId' | 'vehicle' | 'vehicleColor' | 'plate' | 'specialty' | 'experienceYears'
 >;

@@ -1,79 +1,14 @@
-.tone-green  { --c: #20843d; --c-l: #e9f5ec; }
-.tone-blue   { --c: #2563eb; --c-l: #e8efff; }
-.tone-purple { --c: #7c3aed; --c-l: #f1ebff; }
-.tone-teal   { --c: #0d9488; --c-l: #e0f5f2; }
-.tone-amber  { --c: #d97706; --c-l: #fef3e2; }
-.tone-pink   { --c: #db2777; --c-l: #fdebf4; }
-
-.sf-preview {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--c-l);
-  transition: background 0.3s;
-
-  &__icon {
-    display: grid;
-    place-items: center;
-    width: 50px;
-    height: 50px;
-    border-radius: 15px;
-    background: var(--c);
-    color: var(--white);
-    box-shadow: 0 10px 20px -10px var(--c);
-    transition: background 0.3s;
-  }
-  > div { display: grid; gap: 2px; }
-  strong { font-size: 15px; color: var(--black); }
-  span { font-size: 12.5px; color: var(--c); font-weight: 600; }
-}
-
 .sf-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
   border: 1px solid var(--brd);
   background: #fafcfb;
 
   > div { display: grid; gap: 2px; }
-  strong { font-size: 13.5px; }
-  span { font-size: 12px; color: var(--txt3); }
+  strong { font-size: 13px; }
+  span { font-size: 11.5px; color: var(--txt3); }
 }
-
-.sf-swatches, .sf-icons { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.sf-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  border: none;
-  background: var(--c);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover { transform: scale(1.08); }
-  &.is-on { box-shadow: 0 0 0 3px var(--white), 0 0 0 5px var(--c); }
-}
-
-.sf-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  border: 1.5px solid var(--brd);
-  background: var(--white);
-  color: var(--txt2);
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
-
-  &:hover { border-color: #c5d8cc; }
-  &.is-on { border-color: var(--pr); background: var(--pr-l); color: var(--pr); }
-}
-
-.seg--full { display: flex; width: 100%; .seg__btn { flex: 1; justify-content: center; } }

@@ -57,5 +57,7 @@
   app-icon { color: #f59e0b; }
 }
 
+.muted { color: var(--txt3); }
+.chip--xs { padding: 0 7px; font-size: 10.5px; margin-inline-start: 4px; vertical-align: middle; }
 .skel-row { animation: none !important; }
 .skel-row td { padding-block: 16px; }

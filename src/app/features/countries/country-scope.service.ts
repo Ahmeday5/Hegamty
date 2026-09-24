@@ -1,17 +1,16 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { CountriesStore } from './countries.store';
-import { BASE_CURRENCY, Country } from './countries.models';
+import { Country } from './countries.models';
 
 const STORAGE_KEY = 'country_scope';
 export const ALL_COUNTRIES = 'all';
 
 /**
- * The dashboard-wide country filter (topbar switcher). Every page reads
- * through it so switching country re-scopes lists, KPIs and charts at once.
+ * Dashboard-wide country filter (topbar switcher). Every page reads through
+ * it so switching country re-scopes lists, KPIs and charts at once.
  *
- * Money rule: inside one country, amounts stay in that country's currency.
- * Across "all countries", amounts are converted to the base currency with
- * `rateToBase` — different currencies are never summed as-is.
+ * Amounts are only ever shown in one country's currency — the "all
+ * countries" view shows counts instead of summing different currencies.
  */
 @Injectable({ providedIn: 'root' })
 export class CountryScopeService {
@@ -24,11 +23,10 @@ export class CountryScopeService {
     return id === ALL_COUNTRIES ? null : (this.countries.byId(id) ?? null);
   });
   readonly isAll = computed(() => this.country() === null);
-  readonly currency = computed(() => this.country()?.currencySymbol ?? BASE_CURRENCY.symbol);
+  readonly currency = computed(() => this.country()?.currency ?? '');
   readonly label = computed(() => this.country()?.name ?? 'كل الدول');
 
   constructor() {
-    // A deleted country can't stay selected.
     effect(() => {
       const id = this.selected();
       if (id !== ALL_COUNTRIES && !this.countries.byId(id)) this.selected.set(ALL_COUNTRIES);
@@ -40,24 +38,9 @@ export class CountryScopeService {
     this.selected.set(id);
   }
 
-  matches(countryId: string): boolean {
-    const id = this.selected();
-    return id === ALL_COUNTRIES || id === countryId;
-  }
-
   filter<T extends { countryId: string }>(list: readonly T[]): T[] {
     const id = this.selected();
     return id === ALL_COUNTRIES ? [...list] : list.filter((x) => x.countryId === id);
-  }
-
-  /** An amount in `countryId`'s currency, expressed in the scope currency. */
-  toScope(amount: number, countryId: string): number {
-    return this.isAll() ? amount * this.countries.rate(countryId) : amount;
-  }
-
-  /** Sums money across items, converting to the scope currency when needed. */
-  sum<T extends { countryId: string }>(list: readonly T[], amount: (x: T) => number): number {
-    return list.reduce((acc, x) => acc + this.toScope(amount(x), x.countryId), 0);
   }
 
   private restore(): string {

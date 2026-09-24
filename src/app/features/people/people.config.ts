@@ -1,8 +1,7 @@
 import { IconName } from '../../shared/components/icon/icon.component';
-import { Tone } from '../../shared/components/kpi-card/kpi-card.component';
-import { BookingStatus, Person, PersonKind, PersonStatus, TxType } from './people.models';
+import { BookingStatus, Person, PersonDocument, PersonKind, PersonStatus } from './people.models';
 
-export type DetailTab = 'overview' | 'bookings' | 'transactions' | 'reviews' | 'notifications' | 'activity';
+export type DetailTab = 'overview' | 'bookings' | 'reviews' | 'notifications';
 
 export interface PeopleConfig {
   kind: PersonKind;
@@ -15,22 +14,25 @@ export interface PeopleConfig {
   idPrefix: string;
   /** Column / stat label for `Person.bookings`. */
   countLabel: string;
-  balanceLabel: string;
-  totalLabel: string;
   /** Header of the counter-party column in the bookings tab. */
   partyLabel: string;
   /** Role-specific extra column in the list (vehicle / specialty). */
   extra?: { label: string; value: (p: Person) => string };
+  documents: PersonDocument[];
   tabs: { id: DetailTab; label: string; icon: IconName }[];
 }
 
-const BASE_TABS = (bookingsLabel: string, txLabel: string): PeopleConfig['tabs'] => [
+const PHOTO: PersonDocument = { key: 'photo', label: 'الصورة الشخصية' };
+const ID_DOCS: PersonDocument[] = [
+  { key: 'id_front', label: 'البطاقة (وجه)' },
+  { key: 'id_back', label: 'البطاقة (ظهر)' },
+];
+
+const tabs = (bookingsLabel: string): PeopleConfig['tabs'] => [
   { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
   { id: 'bookings', label: bookingsLabel, icon: 'calendar' },
-  { id: 'transactions', label: txLabel, icon: 'wallet' },
   { id: 'reviews', label: 'التقييمات', icon: 'star' },
   { id: 'notifications', label: 'الإشعارات', icon: 'bell' },
-  { id: 'activity', label: 'النشاط', icon: 'activity' },
 ];
 
 export const PEOPLE_CONFIG: Record<PersonKind, PeopleConfig> = {
@@ -38,42 +40,39 @@ export const PEOPLE_CONFIG: Record<PersonKind, PeopleConfig> = {
     kind: 'customers',
     title: 'العملاء',
     singular: 'عميل',
-    subtitle: 'إدارة حسابات العملاء وحجوزاتهم وأرصدتهم',
+    subtitle: 'حسابات العملاء المسجلين من التطبيق وحجوزاتهم',
     icon: 'users',
     idPrefix: 'CU',
     countLabel: 'الحجوزات',
-    balanceLabel: 'الرصيد',
-    totalLabel: 'إجمالي الإنفاق',
     partyLabel: 'الفني',
-    tabs: BASE_TABS('الحجوزات', 'المعاملات المالية'),
+    documents: [PHOTO],
+    tabs: tabs('الحجوزات'),
   },
   drivers: {
     kind: 'drivers',
     title: 'السائقون',
     singular: 'سائق',
-    subtitle: 'متابعة السائقين ومركباتهم ورحلات الزيارات المنزلية',
+    subtitle: 'مراجعة مستندات السائقين ومركباتهم وتفعيل حساباتهم',
     icon: 'car',
     idPrefix: 'DR',
     countLabel: 'الرحلات',
-    balanceLabel: 'المستحقات',
-    totalLabel: 'إجمالي الأرباح',
-    partyLabel: 'العميل',
+    partyLabel: 'الفني',
     extra: { label: 'المركبة', value: (p) => p.vehicle ?? '—' },
-    tabs: BASE_TABS('الرحلات', 'الأرباح والمدفوعات'),
+    documents: [PHOTO, ...ID_DOCS, { key: 'license', label: 'رخصة القيادة' }],
+    tabs: tabs('الرحلات'),
   },
   technicians: {
     kind: 'technicians',
     title: 'الفنيون',
     singular: 'فني',
-    subtitle: 'إدارة فريق الفنيين وتخصصاتهم وجلساتهم وتقييماتهم',
+    subtitle: 'مراجعة مستندات الفنيين وتفعيل حساباتهم ومتابعة باقاتهم',
     icon: 'stethoscope',
     idPrefix: 'TE',
     countLabel: 'الجلسات',
-    balanceLabel: 'المستحقات',
-    totalLabel: 'إجمالي الأرباح',
     partyLabel: 'العميل',
     extra: { label: 'التخصص', value: (p) => p.specialty ?? '—' },
-    tabs: BASE_TABS('الجلسات', 'الأرباح والمدفوعات'),
+    documents: [PHOTO, ...ID_DOCS],
+    tabs: tabs('الجلسات'),
   },
 };
 
@@ -82,22 +81,13 @@ export const PEOPLE_CONFIG: Record<PersonKind, PeopleConfig> = {
 export const STATUS_META: Record<PersonStatus, { label: string; chip: string }> = {
   active: { label: 'نشط', chip: 'chip--green' },
   inactive: { label: 'غير نشط', chip: 'chip--slate' },
-  pending: { label: 'قيد المراجعة', chip: 'chip--amber' },
-  blocked: { label: 'محظور', chip: 'chip--red' },
 };
 
 export const BOOKING_META: Record<BookingStatus, { label: string; chip: string; color: string }> = {
-  completed: { label: 'مكتملة', chip: 'chip--green', color: '#20843d' },
-  scheduled: { label: 'مجدولة', chip: 'chip--blue', color: '#2563eb' },
+  scheduled: { label: 'مؤكد', chip: 'chip--blue', color: '#2563eb' },
   in_progress: { label: 'قيد التنفيذ', chip: 'chip--amber', color: '#f59e0b' },
-  cancelled: { label: 'ملغاة', chip: 'chip--red', color: '#ef4444' },
-};
-
-export const TX_META: Record<TxType, { label: string; tone: Tone; icon: IconName; sign: 1 | -1 }> = {
-  deposit: { label: 'شحن رصيد', tone: 'green', icon: 'download', sign: 1 },
-  payment: { label: 'دفع حجز', tone: 'blue', icon: 'card', sign: -1 },
-  refund: { label: 'استرداد', tone: 'amber', icon: 'refresh', sign: 1 },
-  payout: { label: 'تحويل مستحقات', tone: 'purple', icon: 'send', sign: -1 },
+  completed: { label: 'مكتمل', chip: 'chip--green', color: '#20843d' },
+  cancelled: { label: 'ملغي', chip: 'chip--red', color: '#ef4444' },
 };
 
 export const SPECIALTIES = [
@@ -105,9 +95,20 @@ export const SPECIALTIES = [
 ] as const;
 
 export const SERVICES = [
-  'حجامة رطبة', 'حجامة جافة', 'حجامة رياضية', 'حجامة تجميلية', 'حجامة منزلية', 'جلسة استشارة',
+  'حجامة رطبة', 'حجامة جافة', 'حجامة رياضية', 'حجامة تجميلية', 'مساج علاجي', 'جلسة استشارة',
 ] as const;
 
-export function isPersonKind(value: unknown): value is PersonKind {
-  return value === 'customers' || value === 'drivers' || value === 'technicians';
+/** Accounts registered in the last N days get a "جديد" badge (awaiting review). */
+export const NEW_ACCOUNT_DAYS = 10;
+
+export function isNewAccount(p: Person): boolean {
+  return Date.now() - +new Date(p.joinedAt) < NEW_ACCOUNT_DAYS * 86400000;
+}
+
+export function ageOf(birthDate: string): number {
+  const b = new Date(birthDate);
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+  return age;
 }

@@ -19,7 +19,7 @@
       @for (item of section.items; track item.id; let i = $index) {
         <a class="sbi" [routerLink]="item.route" routerLinkActive="on" [attr.title]="layout.collapsed() ? item.label : null"
           [style.--d]="s * 3 + i" (click)="layout.closeMobile()">
-          <span class="sbi-icon"><app-icon [name]="iconName(item)" [size]="20" /></span>
+          <span class="sbi-icon"><app-icon [name]="iconName(item)" [size]="18" /></span>
           <span class="sbi-label">{{ item.label }}</span>
           <app-icon class="sbi-arrow" name="chevron-left" [size]="16" />
         </a>
@@ -27,14 +27,14 @@
     }
   </nav>
 
-  <div class="sb-help">
+  <!--<div class="sb-help">
     <span class="sb-help__icon"><app-icon name="sparkles" [size]="20" /></span>
     <strong>تحتاج مساعدة؟</strong>
     <p>فريق الدعم الفني متاح على مدار الساعة لمساعدتك.</p>
     <a class="sb-help__btn" href="mailto:support@hegamty.com">
       <app-icon name="message" [size]="16" /> تواصل مع الدعم
     </a>
-  </div>
+  </div>-->
 
   <div class="sb-ver">Hegamty · v{{ version }}</div>
 </aside>

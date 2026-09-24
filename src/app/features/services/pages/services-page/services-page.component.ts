@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { KpiCardComponent } from '../../../../shared/components/kpi-card/kpi-card.component';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ServiceFormComponent } from '../../components/service-form/service-form.component';
-import { CATEGORY_META, ClinicService, ServiceCategory } from '../../services.models';
+import { ClinicService } from '../../services.models';
 import { ServicesStore } from '../../services.store';
-import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import { CategoriesStore } from '../../categories.store';
 import { CountryScopeService } from '../../../countries/country-scope.service';
 import { CountriesStore } from '../../../countries/countries.store';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
@@ -16,32 +17,24 @@ import { COUNTRY_PIPES } from '../../../countries/country.pipes';
 
 type SortKey = 'popular' | 'price-desc' | 'price-asc' | 'newest';
 type View = 'cards' | 'table';
-
 const VIEW_KEY = 'services_view';
 
 @Component({
   selector: 'app-services-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    IconComponent,
-    KpiCardComponent,
-    ServiceFormComponent,
-    ModalComponent,
-    CountryFlagComponent,
-    ...FORMAT_PIPES,
-    ...COUNTRY_PIPES,
-  ],
+  imports: [RouterLink, IconComponent, KpiCardComponent, ServiceFormComponent, ModalComponent, CountryFlagComponent, ...FORMAT_PIPES, ...COUNTRY_PIPES],
   templateUrl: './services-page.component.html',
   styleUrl: './services-page.component.scss',
 })
 export class ServicesPageComponent {
   private readonly store = inject(ServicesStore);
+  private readonly categoriesStore = inject(CategoriesStore);
+  private readonly countries = inject(CountriesStore);
   private readonly dialog = inject(DialogService);
   private readonly toast = inject(ToastService);
+  protected readonly scope = inject(CountryScopeService);
 
-  protected readonly categoryMeta = CATEGORY_META;
   protected readonly sorts: { id: SortKey; label: string }[] = [
     { id: 'popular', label: 'الأكثر طلبًا' },
     { id: 'price-desc', label: 'السعر: من الأعلى' },
@@ -50,7 +43,7 @@ export class ServicesPageComponent {
   ];
 
   protected readonly search = signal('');
-  protected readonly category = signal<ServiceCategory | 'all'>('all');
+  protected readonly category = signal<string>('all');
   protected readonly state = signal<'all' | 'active' | 'inactive'>('all');
   protected readonly sort = signal<SortKey>('popular');
   protected readonly view = signal<View>(this.readView());
@@ -59,40 +52,34 @@ export class ServicesPageComponent {
 
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<ClinicService | null>(null);
-
-  protected readonly scope = inject(CountryScopeService);
-  private readonly countries = inject(CountriesStore);
-  private readonly all = computed(() => this.scope.filter(this.store.all()));
-
-  // ── Copy to another country ──
   protected readonly copying = signal<ClinicService | null>(null);
   protected readonly copyTarget = signal('');
-  protected readonly copyTargets = computed(() => {
-    const src = this.copying();
-    return src ? this.countries.all().filter((c) => c.id !== src.countryId) : [];
-  });
+
+  private readonly all = computed(() => this.scope.filter(this.store.all()));
 
   protected readonly kpis = computed(() => {
     const list = this.all();
-    const active = list.filter((s) => s.active);
-    const avg = this.scope.sum(list, (s) => s.price) / (list.length || 1);
-    const bookings = list.reduce((a, s) => a + s.bookingsCount, 0);
-    return { total: list.length, active: active.length, avg, bookings, home: list.filter((s) => s.homeVisit).length };
+    return {
+      total: list.length,
+      active: list.filter((s) => s.active).length,
+      categories: new Set(list.map((s) => s.categoryId)).size,
+      bookings: list.reduce((a, s) => a + s.bookingsCount, 0),
+    };
   });
 
   protected readonly categoryTabs = computed(() => {
     const list = this.all();
     return [
-      { id: 'all' as const, label: 'الكل', count: list.length },
-      ...(Object.keys(CATEGORY_META) as ServiceCategory[]).map((id) => ({
-        id,
-        label: CATEGORY_META[id].label,
-        count: list.filter((s) => s.category === id).length,
-      })),
+      { id: 'all', label: 'الكل', count: list.length },
+      ...this.categoriesStore.all().map((c) => ({ id: c.id, label: c.name, count: list.filter((s) => s.categoryId === c.id).length })),
     ];
   });
 
   protected readonly topBookings = computed(() => Math.max(1, ...this.all().map((s) => s.bookingsCount)));
+  protected readonly copyTargets = computed(() => {
+    const src = this.copying();
+    return src ? this.countries.all().filter((c) => c.id !== src.countryId) : [];
+  });
 
   protected readonly filtered = computed(() => {
     const term = this.search().trim().toLowerCase();
@@ -100,13 +87,13 @@ export class ServicesPageComponent {
     const state = this.state();
     const sort = this.sort();
     return this.all()
-      .filter((s) => cat === 'all' || s.category === cat)
+      .filter((s) => cat === 'all' || s.categoryId === cat)
       .filter((s) => state === 'all' || (state === 'active' ? s.active : !s.active))
       .filter((s) => !term || s.name.toLowerCase().includes(term) || s.description.toLowerCase().includes(term))
       .sort((a, b) => {
         switch (sort) {
-          case 'price-desc': return this.scope.toScope(b.price, b.countryId) - this.scope.toScope(a.price, a.countryId);
-          case 'price-asc': return this.scope.toScope(a.price, a.countryId) - this.scope.toScope(b.price, b.countryId);
+          case 'price-desc': return b.price - a.price;
+          case 'price-asc': return a.price - b.price;
           case 'newest': return +new Date(b.createdAt) - +new Date(a.createdAt);
           default: return b.bookingsCount - a.bookingsCount;
         }
@@ -117,9 +104,13 @@ export class ServicesPageComponent {
 
   constructor() {
     effect((onCleanup) => {
-      const t = setTimeout(() => this.loading.set(false), 600);
+      const t = setTimeout(() => this.loading.set(false), 450);
       onCleanup(() => clearTimeout(t));
     }, { allowSignalWrites: true });
+  }
+
+  protected categoryName(id: string): string {
+    return this.categoriesStore.byId(id)?.name ?? '—';
   }
 
   protected setView(v: View): void {
@@ -152,7 +143,7 @@ export class ServicesPageComponent {
   protected async remove(s: ClinicService): Promise<void> {
     const ok = await this.dialog.confirm({
       title: 'حذف الخدمة',
-      message: `سيتم حذف خدمة "${s.name}" نهائيًا. الحجوزات السابقة لن تتأثر، لكن لن يتمكن العملاء من حجزها مجددًا.`,
+      message: `سيتم حذف خدمة "${s.name}" نهائيًا ولن يتمكن العملاء من حجزها مجددًا.`,
       confirmText: 'حذف الخدمة',
       type: 'danger',
     });
@@ -166,23 +157,13 @@ export class ServicesPageComponent {
     this.copyTarget.set(this.countries.all().find((c) => c.id !== s.countryId)?.id ?? '');
   }
 
-  /** Converted price preview for the copy dialog. */
-  protected copyPreview(s: ClinicService, targetId: string): number {
-    const to = this.countries.rate(targetId);
-    return to ? Math.round((s.price * this.countries.rate(s.countryId)) / to) : 0;
-  }
-
   protected confirmCopy(): void {
     const src = this.copying();
     const target = this.copyTarget();
     if (!src || !target) return;
-    const copy = this.store.copyTo(src.id, target);
+    this.store.copyTo(src.id, target);
     this.copying.set(null);
-    if (copy) {
-      this.toast.success(
-        `تم نسخ "${src.name}" إلى ${this.countries.byId(target)?.name} بسعر ${copy.price} ${this.countries.symbol(target)} — راجع السعر ثم فعّل الخدمة`,
-      );
-    }
+    this.toast.success(`تم نسخ "${src.name}" إلى ${this.countries.byId(target)?.name} كخدمة موقوفة — عدّل السعر بالعملة المحلية ثم فعّلها`);
   }
 
   private readView(): View {

@@ -1,0 +1,77 @@
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a routerLink="/services">الخدمات</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">التصنيفات</span>
+      </nav>
+      <h1 class="page-head__title">تصنيفات الخدمات</h1>
+      <p class="page-head__sub">كل تصنيف يضم مجموعة خدمات، ويظهر للعميل في التطبيق لتسهيل اختيار الخدمة</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="16" [stroke]="2.2" /> تصنيف جديد</button>
+    </div>
+  </header>
+
+  <div class="cats">
+    @for (r of rows(); track r.category.id; let i = $index) {
+      <article class="cat panel" [class.is-off]="!r.category.active" [style.--d]="i">
+        <header class="cat__head">
+          <span class="cat__no">{{ i + 1 }}</span>
+          <div class="cat__title">
+            <h3>{{ r.category.name }}</h3>
+            <span>{{ r.services }} خدمة · {{ r.activeServices }} مفعّلة</span>
+          </div>
+          <button type="button" class="switch" role="switch" [class.is-on]="r.category.active" [attr.aria-checked]="r.category.active"
+            [attr.aria-label]="(r.category.active ? 'إيقاف ' : 'تفعيل ') + r.category.name" (click)="toggleActive(r.category)"></button>
+        </header>
+        <p class="cat__desc">{{ r.category.description || 'بدون وصف' }}</p>
+        <div class="cat__tags">
+          @for (n of r.names; track n) { <span>{{ n }}</span> }
+          @if (r.services > r.names.length) { <span class="more">+{{ r.services - r.names.length }}</span> }
+          @if (!r.services) { <span class="none">لا توجد خدمات في هذا التصنيف بعد</span> }
+        </div>
+        <footer class="cat__foot">
+          <span class="muted"><app-icon name="calendar" [size]="13" /> {{ r.bookings | num }} حجز</span>
+          <div class="actions">
+            <button type="button" class="icon-btn icon-btn--blue" data-tip="عرض الخدمات" aria-label="عرض الخدمات" (click)="openServices()"><app-icon name="eye" [size]="16" /></button>
+            <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(r.category)"><app-icon name="edit" [size]="16" /></button>
+            <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(r.category)"><app-icon name="trash" [size]="16" /></button>
+          </div>
+        </footer>
+      </article>
+    }
+    <button type="button" class="cat-add" [style.--d]="rows().length" (click)="openCreate()">
+      <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
+      <strong>تصنيف جديد</strong>
+    </button>
+  </div>
+
+  <app-modal [open]="formOpen()" [title]="editing() ? 'تعديل التصنيف' : 'تصنيف جديد'" size="sm" (closed)="formOpen.set(false)">
+    <form id="cat-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="span-2">
+        <label class="form-label" for="cat-name">اسم التصنيف</label>
+        <input id="cat-name" class="form-control" formControlName="name" placeholder="مثال: الحجامة" [class.is-invalid]="invalid('name')" />
+        <app-form-error [control]="form.controls.name" label="اسم التصنيف" />
+      </div>
+      <div class="span-2">
+        <label class="form-label" for="cat-desc">الوصف (اختياري)</label>
+        <textarea id="cat-desc" class="form-control" rows="3" formControlName="description" maxlength="160" [class.is-invalid]="invalid('description')"></textarea>
+      </div>
+      <div class="span-2 cat-toggle">
+        <div><strong>التصنيف مفعّل</strong><span>التصنيفات الموقوفة تُخفى من التطبيق مع خدماتها</span></div>
+        <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value" [attr.aria-checked]="form.controls.active.value"
+          aria-label="تفعيل التصنيف" (click)="toggleFormActive()"></button>
+      </div>
+    </form>
+    <ng-container modal-footer>
+      <button type="button" class="btn btn-ghost" (click)="formOpen.set(false)">إلغاء</button>
+      <button type="submit" form="cat-form" class="btn btn-pr" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… } @else { حفظ }
+      </button>
+    </ng-container>
+  </app-modal>
+</section>

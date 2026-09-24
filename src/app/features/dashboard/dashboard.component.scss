@@ -177,7 +177,7 @@
   &__rev {
     display: grid;
     gap: 6px;
-    strong { font-size: 17px; font-weight: 700; color: var(--pr-d); font-variant-numeric: tabular-nums; }
+    strong { font-size: 17px; font-weight: 700; color: var(--pr-d); font-variant-numeric: tabular-nums; small { font-size: 12px; font-weight: 500; color: var(--txt3); } }
     .bar { height: 6px; }
   }
   &__stats {

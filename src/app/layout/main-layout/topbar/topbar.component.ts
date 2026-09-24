@@ -95,7 +95,7 @@ export class TopbarComponent {
   protected readonly notes = signal<SystemNote[]>([
     { id: 1, icon: 'calendar', tone: 'green', title: 'حجز جديد', text: 'قام أحمد الغامدي بحجز جلسة حجامة رطبة', date: new Date(Date.now() - 4 * MIN).toISOString(), read: false },
     { id: 2, icon: 'user-plus', tone: 'blue', title: 'فني جديد بانتظار المراجعة', text: 'طلب انضمام من سارة القحطاني', date: new Date(Date.now() - 38 * MIN).toISOString(), read: false },
-    { id: 3, icon: 'wallet', tone: 'purple', title: 'عملية دفع ناجحة', text: 'تم استلام 450 ر.س من خالد العتيبي', date: new Date(Date.now() - 95 * MIN).toISOString(), read: false },
+    { id: 3, icon: 'wallet', tone: 'purple', title: 'اشتراك جديد', text: 'اشترك الفني خالد العتيبي في الباقة الربع سنوية', date: new Date(Date.now() - 95 * MIN).toISOString(), read: false },
     { id: 4, icon: 'star', tone: 'amber', title: 'تقييم جديد ★★★★★', text: 'حصل الفني فهد الشهري على تقييم ممتاز', date: new Date(Date.now() - 5 * 60 * MIN).toISOString(), read: true },
     { id: 5, icon: 'ban', tone: 'red', title: 'إلغاء حجز', text: 'ألغت نورة الحربي موعدها المجدول غدًا', date: new Date(Date.now() - 26 * 60 * MIN).toISOString(), read: true },
   ]);

@@ -86,7 +86,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-size: 14px;
+  font-size: 13px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -114,10 +114,10 @@ body {
   justify-content: center;
   gap: 8px;
   font-family: var(--font-base);
-  font-size: 13px;
+  font-size: 12.5px;
   border-radius: var(--r);
   font-weight: 600;
-  padding: 9px 16px;
+  padding: 7px 14px;
   background: var(--bg2);
   border: 1px solid var(--brd2);
   color: var(--txt);
@@ -292,21 +292,21 @@ body {
 
 /* ── FORMS ── */
 .form-label {
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--txt);
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .form-control,
 .form-select {
   font-family: var(--font-base);
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--txt);
   background-color: var(--bg2);
   border: 1.5px solid var(--brd);
   border-radius: var(--r);
-  padding: 9px 12px;
-  min-height: 42px;
+  padding: 7px 11px;
+  min-height: 38px;
   transition: border-color 0.18s, box-shadow 0.18s;
   &::placeholder { color: #a3aaa5; }
   &:hover:not(:focus):not(:disabled) { border-color: var(--brd2); }
@@ -357,7 +357,7 @@ body {
 
   &--lg .form-control {
     height: 48px;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 12px;
     border: 1.5px solid #dfe5e1;
     background: var(--white);
@@ -535,7 +535,7 @@ body {
 .app-modal {
   background: var(--bg2);
   border-radius: var(--rxl);
-  padding: 24px;
+  padding: 20px;
   width: 100%;
   max-width: 560px;
   max-height: 90vh;
@@ -556,9 +556,9 @@ body {
 }
 
 .app-modal-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -641,17 +641,17 @@ body.app-modal-open { overflow: hidden; }
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 
   &__title {
-    margin: 4px 0 0;
-    font-size: 24px;
+    margin: 3px 0 0;
+    font-size: 20px;
     font-weight: 700;
     color: var(--black);
   }
   &__sub {
-    margin: 4px 0 0;
-    font-size: 13.5px;
+    margin: 3px 0 0;
+    font-size: 12.5px;
     color: var(--txt2);
   }
   &__actions {
@@ -690,11 +690,11 @@ body.app-modal-open { overflow: hidden; }
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
-    padding: 18px 20px 0;
+    padding: 14px 16px 0;
   }
   &__title {
     margin: 0;
-    font-size: 15.5px;
+    font-size: 14.5px;
     font-weight: 700;
     color: var(--black);
   }
@@ -703,13 +703,13 @@ body.app-modal-open { overflow: hidden; }
     font-size: 12.5px;
     color: var(--txt3);
   }
-  &__body { padding: 18px 20px 20px; }
+  &__body { padding: 14px 16px 16px; }
 }
 
 .grid {
   display: grid;
-  gap: 18px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 14px;
 
   &--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   &--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -732,9 +732,9 @@ body.app-modal-open { overflow: hidden; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
@@ -766,13 +766,13 @@ body.app-modal-open { overflow: hidden; }
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   color: var(--c);
   background: var(--c-l);
 
-  &--sm { width: 36px; height: 36px; border-radius: 11px; }
+  &--sm { width: 32px; height: 32px; border-radius: 10px; }
   &--green  { --c: var(--pr); --c-l: var(--pr-l); }
   &--blue   { --c: var(--sk); --c-l: var(--sk-l); }
   &--amber  { --c: var(--am); --c-l: var(--am-l); }
@@ -796,12 +796,12 @@ body.app-modal-open { overflow: hidden; }
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border: none;
     border-radius: 9px;
     background: transparent;
     font-family: inherit;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--txt2);
     cursor: pointer;
@@ -831,9 +831,9 @@ body.app-modal-open { overflow: hidden; }
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--c);
@@ -851,8 +851,9 @@ body.app-modal-open { overflow: hidden; }
 }
 
 /* CSS tooltip — <button data-tip="تعديل"> */
-[data-tip] { position: relative; }
-[data-tip]::after {
+/* `.switch` draws its knob with ::after, so it must never become a tooltip host */
+[data-tip]:not(.switch) { position: relative; }
+[data-tip]:not(.switch)::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -870,8 +871,8 @@ body.app-modal-open { overflow: hidden; }
   transition: opacity 0.15s, translate 0.15s;
   z-index: 20;
 }
-[data-tip]:hover::after,
-[data-tip]:focus-visible::after { opacity: 1; translate: -50% 0; }
+[data-tip]:not(.switch):hover::after,
+[data-tip]:not(.switch):focus-visible::after { opacity: 1; translate: -50% 0; }
 
 /* ── Search / toolbar ── */
 .toolbar {
@@ -879,7 +880,7 @@ body.app-modal-open { overflow: hidden; }
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 16px 20px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--brd);
 
   &__grow { flex: 1 1 260px; min-width: 0; }
@@ -898,8 +899,8 @@ body.app-modal-open { overflow: hidden; }
   }
   input {
     width: 100%;
-    height: 40px;
-    padding-inline: 38px 12px;
+    height: 36px;
+    padding-inline: 36px 12px;
     border-radius: 11px;
     border: 1.5px solid var(--brd);
     background: var(--bg);
@@ -919,8 +920,8 @@ body.app-modal-open { overflow: hidden; }
 }
 
 .select-sm {
-  height: 40px;
-  min-height: 40px;
+  height: 36px;
+  min-height: 36px;
   min-width: 150px;
   width: auto;
   font-size: 13px;
@@ -937,12 +938,12 @@ body.app-modal-open { overflow: hidden; }
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 13.5px;
+  font-size: 13px;
 
   th {
     position: sticky;
     top: 0;
-    padding: 12px 16px;
+    padding: 10px 14px;
     background: #f8faf9;
     border-bottom: 1px solid var(--brd);
     font-size: 12px;
@@ -956,7 +957,7 @@ body.app-modal-open { overflow: hidden; }
   th.is-sortable:hover, th.is-sorted { color: var(--pr); }
 
   td {
-    padding: 13px 16px;
+    padding: 9px 14px;
     border-bottom: 1px solid #eef2ef;
     vertical-align: middle;
     white-space: nowrap;
@@ -1000,7 +1001,7 @@ body.app-modal-open { overflow: hidden; }
   display: grid;
   justify-items: center;
   gap: 10px;
-  padding: 56px 20px;
+  padding: 40px 20px;
   text-align: center;
   color: var(--txt2);
 
@@ -1024,9 +1025,9 @@ body.app-modal-open { overflow: hidden; }
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 11px 0;
+  padding: 8px 0;
   border-bottom: 1px dashed var(--brd);
-  font-size: 13.5px;
+  font-size: 13px;
 
   &:last-child { border-bottom: none; }
   &__k { display: inline-flex; align-items: center; gap: 8px; color: var(--txt3); }

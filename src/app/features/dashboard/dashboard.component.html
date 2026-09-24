@@ -21,15 +21,15 @@
       </div>
       <h1 class="hero__title">{{ greeting }}، {{ user()?.name }}</h1>
       <p class="hero__text">
-        لديك <strong>{{ hero().upcoming | num }} حجزًا</strong> قادمًا و<strong>{{ hero().pendingJoins }} طلبات</strong>
-        انضمام بانتظار المراجعة{{ scope.country() ? ' في ' + scope.label() : '' }}.
+        لديك <strong>{{ hero().liveNow | num }} جلسة</strong> جارية الآن و<strong>{{ hero().pendingJoins }} حساب</strong>
+        جديد بانتظار التفعيل{{ scope.country() ? ' في ' + scope.label() : '' }}.
       </p>
       <div class="hero__actions">
         <a class="hero__btn hero__btn--solid" routerLink="/bookings">
           <app-icon name="calendar" [size]="15" /> الحجوزات
         </a>
-        <a class="hero__btn" routerLink="/technicians">
-          <app-icon name="stethoscope" [size]="15" /> فريق الفنيين
+        <a class="hero__btn" routerLink="/packages">
+          <app-icon name="award" [size]="15" /> باقات الفنيين
         </a>
       </div>
     </div>
@@ -41,20 +41,20 @@
       </div>
       <div class="glass fx" style="--d: 3">
         <span class="glass__icon"><app-icon name="stethoscope" [size]="17" /></span>
-        <div><p>الفنيون المتاحون</p><strong><span [appCountUp]="hero().availableTechs"></span><small> / {{ hero().techCount }}</small></strong></div>
+        <div><p>فنيون مشتركون</p><strong><span [appCountUp]="hero().subscribedTechs"></span><small> / {{ hero().techCount }}</small></strong></div>
       </div>
       <div class="glass fx" style="--d: 4">
-        <span class="glass__icon"><app-icon name="wallet" [size]="17" /></span>
-        <div><p>إيرادات اليوم</p><strong><span [appCountUp]="hero().todayRevenue"></span><small> {{ scope.currency() }}</small></strong></div>
+        <span class="glass__icon"><app-icon name="activity" [size]="17" /></span>
+        <div><p>جلسات جارية الآن</p><strong [appCountUp]="hero().liveNow"></strong></div>
       </div>
     </div>
   </div>
 
   <!-- ── KPIs ── -->
   <div class="grid grid--4">
-    <app-kpi-card class="fx" style="--d: 1" label="الإيرادات (30 يومًا)" [value]="kpis().revenue.value" [suffix]="scope.currency()"
-      icon="wallet" tone="green" [trend]="kpis().revenue.trend" [spark]="kpis().revenue.spark"
-      [hint]="scope.isAll() ? 'محوّلة إلى العملة الأساسية' : ''" />
+    <app-kpi-card class="fx" style="--d: 1" [label]="scope.isAll() ? 'اشتراكات الباقات (30 يومًا)' : 'إيرادات الباقات (30 يومًا)'"
+      [value]="kpis().packages.value" [suffix]="scope.currency()" icon="award" tone="green" [trend]="kpis().packages.trend"
+      [spark]="kpis().packages.spark" [hint]="scope.isAll() ? 'اختر دولة لعرض الإيرادات بعملتها' : 'اشتراكات الفنيين الجديدة'" />
     <app-kpi-card class="fx" style="--d: 2" label="الحجوزات (30 يومًا)" [value]="kpis().bookings.value" icon="calendar" tone="blue"
       [trend]="kpis().bookings.trend" [spark]="kpis().bookings.spark" />
     <app-kpi-card class="fx" style="--d: 3" label="العملاء المسجلون" [value]="kpis().customers.value" icon="users" tone="amber"
@@ -69,29 +69,29 @@
       <div class="panel__head">
         <div>
           <h2 class="panel__title">الأداء حسب الدولة</h2>
-          <p class="panel__sub">آخر 30 يومًا — الإيرادات محوّلة إلى {{ scope.currency() }} للمقارنة. اضغط على دولة لعرض بياناتها.</p>
+          <p class="panel__sub">حجوزات آخر 30 يومًا — اضغط على دولة لعرض بياناتها.</p>
         </div>
         <a class="btn btn-ghost btn-sm" routerLink="/countries">إدارة الدول <app-icon name="chevron-left" [size]="15" /></a>
       </div>
       <div class="panel__body countries">
         @for (r of byCountry(); track r.country.id; let i = $index) {
-          <button type="button" class="ctry" [class.is-off]="!r.country.active" [style.--d]="i" (click)="scope.select(r.country.id)">
+          <button type="button" class="ctry" [class.is-off]="!r.services" [style.--d]="i" (click)="scope.select(r.country.id)">
             <div class="ctry__head">
-              <app-country-flag [code]="r.country.id" [size]="34" />
+              <app-country-flag [code]="r.country.id" [size]="30" />
               <div>
                 <strong>{{ r.country.name }}</strong>
-                <span>{{ r.country.currencyCode }} · {{ r.country.cities.length }} مدن</span>
+                <span>{{ r.country.currency }} · {{ r.country.cities.length }} مدن</span>
               </div>
-              @if (!r.country.active) { <span class="chip chip--slate">غير مفعّلة</span> }
+              @if (!r.services) { <span class="chip chip--slate">بدون خدمات</span> }
             </div>
             <div class="ctry__rev">
-              <strong>{{ r.revenueBase | smoney }}</strong>
+              <strong>{{ r.bookings | num }} <small>حجز</small></strong>
               <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="r.share" [style.--d]="i"></span></div>
             </div>
             <dl class="ctry__stats">
-              <div><dt>حجوزات</dt><dd>{{ r.bookings | num }}</dd></div>
               <div><dt>عملاء</dt><dd>{{ r.customers | num }}</dd></div>
               <div><dt>فنيون</dt><dd>{{ r.technicians | num }}</dd></div>
+              <div><dt>مشتركون</dt><dd>{{ r.subscribed | num }}</dd></div>
               <div><dt>خدمات</dt><dd>{{ r.services | num }}</dd></div>
             </dl>
           </button>
@@ -105,14 +105,14 @@
     <div class="panel fx" style="--d: 6">
       <div class="panel__head">
         <div>
-          <h2 class="panel__title">نظرة على الإيرادات</h2>
+          <h2 class="panel__title">حركة الحجوزات</h2>
           <p class="panel__sub">
-            <strong class="rev-total">{{ revenue().total | smoney }}</strong>
-            <span class="chip" [class.chip--green]="revenue().delta >= 0" [class.chip--red]="revenue().delta < 0">
-              <app-icon [name]="revenue().delta >= 0 ? 'trending-up' : 'trending-down'" [size]="13" />
-              {{ revenue().delta >= 0 ? '+' : '' }}{{ revenue().delta | num: 1 }}%
+            <strong class="rev-total">{{ volume().total | num }} حجز</strong>
+            <span class="chip" [class.chip--green]="volume().delta >= 0" [class.chip--red]="volume().delta < 0">
+              <app-icon [name]="volume().delta >= 0 ? 'trending-up' : 'trending-down'" [size]="13" />
+              {{ volume().delta >= 0 ? '+' : '' }}{{ volume().delta | num: 1 }}%
             </span>
-            {{ revenue().compareLabel }}
+            {{ volume().compareLabel }}
           </p>
         </div>
         <div class="seg">
@@ -123,12 +123,11 @@
       </div>
       <div class="panel__body">
         <div class="legend">
-          @for (s of revenue().series; track s.name) {
+          @for (s of volume().series; track s.name) {
             <span><i [style.background]="s.color"></i> {{ s.name }}</span>
           }
         </div>
-        <app-area-chart [labels]="revenue().labels" [series]="revenue().series" [height]="300" [unit]="scope.currency()"
-          ariaLabel="رسم بياني للإيرادات" />
+        <app-area-chart [labels]="volume().labels" [series]="volume().series" [height]="260" unit="حجز" ariaLabel="رسم بياني للحجوزات" />
       </div>
     </div>
 
@@ -212,7 +211,7 @@
         </ul>
         <div class="mini-stats">
           <div><span class="tile tile--sm tile--teal"><app-icon name="car" [size]="16" /></span><p>سائقون نشطون</p><strong>{{ mini().activeDrivers }}</strong></div>
-          <div><span class="tile tile--sm tile--pink"><app-icon name="home" [size]="16" /></span><p>زيارات منزلية (30 يومًا)</p><strong>{{ mini().homeVisits }}</strong></div>
+          <div><span class="tile tile--sm tile--pink"><app-icon name="home" [size]="16" /></span><p>جلسات بسائق (30 يومًا)</p><strong>{{ mini().withDriver }}</strong></div>
         </div>
       </div>
     </div>
@@ -252,7 +251,7 @@
               <td>{{ b.serviceName }}</td>
               <td>{{ b.technicianName }}</td>
               <td class="muted">{{ b.date | arDate: true }}</td>
-              <td class="num">{{ b.total | cmoney: b.countryId }}</td>
+              <td class="num">{{ b.price | cmoney: b.countryId }}</td>
               <td><span class="chip chip--dot {{ bookingMeta[b.status].chip }}">{{ bookingMeta[b.status].label }}</span></td>
             </tr>
           } @empty {

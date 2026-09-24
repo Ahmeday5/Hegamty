@@ -1,5 +1,4 @@
 <section class="page">
-  <!-- ── Header ── -->
   <header class="page-head fx">
     <div>
       <nav class="crumbs" aria-label="مسار التنقل">
@@ -12,17 +11,11 @@
     </div>
     <div class="page-head__actions">
       <button type="button" class="btn" (click)="exportCsv()" [disabled]="loading() || !filtered().length">
-        <app-icon name="download" [size]="17" />
-        تصدير Excel
-      </button>
-      <button type="button" class="btn btn-pr" (click)="openCreate()">
-        <app-icon name="plus" [size]="17" [stroke]="2.2" />
-        إضافة {{ cfg().singular }}
+        <app-icon name="download" [size]="16" /> تصدير Excel
       </button>
     </div>
   </header>
 
-  <!-- ── KPIs ── -->
   <div class="grid grid--4">
     @for (k of kpis(); track k.label; let i = $index) {
       <app-kpi-card class="fx" [style.--d]="i + 1" [label]="k.label" [value]="k.value" [icon]="k.icon"
@@ -30,41 +23,32 @@
     }
   </div>
 
-  <!-- ── Table panel ── -->
   <div class="panel fx" style="--d: 5">
     <div class="toolbar">
       <label class="search toolbar__grow">
-        <app-icon name="search" [size]="18" />
-        <input type="search" [value]="search()" (input)="onSearch($any($event.target).value)"
-          [placeholder]="'ابحث بالاسم أو الجوال أو البريد أو رقم ال' + cfg().singular + '…'"
-          [attr.aria-label]="'بحث في ' + cfg().title" />
+        <app-icon name="search" [size]="17" />
+        <input type="search" [value]="search()" (input)="setFilter(search, $any($event.target).value)"
+          placeholder="ابحث بالاسم أو الجوال أو البريد أو رقم الهوية…" [attr.aria-label]="'بحث في ' + cfg().title" />
       </label>
-
-      <select class="form-select select-sm" [value]="city()" (change)="setCity($any($event.target).value)"
-        aria-label="تصفية حسب المدينة">
+      <select class="form-select select-sm" [value]="city()" (change)="setFilter(city, $any($event.target).value)" aria-label="المدينة">
         <option value="all">كل المدن</option>
         @for (c of cities(); track c) { <option [value]="c">{{ c }}</option> }
       </select>
-
       @if (hasFilters()) {
-        <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()">
-          <app-icon name="x" [size]="15" /> مسح الفلاتر
-        </button>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
       }
     </div>
 
     <div class="status-bar">
-      <div class="seg" role="tablist" aria-label="تصفية حسب الحالة">
+      <div class="seg" role="tablist" aria-label="الحالة">
         @for (t of statusTabs(); track t.id) {
-          <button type="button" class="seg__btn" role="tab" [class.is-on]="status() === t.id"
-            [attr.aria-selected]="status() === t.id" (click)="setStatus(t.id)">
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="status() === t.id" [attr.aria-selected]="status() === t.id"
+            (click)="setFilter(status, t.id)">
             {{ t.label }} <span class="seg__count">{{ t.count }}</span>
           </button>
         }
       </div>
-      <span class="result-count">
-        @if (!loading()) { {{ filtered().length | num }} نتيجة }
-      </span>
+      <span class="result-count">@if (!loading()) { {{ filtered().length | num }} نتيجة }</span>
     </div>
 
     <div class="dtable-wrap">
@@ -72,26 +56,24 @@
         <thead>
           <tr>
             <th class="is-sortable" [class.is-sorted]="sort().key === 'name'" (click)="toggleSort('name')">
-              <span class="th">ال{{ cfg().singular }} @if (sortIcon('name'); as ic) { <app-icon [name]="ic" [size]="14" /> }</span>
+              <span class="th">ال{{ cfg().singular }} @if (sortIcon('name'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
             </th>
             @if (scope.isAll()) { <th>الدولة</th> }
             <th>رقم الجوال</th>
-            <th>المدينة</th>
+            <th>المدينة / الحي</th>
             @if (cfg().extra; as extra) { <th>{{ extra.label }}</th> }
             <th class="is-sortable" [class.is-sorted]="sort().key === 'bookings'" (click)="toggleSort('bookings')">
-              <span class="th">{{ cfg().countLabel }} @if (sortIcon('bookings'); as ic) { <app-icon [name]="ic" [size]="14" /> }</span>
-            </th>
-            <th class="is-sortable" [class.is-sorted]="sort().key === 'balance'" (click)="toggleSort('balance')">
-              <span class="th">{{ cfg().balanceLabel }} @if (sortIcon('balance'); as ic) { <app-icon [name]="ic" [size]="14" /> }</span>
+              <span class="th">{{ cfg().countLabel }} @if (sortIcon('bookings'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
             </th>
             @if (kind() !== 'customers') {
               <th class="is-sortable" [class.is-sorted]="sort().key === 'rating'" (click)="toggleSort('rating')">
-                <span class="th">التقييم @if (sortIcon('rating'); as ic) { <app-icon [name]="ic" [size]="14" /> }</span>
+                <span class="th">التقييم @if (sortIcon('rating'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
               </th>
             }
+            @if (kind() === 'technicians') { <th>الباقة</th> }
             <th>الحالة</th>
             <th class="is-sortable" [class.is-sorted]="sort().key === 'joinedAt'" (click)="toggleSort('joinedAt')">
-              <span class="th">تاريخ الانضمام @if (sortIcon('joinedAt'); as ic) { <app-icon [name]="ic" [size]="14" /> }</span>
+              <span class="th">تاريخ التسجيل @if (sortIcon('joinedAt'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
             </th>
             <th class="th-actions">الإجراءات</th>
           </tr>
@@ -103,15 +85,12 @@
               <tr class="skel-row">
                 <td>
                   <div class="person">
-                    <span class="skel skel--circle" style="width: 38px; height: 38px"></span>
-                    <div class="person__txt">
-                      <span class="skel" style="width: 140px"></span>
-                      <span class="skel" style="width: 96px; height: 10px"></span>
-                    </div>
+                    <span class="skel skel--circle" style="width: 34px; height: 34px"></span>
+                    <div class="person__txt"><span class="skel" style="width: 130px"></span><span class="skel" style="width: 90px; height: 9px"></span></div>
                   </div>
                 </td>
                 @for (c of [1, 2, 3, 4, 5, 6, 7]; track c) {
-                  <td><span class="skel" [style.width.px]="50 + ((r * 13 + c * 17) % 40)"></span></td>
+                  <td><span class="skel" [style.width.px]="46 + ((r * 13 + c * 17) % 40)"></span></td>
                 }
               </tr>
             }
@@ -120,68 +99,57 @@
               <tr class="is-link" [style.--d]="i" (click)="openDetails(p)">
                 <td>
                   <div class="person">
-                    <app-avatar [name]="p.name" />
+                    <app-avatar [name]="p.name" [size]="34" />
                     <div class="person__txt">
-                      <strong>{{ p.name }}</strong>
+                      <strong>{{ p.name }} @if (isNew(p)) { <span class="chip chip--amber chip--xs">جديد</span> }</strong>
                       <span>{{ p.id }} · {{ p.email }}</span>
                     </div>
                   </div>
                 </td>
                 @if (scope.isAll()) {
-                  <td><span class="with-icon"><app-country-flag [code]="p.countryId" [size]="22" /> {{ p.countryId | countryName }}</span></td>
+                  <td><span class="with-icon"><app-country-flag [code]="p.countryId" [size]="20" /> {{ p.countryId | countryName }}</span></td>
                 }
                 <td><span class="ltr">{{ p.phone }}</span></td>
-                <td>
-                  <span class="with-icon"><app-icon name="map-pin" [size]="15" class="muted" /> {{ p.city }}</span>
-                </td>
+                <td>{{ p.city }} <span class="muted">· {{ p.district }}</span></td>
                 @if (cfg().extra; as extra) { <td>{{ extra.value(p) }}</td> }
                 <td class="num">{{ p.bookings | num }}</td>
-                <td class="num">{{ p.balance | cmoney: p.countryId }}</td>
                 @if (kind() !== 'customers') {
-                  <td>
-                    <span class="rating"><app-icon name="star" [size]="15" /> {{ p.rating | num: 1 }}</span>
-                  </td>
+                  <td><span class="rating"><app-icon name="star" [size]="14" [filled]="true" /> {{ p.rating ? (p.rating | num: 1) : '—' }}</span></td>
+                }
+                @if (kind() === 'technicians') {
+                  <td><span class="chip {{ subMeta[subState(p)].chip }}">{{ subMeta[subState(p)].label }}</span></td>
                 }
                 <td><span class="chip chip--dot {{ statusMeta[p.status].chip }}">{{ statusMeta[p.status].label }}</span></td>
                 <td class="muted">{{ p.joinedAt | arDate }}</td>
                 <td (click)="$event.stopPropagation()">
                   <div class="actions">
-                    <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل"
-                      [attr.aria-label]="'تفاصيل ' + p.name" (click)="openDetails(p)">
-                      <app-icon name="eye" [size]="17" />
+                    <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل" aria-label="التفاصيل" (click)="openDetails(p)">
+                      <app-icon name="eye" [size]="16" />
                     </button>
-                    <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل"
-                      [attr.aria-label]="'تعديل ' + p.name" (click)="openEdit(p, $event)">
-                      <app-icon name="edit" [size]="17" />
+                    <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(p)">
+                      <app-icon name="edit" [size]="16" />
                     </button>
-                    <button type="button" class="icon-btn icon-btn--amber"
-                      [attr.data-tip]="p.status === 'blocked' ? 'إلغاء الحظر' : 'حظر'"
-                      [attr.aria-label]="(p.status === 'blocked' ? 'إلغاء حظر ' : 'حظر ') + p.name"
-                      (click)="toggleBlock(p, $event)">
-                      <app-icon [name]="p.status === 'blocked' ? 'unlock' : 'ban'" [size]="17" />
+                    <button type="button" class="icon-btn" [class.icon-btn--amber]="p.status === 'active'" [class.icon-btn--green]="p.status !== 'active'"
+                      [attr.data-tip]="p.status === 'active' ? 'إيقاف' : 'تفعيل'" [attr.aria-label]="p.status === 'active' ? 'إيقاف' : 'تفعيل'"
+                      (click)="toggleActive(p)">
+                      <app-icon [name]="p.status === 'active' ? 'ban' : 'check-circle'" [size]="16" />
                     </button>
-                    <button type="button" class="icon-btn icon-btn--red" data-tip="حذف"
-                      [attr.aria-label]="'حذف ' + p.name" (click)="remove(p, $event)">
-                      <app-icon name="trash" [size]="17" />
+                    <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(p)">
+                      <app-icon name="trash" [size]="16" />
                     </button>
                   </div>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td [attr.colspan]="12">
+                <td colspan="12">
                   <div class="empty">
-                    <span class="empty__icon"><app-icon name="search" [size]="28" /></span>
-                    <p class="empty__title">لا توجد نتائج مطابقة</p>
+                    <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+                    <p class="empty__title">لا توجد نتائج</p>
                     <p class="empty__text">
-                      @if (hasFilters()) { جرّب تعديل كلمات البحث أو إزالة الفلاتر لعرض المزيد من النتائج. }
-                      @else { لم تتم إضافة أي {{ cfg().singular }} بعد. ابدأ بإضافة أول حساب. }
+                      @if (hasFilters()) { جرّب تعديل البحث أو إزالة الفلاتر. } @else { لم يسجّل أي {{ cfg().singular }} من التطبيق بعد. }
                     </p>
-                    @if (hasFilters()) {
-                      <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button>
-                    } @else {
-                      <button type="button" class="btn btn-pr btn-sm" (click)="openCreate()">إضافة {{ cfg().singular }}</button>
-                    }
+                    @if (hasFilters()) { <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button> }
                   </div>
                 </td>
               </tr>
@@ -193,9 +161,8 @@
 
     @if (!loading() && filtered().length) {
       <div class="table-foot">
-        <app-pagination [pageIndex]="page()" [pageSize]="pageSize()" [count]="filtered().length"
-          [totalPages]="totalPages()" [pageSizeOptions]="[10, 20, 50]" (pageChange)="page.set($event)"
-          (pageSizeChange)="setPageSize($event)" />
+        <app-pagination [pageIndex]="page()" [pageSize]="pageSize()" [count]="filtered().length" [totalPages]="totalPages()"
+          [pageSizeOptions]="[10, 20, 50]" (pageChange)="page.set($event)" (pageSizeChange)="setFilter(pageSize, $event)" />
       </div>
     }
   </div>

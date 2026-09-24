@@ -5,8 +5,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 72px;
-  padding: 0 24px;
+  height: 60px;
+  padding: 0 20px;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: saturate(180%) blur(14px);
   border-bottom: 1px solid var(--brd);
@@ -40,7 +40,7 @@
   flex: 0 1 460px;
   min-width: 0;
 
-  .search input { height: 44px; padding-inline-end: 64px; }
+  .search input { height: 38px; padding-inline-end: 64px; }
   @media (max-width: 575px) { .t-kbd { display: none; } .search input { padding-inline-end: 12px; } }
 }
 .t-kbd {
@@ -127,7 +127,7 @@
 
 .t-menu-wrap { position: relative; }
 
-.icon-btn { width: 42px; height: 42px; border-radius: 12px; }
+.icon-btn { width: 38px; height: 38px; border-radius: 11px; }
 .t-bell.is-on { background: var(--pr-l); color: var(--pr); }
 .t-badge {
   position: absolute;
@@ -227,7 +227,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 42px;
+  height: 38px;
   padding: 0 10px;
   border: 1px solid var(--brd);
   border-radius: 12px;

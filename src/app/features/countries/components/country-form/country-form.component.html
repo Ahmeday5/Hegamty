@@ -1,73 +1,26 @@
-<app-modal [open]="open()" [title]="title()" size="lg" (closed)="closed.emit()">
+<app-modal [open]="open()" [title]="title()" size="md" (closed)="closed.emit()">
   <form id="country-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <!-- Preview -->
-    <div class="span-2 cf-preview">
-      <app-country-flag [code]="(form.controls.id.value || '??').toUpperCase()" [size]="46" />
-      <div>
-        <strong>{{ form.controls.name.value || 'اسم الدولة' }}</strong>
-        <span dir="ltr">{{ form.controls.phoneCode.value }} · {{ form.controls.currencyCode.value.toUpperCase() || 'CUR' }} · VAT {{ form.controls.vatPct.value || 0 }}%</span>
-      </div>
-    </div>
-
-    <div>
+    <div class="span-2">
       <label class="form-label" for="cf-name">اسم الدولة</label>
       <input id="cf-name" class="form-control" formControlName="name" placeholder="مثال: سلطنة عُمان" [class.is-invalid]="invalid('name')" />
       <app-form-error [control]="form.controls.name" label="اسم الدولة" />
     </div>
 
     <div>
-      <label class="form-label" for="cf-id">رمز الدولة (ISO)</label>
-      <input id="cf-id" class="form-control cf-code" formControlName="id" maxlength="2" dir="ltr" placeholder="OM"
-        [class.is-invalid]="invalid('id')" />
-      <app-form-error [control]="form.controls.id" label="رمز الدولة" />
-      @if (country()) { <small class="cf-hint">لا يمكن تغيير الرمز بعد الإنشاء لأنه مرتبط بجميع البيانات</small> }
+      <label class="form-label" for="cf-cur">العملة</label>
+      <input id="cf-cur" class="form-control" formControlName="currency" placeholder="مثال: ريال" [class.is-invalid]="invalid('currency')" />
+      <app-form-error [control]="form.controls.currency" label="العملة" />
     </div>
 
     <div>
-      <label class="form-label" for="cf-cur">رمز العملة</label>
-      <input id="cf-cur" class="form-control cf-code" formControlName="currencyCode" maxlength="3" dir="ltr" placeholder="OMR"
-        [class.is-invalid]="invalid('currencyCode')" />
-      <app-form-error [control]="form.controls.currencyCode" label="رمز العملة" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-sym">اختصار العملة</label>
-      <input id="cf-sym" class="form-control" formControlName="currencySymbol" maxlength="6" placeholder="ر.ع"
-        [class.is-invalid]="invalid('currencySymbol')" />
-      <app-form-error [control]="form.controls.currencySymbol" label="اختصار العملة" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-phone">مفتاح الاتصال</label>
-      <input id="cf-phone" class="form-control" formControlName="phoneCode" dir="ltr" placeholder="+968"
-        [class.is-invalid]="invalid('phoneCode')" />
-      <app-form-error [control]="form.controls.phoneCode" label="مفتاح الاتصال" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-len">عدد أرقام الجوال</label>
-      <input id="cf-len" type="number" min="6" max="15" class="form-control" formControlName="phoneLength"
-        [class.is-invalid]="invalid('phoneLength')" />
-      <app-form-error [control]="form.controls.phoneLength" label="عدد الأرقام" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-vat">ضريبة القيمة المضافة (%)</label>
-      <input id="cf-vat" type="number" min="0" max="50" step="0.5" class="form-control" formControlName="vatPct"
-        [class.is-invalid]="invalid('vatPct')" />
-      <app-form-error [control]="form.controls.vatPct" label="الضريبة" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-rate">سعر الصرف مقابل {{ base.symbol }}</label>
-      <input id="cf-rate" type="number" min="0" step="0.001" class="form-control" formControlName="rateToBase"
-        [class.is-invalid]="invalid('rateToBase')" />
-      <small class="cf-hint">1 {{ form.controls.currencySymbol.value || 'وحدة' }} = {{ form.controls.rateToBase.value || 0 }} {{ base.symbol }} — للتقارير المجمّعة فقط</small>
-      <app-form-error [control]="form.controls.rateToBase" label="سعر الصرف" />
+      <label class="form-label" for="cf-dial">كود الدولة</label>
+      <input id="cf-dial" class="form-control" formControlName="dialCode" dir="ltr" placeholder="+968"
+        [class.is-invalid]="invalid('dialCode')" />
+      <app-form-error [control]="form.controls.dialCode" label="كود الدولة" />
     </div>
 
     <div class="span-2">
-      <label class="form-label" for="cf-city">المدن المتاحة</label>
+      <label class="form-label" for="cf-city">المدن</label>
       <div class="cf-tags" [class.is-invalid]="citiesTouched() && !cities().length">
         @for (c of cities(); track c) {
           <span class="cf-tag">{{ c }} <button type="button" [attr.aria-label]="'حذف ' + c" (click)="removeCity(c)"><app-icon name="x" [size]="12" [stroke]="2.4" /></button></span>
@@ -76,29 +29,10 @@
           (keydown.enter)="addCity($event)" (blur)="addCity()" placeholder="اكتب اسم المدينة واضغط Enter" />
       </div>
       @if (citiesTouched() && !cities().length) {
-        <div class="invalid-feedback d-block cf-err">أضف مدينة واحدة على الأقل</div>
+        <div class="cf-err">أضف مدينة واحدة على الأقل</div>
       } @else {
         <small class="cf-hint">يمكنك لصق عدة مدن مفصولة بفاصلة</small>
       }
-    </div>
-
-    <div>
-      <span class="form-label">لون الدولة</span>
-      <div class="cf-tones">
-        @for (t of tones; track t) {
-          <button type="button" class="cf-tone tone-{{ t }}" [class.is-on]="form.controls.tone.value === t" [attr.aria-label]="t"
-            (click)="setTone(t)"></button>
-        }
-      </div>
-    </div>
-
-    <div class="cf-toggle">
-      <div>
-        <strong>الدولة مفعّلة</strong>
-        <span>تظهر للعملاء في اختيار الدولة داخل التطبيق</span>
-      </div>
-      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value"
-        [attr.aria-checked]="form.controls.active.value" aria-label="تفعيل الدولة" (click)="toggleActive()"></button>
     </div>
   </form>
 

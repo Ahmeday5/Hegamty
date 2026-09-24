@@ -1,39 +1,33 @@
-import { IconName } from '../../shared/components/icon/icon.component';
-import { Tone } from '../../shared/components/kpi-card/kpi-card.component';
+/**
+ * Service catalog. Categories (حجامة، مساج…) are shared across countries;
+ * each service lives inside one category and is sold in one country at a
+ * local price. Every session is a home visit, so there's no location option.
+ */
 
-export type ServiceCategory = 'cupping' | 'therapy' | 'consultation';
-
-export interface ClinicService {
+export interface ServiceCategory {
   id: string;
-  /** The market this service is sold in — the app lists it only there. */
-  countryId: string;
   name: string;
   description: string;
-  category: ServiceCategory;
-  /** Price at the clinic, in the country's currency. */
-  price: number;
-  durationMin: number;
-  /** Offered as a home visit (extra fee on top of `price`). */
-  homeVisit: boolean;
-  homeFee: number;
   active: boolean;
-  bookingsCount: number;
-  rating: number;
-  tone: Tone;
-  icon: IconName;
   createdAt: string;
 }
 
-export type ServiceDraft = Pick<
-  ClinicService,
-  'countryId' | 'name' | 'description' | 'category' | 'price' | 'durationMin' | 'homeVisit' | 'homeFee' | 'active' | 'tone' | 'icon'
->;
+export type CategoryDraft = Pick<ServiceCategory, 'name' | 'description' | 'active'>;
 
-export const CATEGORY_META: Record<ServiceCategory, { label: string; chip: string }> = {
-  cupping: { label: 'حجامة', chip: 'chip--green' },
-  therapy: { label: 'علاج طبيعي', chip: 'chip--purple' },
-  consultation: { label: 'استشارات', chip: 'chip--blue' },
-};
+export interface ClinicService {
+  id: string;
+  countryId: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  /** Session price in the country's currency (paid to the technician directly). */
+  price: number;
+  /** `null` = open-ended service without a fixed duration. */
+  durationMin: number | null;
+  active: boolean;
+  bookingsCount: number;
+  rating: number;
+  createdAt: string;
+}
 
-export const SERVICE_TONES: Tone[] = ['green', 'blue', 'purple', 'teal', 'amber', 'pink'];
-export const SERVICE_ICONS: IconName[] = ['droplet', 'sparkles', 'activity', 'stethoscope', 'award', 'message'];
+export type ServiceDraft = Pick<ClinicService, 'countryId' | 'categoryId' | 'name' | 'description' | 'price' | 'durationMin' | 'active'>;

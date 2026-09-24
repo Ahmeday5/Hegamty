@@ -6,8 +6,8 @@ import { Person } from './people.models';
 import { PeopleStore } from './people.store';
 
 /**
- * Confirm-then-mutate flows (block / unblock / delete) shared by the list
- * and detail pages so both always show the same wording and toasts.
+ * Activation / deletion flows shared by the list and detail pages.
+ * "Blocking" an account is simply deactivating it.
  */
 @Injectable({ providedIn: 'root' })
 export class PeopleActionsService {
@@ -15,28 +15,21 @@ export class PeopleActionsService {
   private readonly dialog = inject(DialogService);
   private readonly toast = inject(ToastService);
 
-  async toggleBlock(p: Person): Promise<void> {
-    const singular = PEOPLE_CONFIG[p.kind].singular;
-    const blocking = p.status !== 'blocked';
-    const ok = await this.dialog.confirm(
-      blocking
-        ? {
-            title: `حظر ال${singular}`,
-            message: `سيتم إيقاف حساب "${p.name}" ومنعه من استخدام التطبيق حتى يتم إلغاء الحظر. هل تريد المتابعة؟`,
-            confirmText: 'نعم، حظر',
-            type: 'warning',
-          }
-        : {
-            title: 'إلغاء الحظر',
-            message: `سيتم إعادة تفعيل حساب "${p.name}". هل تريد المتابعة؟`,
-            confirmText: 'إلغاء الحظر',
-            type: 'info',
-          },
-    );
+  async toggleActive(p: Person): Promise<void> {
+    if (p.status === 'inactive') {
+      this.store.setStatus(p.kind, p.id, 'active');
+      this.toast.success(`تم تفعيل حساب ${p.name}`);
+      return;
+    }
+    const ok = await this.dialog.confirm({
+      title: 'إيقاف الحساب',
+      message: `سيتم إيقاف حساب "${p.name}" ولن يتمكن من استخدام التطبيق حتى تعيد تفعيله. هل تريد المتابعة؟`,
+      confirmText: 'إيقاف الحساب',
+      type: 'warning',
+    });
     if (!ok) return;
-    this.store.setStatus(p.kind, p.id, blocking ? 'blocked' : 'active');
-    if (blocking) this.toast.warning(`تم حظر ${p.name}`);
-    else this.toast.success(`تم إلغاء حظر ${p.name} وإعادة تفعيل الحساب`);
+    this.store.setStatus(p.kind, p.id, 'inactive');
+    this.toast.warning(`تم إيقاف حساب ${p.name}`);
   }
 
   /** Resolves `true` when the record was deleted. */

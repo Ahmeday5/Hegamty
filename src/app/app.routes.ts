@@ -54,6 +54,18 @@ export const routes: Routes = [
           import('./features/services/pages/services-page/services-page.component').then((m) => m.ServicesPageComponent),
       },
       {
+        path: 'service-categories',
+        title: 'تصنيفات الخدمات · Hegamty',
+        loadComponent: () =>
+          import('./features/services/pages/categories-page/categories-page.component').then((m) => m.CategoriesPageComponent),
+      },
+      {
+        path: 'packages',
+        title: 'الباقات · Hegamty',
+        loadComponent: () =>
+          import('./features/packages/pages/packages-page/packages-page.component').then((m) => m.PackagesPageComponent),
+      },
+      {
         path: 'countries',
         title: 'الدول · Hegamty',
         loadComponent: () =>

@@ -11,11 +11,13 @@ import { CountUpDirective } from '../../shared/directives/count-up.directive';
 import { FORMAT_PIPES } from '../../shared/pipes/format.pipes';
 import { APP_LOCALE, formatLongDate } from '../../shared/utils/format.util';
 import { PeopleStore } from '../people/people.store';
-import { BOOKING_META } from '../people/people.config';
+import { BOOKING_META, isNewAccount } from '../people/people.config';
 import { BookingStatus } from '../people/people.models';
 import { BookingsStore } from '../bookings/bookings.store';
 import { BookingRecord } from '../bookings/bookings.models';
 import { ServicesStore } from '../services/services.store';
+import { PackagesStore } from '../packages/packages.store';
+import { Subscription } from '../packages/packages.models';
 import { CountriesStore } from '../countries/countries.store';
 import { CountryScopeService } from '../countries/country-scope.service';
 import { CountryFlagComponent } from '../countries/country-flag.component';
@@ -29,12 +31,16 @@ const startOfDay = (t: number) => {
   return d.getTime();
 };
 const pct = (cur: number, prev: number) => (prev ? ((cur - prev) / prev) * 100 : cur ? 100 : 0);
+const inRange = <T>(list: readonly T[], at: (x: T) => string, from: number, to: number) =>
+  list.filter((x) => {
+    const t = +new Date(at(x));
+    return t >= from && t < to;
+  });
 
 /**
- * Operations overview. Every widget is derived from the stores through the
- * country scope, so switching country in the topbar re-computes the whole
- * page; money is shown in that country's currency, or converted to the
- * base currency across all countries.
+ * Operations overview, fully derived from the stores through the country
+ * scope. The platform's revenue is technician package subscriptions; booking
+ * prices are paid to technicians directly, so bookings are shown as volume.
  */
 @Component({
   selector: 'app-dashboard',
@@ -61,6 +67,7 @@ export class DashboardComponent {
   private readonly people = inject(PeopleStore);
   private readonly bookingsStore = inject(BookingsStore);
   private readonly servicesStore = inject(ServicesStore);
+  private readonly packages = inject(PackagesStore);
   private readonly countries = inject(CountriesStore);
   protected readonly scope = inject(CountryScopeService);
 
@@ -71,35 +78,26 @@ export class DashboardComponent {
   protected readonly period = signal<Period>('month');
   protected readonly bookingMeta = BOOKING_META;
 
-  // ── Scoped sources ──
   private readonly bookings = computed(() => this.scope.filter(this.bookingsStore.all()));
   private readonly customers = computed(() => this.scope.filter(this.people.list('customers')()));
   private readonly technicians = computed(() => this.scope.filter(this.people.list('technicians')()));
   private readonly drivers = computed(() => this.scope.filter(this.people.list('drivers')()));
-  private readonly paid = computed(() => this.bookings().filter((b) => b.paymentStatus === 'paid'));
+  private readonly subs = computed(() => this.scope.filter(this.packages.subscriptions()));
 
-  private revenueOf(list: readonly BookingRecord[]): number {
-    return this.scope.sum(list, (b) => b.total);
-  }
-  private inRange(list: readonly BookingRecord[], from: number, to: number): BookingRecord[] {
-    return list.filter((b) => {
-      const t = +new Date(b.date);
-      return t >= from && t < to;
-    });
+  private subscribed(techId: string): boolean {
+    const s = this.packages.stateOf(this.packages.latestFor(techId));
+    return s === 'active' || s === 'expiring';
   }
 
   // ── Hero ──
   protected readonly hero = computed(() => {
-    const now = Date.now();
-    const today = startOfDay(now);
-    const todays = this.inRange(this.bookings(), today, today + DAY);
-    const pendingJoins = [...this.technicians(), ...this.drivers()].filter((p) => p.status === 'pending').length;
+    const today = startOfDay(Date.now());
+    const pending = [...this.customers(), ...this.technicians(), ...this.drivers()].filter((p) => p.status === 'inactive' && isNewAccount(p));
     return {
-      todayCount: todays.length,
-      todayRevenue: this.revenueOf(todays.filter((b) => b.paymentStatus === 'paid')),
-      upcoming: this.bookings().filter((b) => b.status === 'scheduled').length,
-      pendingJoins,
-      availableTechs: this.technicians().filter((t) => t.status === 'active').length,
+      todayCount: inRange(this.bookings(), (b) => b.date, today, today + DAY).length,
+      liveNow: this.bookings().filter((b) => b.status === 'in_progress').length,
+      pendingJoins: pending.length,
+      subscribedTechs: this.technicians().filter((t) => t.status === 'active' && this.subscribed(t.id)).length,
       techCount: this.technicians().length,
     };
   });
@@ -109,53 +107,41 @@ export class DashboardComponent {
     const now = Date.now();
     const cur = [now - 30 * DAY, now] as const;
     const prev = [now - 60 * DAY, now - 30 * DAY] as const;
-    const all = this.bookings();
-    const paid = this.paid();
-
     const weeks = Array.from({ length: 10 }, (_, i) => [now - (10 - i) * 7 * DAY, now - (9 - i) * 7 * DAY] as const);
+    const all = this.bookings();
+    const subs = this.subs();
+    const subsIn = (from: number, to: number) => inRange(subs, (s: Subscription) => s.startedAt, from, to);
+    const subValue = (list: Subscription[]) => (this.scope.isAll() ? list.length : list.reduce((a, s) => a + s.price, 0));
+    const bk = (from: number, to: number) => inRange(all, (b: BookingRecord) => b.date, from, to);
     const rated = (list: BookingRecord[]) => {
       const r = list.filter((b) => b.rating);
       return r.length ? r.reduce((a, b) => a + (b.rating ?? 0), 0) / r.length : 0;
     };
-    const joinedIn = (from: number, to: number) =>
-      this.customers().filter((c) => {
-        const t = +new Date(c.joinedAt);
-        return t >= from && t < to;
-      }).length;
+    const joinedIn = (from: number, to: number) => inRange(this.customers(), (c) => c.joinedAt, from, to).length;
 
-    const revCur = this.revenueOf(this.inRange(paid, ...cur));
-    const revPrev = this.revenueOf(this.inRange(paid, ...prev));
-    const bkCur = this.inRange(all, ...cur).length;
-    const bkPrev = this.inRange(all, ...prev).length;
-    const rtCur = rated(this.inRange(all, now - 90 * DAY, now));
-    const rtPrev = rated(this.inRange(all, now - 180 * DAY, now - 90 * DAY));
-
+    const subCur = subValue(subsIn(...cur));
+    const bkCur = bk(...cur).length;
+    const rtCur = rated(bk(now - 90 * DAY, now));
     return {
-      revenue: { value: revCur, trend: pct(revCur, revPrev), spark: weeks.map((w) => this.revenueOf(this.inRange(paid, ...w))) },
-      bookings: { value: bkCur, trend: pct(bkCur, bkPrev), spark: weeks.map((w) => this.inRange(all, ...w).length) },
-      customers: {
-        value: this.customers().length,
-        trend: pct(joinedIn(...cur), joinedIn(...prev)),
-        spark: weeks.map((w) => joinedIn(...w)),
-      },
-      rating: { value: rtCur, trend: pct(rtCur, rtPrev), spark: weeks.map((w) => rated(this.inRange(all, ...w)) || rtCur) },
+      packages: { value: subCur, trend: pct(subCur, subValue(subsIn(...prev))), spark: weeks.map((w) => subValue(subsIn(...w))) },
+      bookings: { value: bkCur, trend: pct(bkCur, bk(...prev).length), spark: weeks.map((w) => bk(...w).length) },
+      customers: { value: this.customers().length, trend: pct(joinedIn(...cur), joinedIn(...prev)), spark: weeks.map((w) => joinedIn(...w)) },
+      rating: { value: rtCur, trend: pct(rtCur, rated(bk(now - 180 * DAY, now - 90 * DAY))), spark: weeks.map((w) => rated(bk(...w)) || rtCur) },
     };
   });
 
-  // ── Revenue chart ──
-  protected readonly revenue = computed(() => {
-    const paid = this.paid();
+  // ── Bookings volume chart ──
+  protected readonly volume = computed(() => {
+    const all = this.bookings();
     const now = Date.now();
     const period = this.period();
+    const count = (from: number, to: number) => inRange(all, (b) => b.date, from, to).length;
 
     if (period === 'year') {
       const fmt = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short' });
       const base = new Date();
       const months = Array.from({ length: 12 }, (_, i) => new Date(base.getFullYear(), base.getMonth() - 11 + i, 1));
-      const values = months.map((m) => {
-        const next = new Date(m.getFullYear(), m.getMonth() + 1, 1);
-        return Math.round(this.revenueOf(this.inRange(paid, m.getTime(), next.getTime())));
-      });
+      const values = months.map((m) => count(m.getTime(), new Date(m.getFullYear(), m.getMonth() + 1, 1).getTime()));
       const half = (a: number, b: number) => values.slice(a, b).reduce((x, y) => x + y, 0);
       return {
         labels: months.map((m) => fmt.format(m)),
@@ -169,10 +155,10 @@ export class DashboardComponent {
     const days = period === 'week' ? 7 : 30;
     const today = startOfDay(now);
     const dayFmt = new Intl.DateTimeFormat(APP_LOCALE, period === 'week' ? { weekday: 'short' } : { day: 'numeric' });
-    const bucket = (offsetDays: number) =>
+    const bucket = (offset: number) =>
       Array.from({ length: days }, (_, i) => {
-        const from = today - (days - 1 - i + offsetDays) * DAY;
-        return Math.round(this.revenueOf(this.inRange(paid, from, from + DAY)));
+        const from = today - (days - 1 - i + offset) * DAY;
+        return count(from, from + DAY);
       });
     const current = bucket(0);
     const previous = bucket(days);
@@ -189,9 +175,8 @@ export class DashboardComponent {
     };
   });
 
-  // ── Status donut (last 30 days) ──
   protected readonly bookingStatus = computed<DonutSegment[]>(() => {
-    const recent = this.inRange(this.bookings(), Date.now() - 30 * DAY, Date.now() + 30 * DAY);
+    const recent = inRange(this.bookings(), (b) => b.date, Date.now() - 30 * DAY, Date.now() + DAY);
     return (Object.keys(BOOKING_META) as BookingStatus[]).map((s) => ({
       label: BOOKING_META[s].label,
       value: recent.filter((b) => b.status === s).length,
@@ -199,7 +184,6 @@ export class DashboardComponent {
     }));
   });
 
-  // ── Cities ──
   protected readonly cities = computed(() => {
     const map = new Map<string, number>();
     for (const b of this.bookings()) map.set(b.city, (map.get(b.city) ?? 0) + 1);
@@ -207,7 +191,6 @@ export class DashboardComponent {
     return { labels: top.map(([k]) => k), values: top.map(([, v]) => v) };
   });
 
-  // ── Top technicians (by completed sessions in scope, then rating) ──
   protected readonly topTechs = computed(() => {
     const done = new Map<string, number>();
     for (const b of this.bookings()) if (b.status === 'completed') done.set(b.technicianId, (done.get(b.technicianId) ?? 0) + 1);
@@ -220,7 +203,6 @@ export class DashboardComponent {
     return list.map((t) => ({ ...t, pct: Math.round((t.sessions / max) * 100) }));
   });
 
-  // ── Services share ──
   protected readonly services = computed(() => {
     const map = new Map<string, number>();
     for (const b of this.bookings()) map.set(b.serviceName, (map.get(b.serviceName) ?? 0) + 1);
@@ -234,32 +216,27 @@ export class DashboardComponent {
 
   protected readonly mini = computed(() => ({
     activeDrivers: this.drivers().filter((d) => d.status === 'active').length,
-    homeVisits: this.inRange(this.bookings(), Date.now() - 30 * DAY, Date.now()).filter((b) => b.location === 'home').length,
+    withDriver: inRange(this.bookings(), (b) => b.date, Date.now() - 30 * DAY, Date.now()).filter((b) => b.driverId).length,
   }));
 
-  // ── Per-country breakdown (all-countries view only) ──
   protected readonly byCountry = computed(() => {
     const now = Date.now();
-    const recent = this.inRange(this.bookingsStore.all(), now - 30 * DAY, now);
+    const recent = inRange(this.bookingsStore.all(), (b) => b.date, now - 30 * DAY, now);
     const rows = this.countries.all().map((c) => {
-      const cb = recent.filter((b) => b.countryId === c.id);
-      const revenueBase = cb.filter((b) => b.paymentStatus === 'paid').reduce((a, b) => a + b.total * c.rateToBase, 0);
+      const techs = this.people.list('technicians')().filter((p) => p.countryId === c.id);
       return {
         country: c,
-        bookings: cb.length,
-        revenueBase,
+        bookings: recent.filter((b) => b.countryId === c.id).length,
         customers: this.people.list('customers')().filter((p) => p.countryId === c.id).length,
-        technicians: this.people.list('technicians')().filter((p) => p.countryId === c.id).length,
+        technicians: techs.length,
+        subscribed: techs.filter((t) => this.subscribed(t.id)).length,
         services: this.servicesStore.all().filter((s) => s.countryId === c.id && s.active).length,
       };
     });
-    const max = Math.max(1, ...rows.map((r) => r.revenueBase));
-    return rows
-      .sort((a, b) => b.revenueBase - a.revenueBase || +b.country.active - +a.country.active)
-      .map((r) => ({ ...r, share: Math.round((r.revenueBase / max) * 100) }));
+    const max = Math.max(1, ...rows.map((r) => r.bookings));
+    return rows.sort((a, b) => b.bookings - a.bookings).map((r) => ({ ...r, share: Math.round((r.bookings / max) * 100) }));
   });
 
-  // ── Recent bookings: closest to now (live, next up, just finished) ──
   protected readonly recent = computed(() => {
     const now = Date.now();
     return [...this.bookings()]

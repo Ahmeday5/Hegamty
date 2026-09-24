@@ -1,0 +1,128 @@
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">الباقات</span>
+      </nav>
+      <h1 class="page-head__title">باقات الفنيين</h1>
+      <p class="page-head__sub">يشترك الفني في باقة من التطبيق ليتمكن من استقبال طلبات العملاء طوال مدة الاشتراك</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="16" [stroke]="2.2" /> باقة جديدة</button>
+    </div>
+  </header>
+
+  <div class="grid grid--4">
+    <app-kpi-card class="fx" style="--d: 1" label="اشتراكات سارية" [value]="kpis().active" icon="award" tone="green" hint="فنيون يستقبلون الطلبات" />
+    <app-kpi-card class="fx" style="--d: 2" label="تنتهي خلال 7 أيام" [value]="kpis().expiring" icon="clock" tone="amber" hint="فرصة للتذكير بالتجديد" />
+    @if (scope.isAll()) {
+      <app-kpi-card class="fx" style="--d: 3" label="اشتراكات جديدة (30 يومًا)" [value]="kpis().newSubs" icon="trending-up" tone="blue" />
+    } @else {
+      <app-kpi-card class="fx" style="--d: 3" label="إيرادات الباقات (30 يومًا)" [value]="kpis().revenue" [suffix]="scope.currency()" icon="wallet" tone="blue"
+        [hint]="kpis().newSubs + ' اشتراك جديد'" />
+    }
+    <app-kpi-card class="fx" style="--d: 4" label="فنيون نشطون بدون باقة" [value]="kpis().unsubscribed" icon="user" tone="red" hint="لا يستقبلون طلبات حاليًا" />
+  </div>
+
+  <!-- ── Packages ── -->
+  <div class="pkgs">
+    @for (r of packages(); track r.pkg.id; let i = $index) {
+      <article class="pkg" [class.is-featured]="r.pkg.featured" [class.is-off]="!r.pkg.active" [style.--d]="i">
+        @if (r.pkg.featured) { <span class="pkg__badge">الأكثر اختيارًا</span> }
+        <header class="pkg__head">
+          <div>
+            <span class="pkg__period">{{ periodMeta[r.pkg.period].label }}</span>
+            <h3>{{ r.pkg.name }}</h3>
+          </div>
+          <button type="button" class="switch" role="switch" [class.is-on]="r.pkg.active" [attr.aria-checked]="r.pkg.active"
+            [attr.aria-label]="(r.pkg.active ? 'إيقاف ' : 'تفعيل ') + r.pkg.name" (click)="toggleActive(r.pkg)"></button>
+        </header>
+        <p class="pkg__price"><strong>{{ r.pkg.price | num }}</strong> <span>{{ r.pkg.countryId | ccy }} / {{ periodMeta[r.pkg.period].per }}</span></p>
+        @if (r.pkg.description) { <p class="pkg__desc">{{ r.pkg.description }}</p> }
+        <ul class="pkg__features">
+          @for (f of r.pkg.features; track f) { <li><app-icon name="check" [size]="13" [stroke]="2.6" /> {{ f }}</li> }
+        </ul>
+        <footer class="pkg__foot">
+          <span class="pkg__meta">
+            @if (scope.isAll()) { <app-country-flag [code]="r.pkg.countryId" [size]="16" /> }
+            <app-icon name="users" [size]="13" /> {{ r.subscribers }} مشترك
+          </span>
+          <div class="actions">
+            <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(r.pkg)"><app-icon name="edit" [size]="16" /></button>
+            <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(r.pkg)"><app-icon name="trash" [size]="16" /></button>
+          </div>
+        </footer>
+      </article>
+    }
+    <button type="button" class="pkg-add" [style.--d]="packages().length" (click)="openCreate()">
+      <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
+      <strong>باقة جديدة</strong>
+    </button>
+  </div>
+
+  <!-- ── Subscriptions ── -->
+  <div class="panel fx" style="--d: 6">
+    <div class="panel__head">
+      <div>
+        <h2 class="panel__title">اشتراكات الفنيين</h2>
+        <p class="panel__sub">آخر اشتراك لكل فني مرتبًا حسب الأقرب انتهاءً</p>
+      </div>
+      <label class="search sub-search">
+        <app-icon name="search" [size]="16" />
+        <input type="search" [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="ابحث باسم الفني أو الباقة…" aria-label="بحث" />
+      </label>
+    </div>
+    <div class="status-bar">
+      <div class="seg">
+        @for (t of filterTabs(); track t.id) {
+          <button type="button" class="seg__btn" [class.is-on]="subFilter() === t.id" (click)="setFilter(t.id)">{{ t.label }} <span class="seg__count">{{ t.count }}</span></button>
+        }
+      </div>
+    </div>
+    <div class="dtable-wrap">
+      <table class="dtable">
+        <thead>
+          <tr><th>الفني</th>@if (scope.isAll()) { <th>الدولة</th> }<th>الباقة</th><th>المبلغ</th><th>البداية</th><th>النهاية</th><th>المتبقي</th><th>الحالة</th></tr>
+        </thead>
+        <tbody>
+          @for (r of pageRows(); track r.sub.id; let i = $index) {
+            <tr class="is-link" [style.--d]="i" (click)="openTech(r.tech.id)">
+              <td>
+                <div class="who">
+                  <app-avatar [name]="r.tech.name" [size]="32" />
+                  <div class="who__txt"><strong>{{ r.tech.name }}</strong><span><bdi>{{ r.tech.phone }}</bdi></span></div>
+                </div>
+              </td>
+              @if (scope.isAll()) { <td><app-country-flag [code]="r.sub.countryId" [size]="20" /></td> }
+              <td>{{ r.pkg?.name ?? '—' }}</td>
+              <td class="num">{{ r.sub.price | cmoney: r.sub.countryId }}</td>
+              <td class="muted">{{ r.sub.startedAt | arDate }}</td>
+              <td class="muted">{{ r.sub.endsAt | arDate }}</td>
+              <td>
+                @if (r.left > 0) {
+                  <div class="left">
+                    <span>{{ r.left }} يوم</span>
+                    <div class="bar" [class.bar--brand]="r.state === 'active'"><span class="bar__fill" [style.width.%]="barPct(r.left, r.pkg?.period)"
+                      [style.background]="r.state === 'expiring' ? '#f59e0b' : null"></span></div>
+                  </div>
+                } @else { <span class="muted">انتهت {{ r.sub.endsAt | relTime }}</span> }
+              </td>
+              <td><span class="chip chip--dot {{ subMeta[r.state].chip }}">{{ subMeta[r.state].label }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8"><div class="empty"><span class="empty__icon"><app-icon name="award" [size]="24" /></span><p class="empty__title">لا توجد اشتراكات</p></div></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (filtered().length) {
+      <div class="table-foot">
+        <app-pagination [pageIndex]="page()" [pageSize]="pageSize" [count]="filtered().length" [totalPages]="totalPages()" [showPageSize]="false" (pageChange)="page.set($event)" />
+      </div>
+    }
+  </div>
+
+  <app-package-form [open]="formOpen()" [pkg]="editing()" (closed)="formOpen.set(false)" />
+</section>

@@ -3,20 +3,16 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormErrorComponent } from '../../../../shared/components/form-error/form-error.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
-import { Tone } from '../../../../shared/components/kpi-card/kpi-card.component';
 import { ToastService } from '../../../../core/services/toast.service';
-import { CountryFlagComponent } from '../../country-flag.component';
-import { BASE_CURRENCY, Country, CountryDraft } from '../../countries.models';
+import { Country, CountryDraft } from '../../countries.models';
 import { CountriesStore } from '../../countries.store';
 
-const TONES: Tone[] = ['green', 'blue', 'teal', 'purple', 'amber', 'pink', 'red'];
-
-/** Add / edit a market: currency, dialing code, VAT, FX rate and its cities. */
+/** Add / edit a market: name, currency, dialing code and its cities. */
 @Component({
   selector: 'app-country-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ModalComponent, FormErrorComponent, IconComponent, CountryFlagComponent],
+  imports: [ReactiveFormsModule, ModalComponent, FormErrorComponent, IconComponent],
   templateUrl: './country-form.component.html',
   styleUrl: './country-form.component.scss',
 })
@@ -29,30 +25,19 @@ export class CountryFormComponent {
   private readonly store = inject(CountriesStore);
   private readonly toast = inject(ToastService);
 
-  protected readonly tones = TONES;
-  protected readonly base = BASE_CURRENCY;
   protected readonly saving = signal(false);
   protected readonly cities = signal<string[]>([]);
   protected readonly cityDraft = signal('');
   protected readonly citiesTouched = signal(false);
   protected readonly title = computed(() => (this.country() ? `تعديل ${this.country()!.name}` : 'إضافة دولة جديدة'));
 
-  private readonly uniqueCode = (c: AbstractControl): ValidationErrors | null => {
-    const v = String(c.value ?? '').toUpperCase();
-    return !this.country() && this.store.byId(v) ? { taken: 'رمز الدولة مستخدم بالفعل' } : null;
-  };
+  private readonly uniqueDial = (c: AbstractControl): ValidationErrors | null =>
+    this.store.dialCodeTaken(String(c.value ?? '').trim(), this.country()?.id) ? { taken: 'كود الدولة مستخدم لدولة أخرى' } : null;
 
   protected readonly form = this.fb.nonNullable.group({
-    id: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{2}$/), this.uniqueCode]],
     name: ['', [Validators.required, Validators.minLength(2)]],
-    currencyCode: ['', [Validators.required, Validators.pattern(/^[A-Za-z]{3}$/)]],
-    currencySymbol: ['', [Validators.required, Validators.maxLength(6)]],
-    phoneCode: ['+', [Validators.required, Validators.pattern(/^\+\d{1,4}$/)]],
-    phoneLength: [10, [Validators.required, Validators.min(6), Validators.max(15)]],
-    vatPct: [15, [Validators.required, Validators.min(0), Validators.max(50)]],
-    rateToBase: [1, [Validators.required, Validators.min(0.0001)]],
-    tone: ['green' as Tone],
-    active: [true],
+    currency: ['', [Validators.required, Validators.maxLength(20)]],
+    dialCode: ['+', [Validators.required, Validators.pattern(/^\+\d{1,4}$/), this.uniqueDial]],
   });
 
   constructor() {
@@ -64,25 +49,12 @@ export class CountryFormComponent {
         this.cityDraft.set('');
         this.citiesTouched.set(false);
         this.cities.set(c ? [...c.cities] : []);
-        this.form.reset({
-          id: c?.id ?? '',
-          name: c?.name ?? '',
-          currencyCode: c?.currencyCode ?? '',
-          currencySymbol: c?.currencySymbol ?? '',
-          phoneCode: c?.phoneCode ?? '+',
-          phoneLength: c?.phoneLength ?? 10,
-          vatPct: c ? Math.round(c.vatRate * 1000) / 10 : 15,
-          rateToBase: c?.rateToBase ?? 1,
-          tone: c?.tone ?? 'green',
-          active: c?.active ?? true,
-        });
-        if (c) this.form.controls.id.disable();
-        else this.form.controls.id.enable();
+        this.form.reset({ name: c?.name ?? '', currency: c?.currency ?? '', dialCode: c?.dialCode ?? '+' });
       });
     }, { allowSignalWrites: true });
   }
 
-  protected invalid(name: 'id' | 'name' | 'currencyCode' | 'currencySymbol' | 'phoneCode' | 'phoneLength' | 'vatPct' | 'rateToBase'): boolean {
+  protected invalid(name: 'name' | 'currency' | 'dialCode'): boolean {
     const c = this.form.controls[name];
     return c.invalid && c.touched;
   }
@@ -100,14 +72,6 @@ export class CountryFormComponent {
     this.citiesTouched.set(true);
   }
 
-  protected setTone(t: Tone): void {
-    this.form.controls.tone.setValue(t);
-  }
-
-  protected toggleActive(): void {
-    this.form.controls.active.setValue(!this.form.controls.active.value);
-  }
-
   protected submit(): void {
     if (this.saving()) return;
     this.addCity();
@@ -118,17 +82,10 @@ export class CountryFormComponent {
     }
     const v = this.form.getRawValue();
     const draft: CountryDraft = {
-      id: v.id.toUpperCase(),
       name: v.name.trim(),
-      currencyCode: v.currencyCode.toUpperCase(),
-      currencySymbol: v.currencySymbol.trim(),
-      phoneCode: v.phoneCode.trim(),
-      phoneLength: Number(v.phoneLength),
-      vatRate: Number(v.vatPct) / 100,
-      rateToBase: Number(v.rateToBase),
+      currency: v.currency.trim(),
+      dialCode: v.dialCode.trim(),
       cities: this.cities(),
-      tone: v.tone,
-      active: v.active,
     };
     this.saving.set(true);
     setTimeout(() => {
@@ -138,10 +95,10 @@ export class CountryFormComponent {
         this.toast.success(`تم تحديث بيانات ${draft.name}`);
       } else {
         this.store.create(draft);
-        this.toast.success(`تمت إضافة ${draft.name} — يمكنك الآن إضافة خدماتها وفنييها وسائقيها`);
+        this.toast.success(`تمت إضافة ${draft.name} — أضف الآن خدماتها وباقات فنييها`);
       }
       this.saving.set(false);
       this.closed.emit();
-    }, 600);
+    }, 500);
   }
 }
