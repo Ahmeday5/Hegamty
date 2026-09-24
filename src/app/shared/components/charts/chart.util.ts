@@ -1,5 +1,26 @@
 /** Shared geometry helpers for the SVG chart components. */
 
+import { DestroyRef, ElementRef, Signal, inject, signal } from '@angular/core';
+
+/**
+ * Live pixel width of the host element (call from a component constructor).
+ * Charts use it as their viewBox width so they render 1:1 at any screen size
+ * — text and strokes keep their size and the height stays fixed, instead of
+ * the whole drawing scaling up (and getting very tall) on wide monitors.
+ */
+export function hostWidth(fallback: number, min = 240): Signal<number> {
+  const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const width = signal(fallback);
+  if (typeof ResizeObserver === 'undefined') return width;
+  const ro = new ResizeObserver(([entry]) => {
+    const w = Math.round(entry.contentRect.width);
+    if (w > 0) width.set(Math.max(min, w));
+  });
+  ro.observe(el);
+  inject(DestroyRef).onDestroy(() => ro.disconnect());
+  return width;
+}
+
 export interface Pt {
   x: number;
   y: number;

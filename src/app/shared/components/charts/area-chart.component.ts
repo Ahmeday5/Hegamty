@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { chartId, niceMax, smoothPath } from './chart.util';
+import { chartId, hostWidth, niceMax, smoothPath } from './chart.util';
 import { formatCompact, formatNumber } from '../../utils/format.util';
 
 export interface ChartSeries {
@@ -22,7 +22,7 @@ const PAD = { t: 16, r: 12, b: 30, l: 48 };
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="ac" (mouseleave)="hover.set(null)">
-      <svg [attr.viewBox]="'0 0 ' + W + ' ' + height()" role="img" [attr.aria-label]="ariaLabel()">
+      <svg [attr.viewBox]="'0 0 ' + w() + ' ' + height()" role="img" [attr.aria-label]="ariaLabel()">
         <defs>
           @for (s of series(); track s.name; let i = $index) {
             <linearGradient [attr.id]="gid + i" x1="0" y1="0" x2="0" y2="1">
@@ -33,7 +33,7 @@ const PAD = { t: 16, r: 12, b: 30, l: 48 };
         </defs>
 
         @for (t of geo().ticks; track t.v) {
-          <line class="ac__grid" [attr.x1]="PAD.l" [attr.x2]="W - PAD.r" [attr.y1]="t.y" [attr.y2]="t.y" />
+          <line class="ac__grid" [attr.x1]="PAD.l" [attr.x2]="w() - PAD.r" [attr.y1]="t.y" [attr.y2]="t.y" />
           <text class="ac__ylabel" [attr.x]="PAD.l - 10" [attr.y]="t.y + 4">{{ t.label }}</text>
         }
         @for (l of geo().xLabels; track $index) {
@@ -64,8 +64,8 @@ const PAD = { t: 16, r: 12, b: 30, l: 48 };
       </svg>
 
       @if (hover() !== null) {
-        <div class="ac__tip" [style.left.%]="(geo().xs[hover()!] / W) * 100"
-          [class.ac__tip--flip]="geo().xs[hover()!] > W * 0.7">
+        <div class="ac__tip" [style.left.%]="(geo().xs[hover()!] / w()) * 100"
+          [class.ac__tip--flip]="geo().xs[hover()!] > w() * 0.7">
           <div class="ac__tip-title">{{ labels()[hover()!] }}</div>
           @for (s of series(); track s.name) {
             <div class="ac__tip-row">
@@ -122,7 +122,8 @@ export class AreaChartComponent {
   readonly unit = input('');
   readonly ariaLabel = input('رسم بياني');
 
-  protected readonly W = W;
+  /** Rendered width (px) — the viewBox tracks it so the chart draws 1:1. */
+  protected readonly w = hostWidth(W);
   protected readonly PAD = PAD;
   protected readonly gid = chartId('ac');
   protected readonly hover = signal<number | null>(null);
@@ -132,6 +133,7 @@ export class AreaChartComponent {
     const series = this.series();
     const h = this.height();
     const n = Math.max(labels.length, 1);
+    const W = this.w();
     const innerW = W - PAD.l - PAD.r;
     const innerH = h - PAD.t - PAD.b;
     const max = niceMax(Math.max(1, ...series.flatMap((s) => s.values)) * 1.08);

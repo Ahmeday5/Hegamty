@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { chartId, niceMax } from './chart.util';
+import { chartId, hostWidth, niceMax } from './chart.util';
 import { formatCompact, formatNumber } from '../../utils/format.util';
 
 const W = 560;
@@ -15,7 +15,7 @@ const PAD = { t: 26, r: 8, b: 34, l: 8 };
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg [attr.viewBox]="'0 0 ' + W + ' ' + height()" role="img" [attr.aria-label]="ariaLabel()"
+    <svg [attr.viewBox]="'0 0 ' + w() + ' ' + height()" role="img" [attr.aria-label]="ariaLabel()"
       (mouseleave)="hover.set(null)">
       <defs>
         <linearGradient [attr.id]="gid" x1="0" y1="0" x2="0" y2="1">
@@ -67,7 +67,8 @@ export class BarChartComponent {
   readonly compact = input(false);
   readonly ariaLabel = input('رسم بياني بالأعمدة');
 
-  protected readonly W = W;
+  /** Rendered width (px) — the viewBox tracks it so bars/labels stay 1:1. */
+  protected readonly w = hostWidth(W);
   protected readonly PAD = PAD;
   protected readonly gid = chartId('bc');
   protected readonly hover = signal<number | null>(null);
@@ -77,6 +78,7 @@ export class BarChartComponent {
     const n = Math.max(values.length, 1);
     const h = this.height();
     const base = h - PAD.b;
+    const W = this.w();
     const innerW = W - PAD.l - PAD.r;
     const slot = innerW / n;
     const w = Math.min(46, slot * 0.58);

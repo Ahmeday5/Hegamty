@@ -666,8 +666,10 @@ body.app-modal-open { overflow: hidden; }
 }
 
 /* ── Page shell ── */
+/* Fills the available width at any resolution (charts measure themselves);
+   the cap only guards against absurd ultra-wide canvases. */
 .page {
-  max-width: 1480px;
+  max-width: 3200px;
   margin-inline: auto;
   animation: fx-fade 0.35s ease both;
 }
