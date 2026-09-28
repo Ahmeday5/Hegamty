@@ -6,7 +6,7 @@
         <span class="crumbs__sep">/</span>
         <span class="crumbs__current">الدول</span>
       </nav>
-      <h1 class="page-head__title">الدول والأسواق</h1>
+      <h1 class="page-head__title">الدول</h1>
       <p class="page-head__sub">التطبيق يعرض لكل مستخدم خدمات وفنيي وسائقي وباقات دولته فقط</p>
     </div>
     <div class="page-head__actions">
@@ -31,7 +31,6 @@
           <app-country-flag [code]="r.country.id" [size]="46" />
           <div class="ctry-card__title">
             <h3>{{ r.country.name }}</h3>
-            <span><bdi>{{ r.country.dialCode }}</bdi> · {{ r.country.currency }}</span>
           </div>
         </header>
 

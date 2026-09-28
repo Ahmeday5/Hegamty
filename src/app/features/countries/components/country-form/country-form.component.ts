@@ -1,5 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormErrorComponent } from '../../../../shared/components/form-error/form-error.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
@@ -12,7 +26,12 @@ import { CountriesStore } from '../../countries.store';
   selector: 'app-country-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, ModalComponent, FormErrorComponent, IconComponent],
+  imports: [
+    ReactiveFormsModule,
+    ModalComponent,
+    FormErrorComponent,
+    IconComponent,
+  ],
   templateUrl: './country-form.component.html',
   styleUrl: './country-form.component.scss',
 })
@@ -29,41 +48,48 @@ export class CountryFormComponent {
   protected readonly cities = signal<string[]>([]);
   protected readonly cityDraft = signal('');
   protected readonly citiesTouched = signal(false);
-  protected readonly title = computed(() => (this.country() ? `تعديل ${this.country()!.name}` : 'إضافة دولة جديدة'));
-
-  private readonly uniqueDial = (c: AbstractControl): ValidationErrors | null =>
-    this.store.dialCodeTaken(String(c.value ?? '').trim(), this.country()?.id) ? { taken: 'كود الدولة مستخدم لدولة أخرى' } : null;
+  protected readonly title = computed(() =>
+    this.country() ? `تعديل ${this.country()!.name}` : 'إضافة دولة جديدة',
+  );
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     currency: ['', [Validators.required, Validators.maxLength(20)]],
-    dialCode: ['+', [Validators.required, Validators.pattern(/^\+\d{1,4}$/), this.uniqueDial]],
   });
 
   constructor() {
-    effect(() => {
-      if (!this.open()) return;
-      const c = this.country();
-      untracked(() => {
-        this.saving.set(false);
-        this.cityDraft.set('');
-        this.citiesTouched.set(false);
-        this.cities.set(c ? [...c.cities] : []);
-        this.form.reset({ name: c?.name ?? '', currency: c?.currency ?? '', dialCode: c?.dialCode ?? '+' });
-      });
-    }, { allowSignalWrites: true });
+    effect(
+      () => {
+        if (!this.open()) return;
+        const c = this.country();
+        untracked(() => {
+          this.saving.set(false);
+          this.cityDraft.set('');
+          this.citiesTouched.set(false);
+          this.cities.set(c ? [...c.cities] : []);
+          this.form.reset({ name: c?.name ?? '', currency: c?.currency ?? '' });
+        });
+      },
+      { allowSignalWrites: true },
+    );
   }
 
-  protected invalid(name: 'name' | 'currency' | 'dialCode'): boolean {
+  protected invalid(name: 'name' | 'currency'): boolean {
     const c = this.form.controls[name];
     return c.invalid && c.touched;
   }
 
   protected addCity(event?: Event): void {
     event?.preventDefault();
-    const parts = this.cityDraft().split(/[،,\n]/).map((s) => s.trim()).filter(Boolean);
+    const parts = this.cityDraft()
+      .split(/[،,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (!parts.length) return;
-    this.cities.update((list) => [...list, ...parts.filter((p) => !list.includes(p))]);
+    this.cities.update((list) => [
+      ...list,
+      ...parts.filter((p) => !list.includes(p)),
+    ]);
     this.cityDraft.set('');
   }
 
@@ -84,7 +110,6 @@ export class CountryFormComponent {
     const draft: CountryDraft = {
       name: v.name.trim(),
       currency: v.currency.trim(),
-      dialCode: v.dialCode.trim(),
       cities: this.cities(),
     };
     this.saving.set(true);
@@ -95,7 +120,9 @@ export class CountryFormComponent {
         this.toast.success(`تم تحديث بيانات ${draft.name}`);
       } else {
         this.store.create(draft);
-        this.toast.success(`تمت إضافة ${draft.name} — أضف الآن خدماتها وباقات فنييها`);
+        this.toast.success(
+          `تمت إضافة ${draft.name} — أضف الآن خدماتها وباقات فنييها`,
+        );
       }
       this.saving.set(false);
       this.closed.emit();

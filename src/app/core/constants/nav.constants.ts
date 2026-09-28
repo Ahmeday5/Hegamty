@@ -18,7 +18,7 @@ export const NAV_SECTIONS: MenuSection[] = [
     items: [
       { id: 'bookings', label: 'الحجوزات', route: '/bookings', icon: 'calendar' },
       { id: 'services', label: 'الخدمات', route: '/services', icon: 'droplet' },
-      { id: 'categories', label: 'تصنيفات الخدمات', route: '/service-categories', icon: 'filter' },
+      { id: 'categories', label: 'اقسام الخدمات', route: '/service-categories', icon: 'filter' },
       { id: 'packages', label: 'باقات الفنيين', route: '/packages', icon: 'award' },
     ],
   },
@@ -32,6 +32,6 @@ export const NAV_SECTIONS: MenuSection[] = [
   },
   {
     label: 'الإعدادات',
-    items: [{ id: 'countries', label: 'الدول والأسواق', route: '/countries', icon: 'globe' }],
+    items: [{ id: 'countries', label: 'الدول', route: '/countries', icon: 'globe' }],
   },
 ];

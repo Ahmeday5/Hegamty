@@ -9,10 +9,8 @@ export interface Country {
   name: string;
   /** Currency name shown next to amounts, e.g. "ريال", "جنيه". */
   currency: string;
-  /** International dialing code, e.g. "+966". */
-  dialCode: string;
   cities: string[];
   createdAt: string;
 }
 
-export type CountryDraft = Pick<Country, 'name' | 'currency' | 'dialCode' | 'cities'>;
+export type CountryDraft = Pick<Country, 'name' | 'currency' | 'cities'>;

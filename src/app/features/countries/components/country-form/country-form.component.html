@@ -6,17 +6,10 @@
       <app-form-error [control]="form.controls.name" label="اسم الدولة" />
     </div>
 
-    <div>
+    <div class="span-2">
       <label class="form-label" for="cf-cur">العملة</label>
       <input id="cf-cur" class="form-control" formControlName="currency" placeholder="مثال: ريال" [class.is-invalid]="invalid('currency')" />
       <app-form-error [control]="form.controls.currency" label="العملة" />
-    </div>
-
-    <div>
-      <label class="form-label" for="cf-dial">كود الدولة</label>
-      <input id="cf-dial" class="form-control" formControlName="dialCode" dir="ltr" placeholder="+968"
-        [class.is-invalid]="invalid('dialCode')" />
-      <app-form-error [control]="form.controls.dialCode" label="كود الدولة" />
     </div>
 
     <div class="span-2">
