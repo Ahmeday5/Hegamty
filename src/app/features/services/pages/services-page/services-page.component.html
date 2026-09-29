@@ -7,174 +7,185 @@
         <span class="crumbs__current">الخدمات</span>
       </nav>
       <h1 class="page-head__title">الخدمات</h1>
-      <p class="page-head__sub">الخدمات التي يطلبها العملاء من التطبيق — جميع الجلسات تتم في منزل العميل</p>
+      <p class="page-head__sub">كل خدمة تتبع قسمًا، ولها سعر ومدة خاصة بكل دولة — جميع الجلسات تتم في منزل العميل</p>
     </div>
     <div class="page-head__actions">
-      <a class="btn" routerLink="/service-categories"><app-icon name="grid" [size]="16" /> التصنيفات</a>
+      <a class="btn" routerLink="/service-categories"><app-icon name="grid" [size]="16" /> الأقسام</a>
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
       <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="16" [stroke]="2.2" /> خدمة جديدة</button>
     </div>
   </header>
 
+  <!-- Global country scope (header switcher) -->
+  @if (scopedCountry(); as c) {
+    <div class="scope-bar fx" style="--d: 1" role="status">
+      <app-country-flag [countryId]="c.id" [size]="26" />
+      <p>تعرض الخدمات المسعّرة في <strong>{{ c.name }}</strong> فقط، مع أسعارها بـ{{ c.currency }}.</p>
+      <button type="button" class="btn btn-sm scope-bar__btn" (click)="showAllCountries()"><app-icon name="globe" [size]="14" /> كل الدول</button>
+    </div>
+  }
+
   <div class="grid grid--4">
-    <app-kpi-card class="fx" style="--d: 1" label="إجمالي الخدمات" [value]="kpis().total" icon="droplet" tone="green" />
-    <app-kpi-card class="fx" style="--d: 2" label="الخدمات المفعّلة" [value]="kpis().active" icon="check-circle" tone="blue"
-      [hint]="(kpis().total - kpis().active) + ' خدمة موقوفة'" />
-    <app-kpi-card class="fx" style="--d: 3" label="التصنيفات المستخدمة" [value]="kpis().categories" icon="grid" tone="amber" />
-    <app-kpi-card class="fx" style="--d: 4" label="إجمالي الحجوزات" [value]="kpis().bookings" icon="calendar" tone="purple" />
+    <app-kpi-card class="fx" style="--d: 2" label="الخدمات" [value]="kpis().total" icon="droplet" tone="green" />
+    <app-kpi-card class="fx" style="--d: 3" label="مفعّلة" [value]="kpis().active" icon="check-circle" tone="teal" hint="في الصفحة الحالية" />
+    <app-kpi-card class="fx" style="--d: 4" label="موقوفة" [value]="kpis().inactive" icon="ban" tone="amber" hint="في الصفحة الحالية" />
+    <app-kpi-card class="fx" style="--d: 5" label="بدون أسعار" [value]="kpis().unpriced" icon="alert" tone="red" hint="لا تظهر في أي دولة" />
   </div>
 
-  <div class="panel fx" style="--d: 5">
+  <div class="panel fx svc-panel" style="--d: 6">
     <div class="toolbar">
       <label class="search toolbar__grow">
         <app-icon name="search" [size]="17" />
         <input type="search" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="ابحث باسم الخدمة أو الوصف…" aria-label="بحث في الخدمات" />
       </label>
-      <select class="form-select select-sm" [value]="state()" (change)="state.set($any($event.target).value)" aria-label="الحالة">
-        <option value="all">كل الحالات</option>
-        <option value="active">المفعّلة</option>
-        <option value="inactive">الموقوفة</option>
+      <!-- Options render after the <select>, so selection is bound per option (a [value] on the select would be lost). -->
+      <select class="form-select select-sm" (change)="setSection($any($event.target).value)" aria-label="القسم">
+        <option value="" [selected]="!sectionId()">كل الأقسام</option>
+        @for (s of sections(); track s.id) {
+          <option [value]="s.id" [selected]="s.id === sectionId()">{{ s.name }}{{ s.active ? '' : ' (موقوف)' }}</option>
+        }
       </select>
-      <select class="form-select select-sm" [value]="sort()" (change)="sort.set($any($event.target).value)" aria-label="الترتيب">
-        @for (s of sorts; track s.id) { <option [value]="s.id">{{ s.label }}</option> }
-      </select>
-      <div class="seg" role="group" aria-label="طريقة العرض">
-        <button type="button" class="seg__btn" [class.is-on]="view() === 'cards'" (click)="setView('cards')" aria-label="بطاقات"><app-icon name="grid" [size]="15" /></button>
-        <button type="button" class="seg__btn" [class.is-on]="view() === 'table'" (click)="setView('table')" aria-label="جدول"><app-icon name="menu" [size]="15" /></button>
+      @if (scopedCountry()) {
+        <select class="form-select select-sm" (change)="setGovernorate($any($event.target).value)" [attr.aria-label]="divisionPlural()"
+          [disabled]="!governorates().length">
+          <option value="" [selected]="!governorateId()">كل ال{{ divisionPlural() }}</option>
+          @for (g of governorates(); track g.id) {
+            <option [value]="g.id" [selected]="g.id === governorateId()">{{ g.name }}</option>
+          }
+        </select>
+      }
+      <div class="seg" role="tablist" aria-label="الحالة">
+        @for (t of statusTabs; track t.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="statusFilter() === t.id" [attr.aria-selected]="statusFilter() === t.id"
+            (click)="statusFilter.set(t.id)">{{ t.label }}</button>
+        }
       </div>
     </div>
 
     <div class="status-bar">
-      <div class="seg" role="tablist" aria-label="التصنيف">
-        @for (t of categoryTabs(); track t.id) {
-          <button type="button" class="seg__btn" role="tab" [class.is-on]="category() === t.id" (click)="category.set(t.id)">
-            {{ t.label }} <span class="seg__count">{{ t.count }}</span>
-          </button>
-        }
-      </div>
-      <span class="result-count">@if (!loading()) { {{ filtered().length }} خدمة }</span>
+      <span class="result-count" aria-live="polite">
+        @if (status() === 'loading' && !items().length) { جارٍ التحميل… } @else { {{ pageMeta().count | num }} خدمة }
+      </span>
+      @if (hasFilters()) { <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()">مسح كل الفلاتر</button> }
     </div>
 
-    @if (loading()) {
-      <div class="cards">
+    @if (status() === 'loading' && !items().length) {
+      <div class="cards" aria-busy="true">
         @for (s of skeletons; track s) {
-          <div class="svc-card is-skel">
-            <span class="skel" style="width: 40%; height: 12px"></span>
-            <span class="skel" style="width: 60%; height: 15px; margin-top: 14px"></span>
+          <div class="svc is-skel" aria-hidden="true">
+            <span class="skel" style="width: 35%; height: 20px; border-radius: 999px"></span>
+            <span class="skel" style="width: 65%; height: 15px; margin-top: 14px"></span>
             <span class="skel" style="width: 90%; margin-top: 10px"></span>
-            <span class="skel" style="width: 100%; height: 40px; margin-top: 16px; border-radius: 10px"></span>
+            <span class="skel" style="width: 100%; height: 64px; margin-top: 16px; border-radius: 12px"></span>
           </div>
         }
       </div>
-    } @else if (!filtered().length) {
+    } @else if (status() === 'error') {
+      <div class="empty">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+        <p class="empty__title">تعذّر تحميل الخدمات</p>
+        <p class="empty__text">{{ loadError() }}</p>
+        <button type="button" class="btn btn-pr btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+      </div>
+    } @else if (!items().length) {
       <div class="empty">
         <span class="empty__icon"><app-icon name="droplet" [size]="26" /></span>
-        <p class="empty__title">لا توجد خدمات مطابقة</p>
         @if (hasFilters()) {
+          <p class="empty__title">لا توجد خدمات مطابقة</p>
+          <p class="empty__text">
+            @if (scopedCountry(); as c) { لا توجد خدمات مسعّرة في {{ c.name }} بهذه الفلاتر. } @else { جرّب تغيير القسم أو الحالة أو البحث. }
+          </p>
           <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button>
         } @else {
-          <button type="button" class="btn btn-pr btn-sm" (click)="openCreate()">خدمة جديدة</button>
+          <p class="empty__title">لا توجد خدمات بعد</p>
+          <p class="empty__text">أضف أول خدمة وحدد أسعارها في الدول التي تعمل بها.</p>
+          <button type="button" class="btn btn-pr btn-sm" (click)="openCreate()"><app-icon name="plus" [size]="14" [stroke]="2.4" /> خدمة جديدة</button>
         }
       </div>
-    } @else if (view() === 'cards') {
-      <div class="cards">
-        @for (s of filtered(); track s.id; let i = $index) {
-          <article class="svc-card" [class.is-off]="!s.active" [style.--d]="i">
-            <header class="svc-card__top">
-              <div class="svc-card__chips">
-                <span class="chip chip--green">{{ categoryName(s.categoryId) }}</span>
-                @if (scope.isAll()) {
-                  <span class="chip chip--slate chip--flag"><app-country-flag [countryId]="s.countryId" [size]="15" /> {{ s.countryId | countryName }}</span>
-                }
-                @if (!s.active) { <span class="chip chip--slate">موقوفة</span> }
-              </div>
+    } @else {
+      <div class="cards" [class.is-refreshing]="status() === 'loading'" [attr.aria-busy]="status() === 'loading' || null">
+        @for (s of items(); track s.id; let i = $index) {
+          @let isBusy = busy().has(s.id);
+          @let shown = pricingsFor(s);
+          <article class="svc" [class.is-off]="!s.active" [class.is-busy]="isBusy" [style.--d]="i" [attr.aria-busy]="isBusy || null">
+            <header class="svc__top">
+              <span class="chip chip--green svc__section">
+                <app-section-icon [url]="sectionIconUrl(s)" [size]="18" />
+                {{ s.sectionName || 'بدون قسم' }}
+              </span>
               <button type="button" class="switch" role="switch" [class.is-on]="s.active" [attr.aria-checked]="s.active"
-                [attr.aria-label]="(s.active ? 'إيقاف ' : 'تفعيل ') + s.name" (click)="toggleActive(s)"></button>
+                [attr.aria-label]="(s.active ? 'إيقاف ' : 'تفعيل ') + s.name" [disabled]="isBusy" (click)="toggleActive(s)"></button>
             </header>
 
-            <h3 class="svc-card__name">{{ s.name }}</h3>
-            <p class="svc-card__desc">{{ s.description }}</p>
+            <h3 class="svc__name" [attr.title]="s.name">{{ s.name }}</h3>
+            <p class="svc__desc" [class.is-empty]="!s.description">{{ s.description || 'لا يوجد وصف' }}</p>
 
-            <dl class="svc-card__stats">
-              <div><dt>السعر</dt><dd>{{ s.price | num }} <small>{{ s.countryId | ccy }}</small></dd></div>
-              <div><dt>المدة</dt><dd>@if (s.durationMin) { {{ s.durationMin }} <small>دقيقة</small> } @else { <small>غير محددة</small> }</dd></div>
-              <div><dt>التقييم</dt><dd class="rating"><app-icon name="star" [size]="13" [filled]="true" /> {{ s.rating ? (s.rating | num: 1) : '—' }}</dd></div>
-            </dl>
+            <section class="svc__prices" aria-label="الأسعار">
+              <div class="svc__prices-head">
+                <span>الأسعار</span>
+                @if (scope.isAll() && s.pricings.length) { <small>{{ countriesLabel(s) }}</small> }
+              </div>
+              @if (shown.length) {
+                <ul role="list">
+                  @for (p of shown.slice(0, previewCount); track p.id) {
+                    <li>
+                      <app-country-flag [countryId]="p.countryId" [name]="p.countryName" [size]="20" />
+                      <span class="svc__where">
+                        <span class="svc__country" [attr.title]="p.countryName">{{ p.countryName }}</span>
+                        <span class="svc__cover" [attr.title]="governorateNames(p)">{{ coverageOf(p) }}</span>
+                      </span>
+                      <span class="svc__dur" [class.is-open]="p.durationMin === null"><app-icon name="clock" [size]="12" /> {{ p.durationMin | minutes }}</span>
+                      <strong class="svc__price">{{ p | priceRange }}</strong>
+                    </li>
+                  }
+                </ul>
+                @if (shown.length > previewCount) {
+                  <button type="button" class="svc__more" (click)="openPricing(s)">عرض كل الأسعار (+{{ shown.length - previewCount | num }})</button>
+                }
+              } @else {
+                <div class="svc__noprice">
+                  <app-icon name="alert" [size]="14" /> لا توجد أسعار — لن تظهر الخدمة لأي عميل
+                </div>
+              }
+            </section>
 
-            <div class="svc-card__demand">
-              <div class="svc-card__demand-head"><span>الطلب</span><strong>{{ s.bookingsCount | num }} حجز</strong></div>
-              <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="(s.bookingsCount / topBookings()) * 100" [style.--d]="i"></span></div>
-            </div>
-
-            <footer class="svc-card__foot">
-              <span class="muted"><app-icon name="home" [size]="13" /> في منزل العميل</span>
+            <footer class="svc__foot">
+              <button type="button" class="btn btn-soft btn-sm" [disabled]="isBusy" (click)="openPricing(s, !s.pricings.length)">
+                <app-icon name="wallet" [size]="14" /> {{ s.pricings.length ? 'الأسعار والدول' : 'إضافة سعر' }}
+              </button>
               <div class="actions">
-                <button type="button" class="icon-btn icon-btn--blue" data-tip="نسخ لدولة أخرى" aria-label="نسخ لدولة أخرى" (click)="openCopy(s)"><app-icon name="copy" [size]="16" /></button>
-                <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(s)"><app-icon name="edit" [size]="16" /></button>
-                <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(s)"><app-icon name="trash" [size]="16" /></button>
+                <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" [attr.aria-label]="'تعديل ' + s.name"
+                  [disabled]="isBusy" (click)="openEdit(s)"><app-icon name="edit" [size]="16" /></button>
+                <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" [attr.aria-label]="'حذف ' + s.name"
+                  [disabled]="isBusy" (click)="remove(s)">
+                  @if (isBusy) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+                  @else { <app-icon name="trash" [size]="16" /> }
+                </button>
               </div>
             </footer>
           </article>
         }
-        <button type="button" class="svc-add" (click)="openCreate()" [style.--d]="filtered().length">
-          <span><app-icon name="plus" [size]="24" [stroke]="2" /></span>
-          <strong>إضافة خدمة جديدة</strong>
-        </button>
+        @if (!hasFilters() && pageIndex() === pageMeta().totalPages) {
+          <button type="button" class="svc-add" (click)="openCreate()" [style.--d]="items().length">
+            <span><app-icon name="plus" [size]="24" [stroke]="2" /></span>
+            <strong>إضافة خدمة جديدة</strong>
+          </button>
+        }
       </div>
-    } @else {
-      <div class="dtable-wrap">
-        <table class="dtable">
-          <thead>
-            <tr><th>الخدمة</th>@if (scope.isAll()) { <th>الدولة</th> }<th>التصنيف</th><th>السعر</th><th>المدة</th><th>الحجوزات</th><th>التقييم</th><th>الحالة</th><th class="th-actions">الإجراءات</th></tr>
-          </thead>
-          <tbody>
-            @for (s of filtered(); track s.id; let i = $index) {
-              <tr [style.--d]="i" [class.is-off]="!s.active">
-                <td><div class="svc-row"><strong>{{ s.name }}</strong><span>{{ s.description }}</span></div></td>
-                @if (scope.isAll()) { <td><span class="flag-cell"><app-country-flag [countryId]="s.countryId" [size]="20" /> {{ s.countryId | countryName }}</span></td> }
-                <td><span class="chip chip--green">{{ categoryName(s.categoryId) }}</span></td>
-                <td class="num">{{ s.price | cmoney: s.countryId }}</td>
-                <td>{{ s.durationMin ? s.durationMin + ' دقيقة' : 'غير محددة' }}</td>
-                <td class="num">{{ s.bookingsCount | num }}</td>
-                <td><span class="rating"><app-icon name="star" [size]="13" [filled]="true" /> {{ s.rating ? (s.rating | num: 1) : '—' }}</span></td>
-                <td>
-                  <button type="button" class="switch" role="switch" [class.is-on]="s.active" [attr.aria-checked]="s.active"
-                    [attr.aria-label]="(s.active ? 'إيقاف ' : 'تفعيل ') + s.name" (click)="toggleActive(s)"></button>
-                </td>
-                <td>
-                  <div class="actions">
-                    <button type="button" class="icon-btn icon-btn--blue" data-tip="نسخ لدولة أخرى" aria-label="نسخ" (click)="openCopy(s)"><app-icon name="copy" [size]="16" /></button>
-                    <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(s)"><app-icon name="edit" [size]="16" /></button>
-                    <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(s)"><app-icon name="trash" [size]="16" /></button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+
+      <div class="svc-pager">
+        <app-pagination [pageIndex]="pageIndex()" [pageSize]="pageSize()" [count]="pageMeta().count" [totalPages]="pageMeta().totalPages"
+          [pageSizeOptions]="pageSizeOptions" [disabled]="status() === 'loading'"
+          (pageChange)="goToPage($event)" (pageSizeChange)="changePageSize($event)" />
       </div>
     }
   </div>
 
-  <app-service-form [open]="formOpen()" [service]="editing()" [categoryId]="category() === 'all' ? null : category()" (closed)="formOpen.set(false)" />
-
-  <app-modal [open]="!!copying()" title="نسخ الخدمة إلى دولة أخرى" size="md" (closed)="copying.set(null)">
-    @if (copying(); as s) {
-      <p class="copy-intro">
-        سيتم إنشاء نسخة من <strong>{{ s.name }}</strong> في الدولة المختارة كخدمة <strong>موقوفة</strong>،
-        لتعديل سعرها بالعملة المحلية قبل إتاحتها للعملاء.
-      </p>
-      <div class="copy-list">
-        @for (c of copyTargets(); track c.id) {
-          <button type="button" class="copy-opt" [class.is-on]="copyTarget() === c.id" (click)="copyTarget.set(c.id)">
-            <app-country-flag [countryId]="c.id" [size]="28" />
-            <span><strong>{{ c.name }}</strong><small>العملة: {{ c.currency }}</small></span>
-          </button>
-        }
-      </div>
-    }
-    <ng-container modal-footer>
-      <button type="button" class="btn btn-ghost" (click)="copying.set(null)">إلغاء</button>
-      <button type="button" class="btn btn-pr" [disabled]="!copyTarget()" (click)="confirmCopy()"><app-icon name="copy" [size]="15" /> نسخ الخدمة</button>
-    </ng-container>
-  </app-modal>
+  <app-service-form [open]="formOpen()" [service]="editing()" [sectionId]="sectionId()"
+    [countryId]="scope.isAll() ? null : scope.selected()" (closed)="formOpen.set(false)" (managePricing)="switchToPricing($event)" />
+  <app-pricing-dialog [open]="pricingOpen()" [serviceId]="pricingServiceId()" [startAdding]="pricingStartAdding()"
+    [focusCountryId]="scope.isAll() ? null : scope.selected()" (closed)="pricingOpen.set(false)" />
 </section>

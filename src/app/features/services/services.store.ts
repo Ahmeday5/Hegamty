@@ -29,7 +29,11 @@ const MARKETS: Record<string, { items: number[]; demand: number }> = {
 
 const roundTo = (v: number, step: number) => Math.max(step, Math.round(v / step) * step);
 
-/** Services catalog per country. "Copy to country" launches a service in another market. */
+/**
+ * Mock per-country services — fixtures only, feeding the bookings and
+ * dashboard mocks until their endpoints exist. The real catalog UI uses
+ * `ServiceCatalogStore`.
+ */
 @Injectable({ providedIn: 'root' })
 export class ServicesStore {
   private readonly countries = inject(CountriesStore);

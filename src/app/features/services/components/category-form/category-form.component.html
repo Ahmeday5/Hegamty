@@ -1,0 +1,71 @@
+<app-modal [open]="open()" [title]="title()" size="lg" [closeOnBackdrop]="!saving()" [closeOnEsc]="!saving()" (closed)="close()">
+  <!-- How the section will look in the app -->
+  <div class="cgf-preview" [class.is-off]="!preview().active" aria-hidden="true">
+    <span class="cgf-preview__icon" [class.has-img]="!!previewIconUrl()">
+      @if (previewIconUrl(); as url) { <img [src]="url" alt="" /> } @else { <app-icon name="grid" [size]="22" /> }
+    </span>
+    <div class="cgf-preview__text">
+      <strong>{{ preview().name }}</strong>
+      <span>{{ preview().description }}</span>
+    </div>
+    <span class="chip" [class.chip--green]="preview().active" [class.chip--slate]="!preview().active">
+      {{ preview().active ? 'ظاهر في التطبيق' : 'مخفي' }}
+    </span>
+  </div>
+
+  @if (serverError(); as err) {
+    <div class="cgf-alert" role="alert"><app-icon name="alert" [size]="16" /> <span>{{ err }}</span></div>
+  }
+
+  <form id="category-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="span-2">
+      <label class="form-label" for="cgf-name">اسم القسم <span class="req">*</span></label>
+      <input id="cgf-name" class="form-control" formControlName="name" placeholder="مثال: الحجامة" autocomplete="off"
+        [attr.maxlength]="nameMax" [class.is-invalid]="invalid('name')" />
+      <app-form-error [control]="form.controls.name" label="اسم القسم" />
+    </div>
+
+    <div class="span-2">
+      <div class="cgf-label-row">
+        <label class="form-label" for="cgf-desc">الوصف <span class="opt">(اختياري)</span></label>
+        <span class="cgf-counter" [class.is-near]="descLength() > descMax * 0.9">{{ descLength() }}/{{ descMax }}</span>
+      </div>
+      <textarea id="cgf-desc" class="form-control" rows="2" formControlName="description" [attr.maxlength]="descMax"
+        placeholder="جملة قصيرة توضّح للعميل ما يضمّه هذا القسم" [class.is-invalid]="invalid('description')"></textarea>
+      <app-form-error [control]="form.controls.description" label="الوصف" />
+    </div>
+
+    <div class="span-2">
+      <label class="form-label" for="cgf-icon">أيقونة القسم @if (!isEdit()) { <span class="req">*</span> }</label>
+      <app-image-upload inputId="cgf-icon" [(file)]="iconFile" [currentUrl]="currentIconUrl()" [maxSizeMb]="iconMaxMb"
+        [invalid]="iconMissing()" [disabled]="saving()" />
+      @if (iconMissing()) { <div class="cgf-err">اختر صورة أيقونة للقسم</div> }
+      @else { <small class="cgf-hint">يُفضّل صورة مربعة بخلفية شفافة (PNG أو SVG) بمقاس 256×256 على الأقل</small> }
+    </div>
+
+    <div class="span-2">
+      <span class="form-label" id="cgf-countries-label">الدول التي يظهر بها القسم <span class="req">*</span></span>
+      <app-country-multi-select [(value)]="countryIds" label="الدول التي يظهر بها القسم" [invalid]="countriesMissing()"
+        [disabled]="saving()" />
+      @if (countriesMissing()) { <div class="cgf-err">اختر دولة واحدة على الأقل</div> }
+    </div>
+
+    <div class="span-2 cgf-toggle">
+      <div>
+        <strong>القسم مفعّل</strong>
+        <span>الأقسام الموقوفة تُخفى من التطبيق مع خدماتها</span>
+      </div>
+      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value"
+        [attr.aria-checked]="form.controls.active.value" aria-label="تفعيل القسم" [disabled]="saving()"
+        (click)="toggleActive()"></button>
+    </div>
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" [disabled]="saving()" (click)="close()">إلغاء</button>
+    <button type="submit" form="category-form" class="btn btn-pr" [disabled]="saving()">
+      @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
+      @else { {{ isEdit() ? 'حفظ التعديلات' : 'إضافة القسم' }} }
+    </button>
+  </ng-container>
+</app-modal>

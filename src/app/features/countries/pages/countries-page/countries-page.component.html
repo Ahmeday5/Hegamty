@@ -81,11 +81,11 @@
       </div>
     } @else {
       <div class="cards">
-        @for (r of visibleRows(); track r.country.id; let i = $index) {
+        @for (r of pagedRows(); track r.country.id; let i = $index) {
           @let c = r.country;
           <article class="ctry-card" [class.is-busy]="deleting().has(c.id)" [style.--d]="i" [attr.aria-busy]="deleting().has(c.id) || null">
             <div class="ctry-card__cover">
-              <app-country-flag class="ctry-card__flag" [countryId]="c.id" [size]="72" />
+              <app-country-flag class="ctry-card__flag" [countryId]="c.id" [size]="44" />
               @if (c.currency) {
                 <span class="ctry-card__ccy" [attr.title]="'العملة: ' + c.currency"><app-icon name="wallet" [size]="12" /> {{ c.currency }}</span>
               }
@@ -100,7 +100,7 @@
               <div><dt>العملاء</dt><dd>{{ r.customers | num }}</dd></div>
               <div><dt>الفنيون</dt><dd>{{ r.technicians | num }}</dd></div>
               <div><dt>السائقون</dt><dd>{{ r.drivers | num }}</dd></div>
-              <div><dt>الخدمات</dt><dd>{{ r.services | num }}</dd></div>
+              <div><dt>الخدمات</dt><dd>{{ r.services === null ? '—' : (r.services | num) }}</dd></div>
               <div><dt>الحجوزات</dt><dd>{{ r.bookings | num }}</dd></div>
             </dl>
 
@@ -132,20 +132,20 @@
               }
             </section>
 
-            @if (!r.services || !r.packages) {
+            @if (r.services === 0 || !r.packages) {
               <div class="ctry-card__warn">
                 <app-icon name="alert" [size]="15" />
-                {{ !r.services ? 'لا توجد خدمات مفعّلة — لن يتمكن العملاء من الحجز' : 'لا توجد باقات مفعّلة — لن يتمكن الفنيون من الاشتراك' }}
+                {{ r.services === 0 ? 'لا توجد خدمات مفعّلة — لن يتمكن العملاء من الحجز' : 'لا توجد باقات مفعّلة — لن يتمكن الفنيون من الاشتراك' }}
               </div>
             }
 
             <footer class="ctry-card__foot">
-              <!-- Wired once the per-country dashboard and services endpoints land. -->
+              <!-- "لوحتها" is wired once the per-country dashboard endpoints land. -->
               <div class="ctry-card__links">
                 <button type="button" class="btn btn-soft btn-sm is-soon" aria-disabled="true" data-tip="قريبًا">
                   <app-icon name="grid" [size]="14" /> لوحتها
                 </button>
-                <button type="button" class="btn btn-ghost btn-sm is-soon" aria-disabled="true" data-tip="قريبًا">
+                <button type="button" class="btn btn-ghost btn-sm" (click)="viewServices(c)">
                   <app-icon name="droplet" [size]="14" /> الخدمات
                 </button>
               </div>
@@ -164,13 +164,18 @@
           </article>
         }
 
-        @if (!query()) {
-          <button type="button" class="ctry-add" [style.--d]="visibleRows().length" (click)="openCreate()">
+        @if (!query() && isLastPage()) {
+          <button type="button" class="ctry-add" [style.--d]="pagedRows().length" (click)="openCreate()">
             <span><app-icon name="globe" [size]="24" /></span>
             <strong>إطلاق دولة جديدة</strong>
             <small>أضف الدولة ومحافظاتها ثم خدماتها وباقات فنييها</small>
           </button>
         }
+      </div>
+
+      <div class="pager">
+        <app-pagination [pageIndex]="page()" [pageSize]="pageSize()" [count]="visibleRows().length" [totalPages]="totalPages()"
+          [pageSizeOptions]="pageSizeOptions" (pageChange)="goToPage($event)" (pageSizeChange)="changePageSize($event)" />
       </div>
     }
   }

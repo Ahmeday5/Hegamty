@@ -25,6 +25,16 @@
 .state { padding: 8px; }
 .empty__icon--red { background: var(--re-l); color: var(--re); }
 
+/* ── Pagination ── */
+.pager {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--white);
+  border: 1px solid var(--brd);
+  box-shadow: var(--shadow);
+}
+
 /* ── Cards ── */
 .cards {
   display: grid;
@@ -59,7 +69,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    height: 100px;
+    height: 76px;
     margin: 0 -16px;
     background:
       radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.2), transparent 45%),
@@ -79,10 +89,10 @@
   }
   &__flag {
     position: relative;
-    padding: 3px;
-    border-radius: 9px;
+    padding: 2px;
+    border-radius: 6px;
     background: var(--white);
-    box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(255, 255, 255, 0.14);
+    box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(255, 255, 255, 0.14);
     transition: transform 0.35s var(--ease);
   }
   /* Glass chip: white text on a translucent fill over the dark-teal cover */
@@ -196,7 +206,7 @@
     .ctry-card__cover { background: #e6efef; &::before { display: none; } }
     .ctry-card__head { gap: 8px; }
   }
-  &__skel-flag { width: 72px; height: 54px; border-radius: 8px; background-color: #f4f8f8; }
+  &__skel-flag { width: 44px; height: 33px; border-radius: 6px; background-color: #f4f8f8; }
 }
 
 .icon-btn--sm { width: 28px; height: 28px; border-radius: 8px; }

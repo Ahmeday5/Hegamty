@@ -1,0 +1,97 @@
+.req { color: var(--re); font-weight: 700; }
+.opt { font-weight: 400; color: var(--txt3); }
+.cgf-err { margin-top: 6px; font-size: 11.5px; color: var(--re); }
+.cgf-hint { display: block; margin-top: 6px; font-size: 11.5px; color: var(--txt3); }
+
+/* ── Live preview ── */
+.cgf-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--pr-l), #f5fbfb 70%);
+  border: 1px solid #cfe7e9;
+  transition: opacity 0.2s, filter 0.2s;
+
+  &.is-off { filter: grayscale(0.7); opacity: 0.75; }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: var(--grad-pr);
+    color: var(--white);
+    box-shadow: 0 8px 18px -8px rgba(6, 74, 80, 0.6);
+    overflow: hidden;
+
+    /* Uploaded icons sit on white so dark/colored artwork stays legible */
+    &.has-img { background: var(--white); border: 1px solid #cfe7e9; box-shadow: var(--shadow); }
+    img { width: 78%; height: 78%; object-fit: contain; }
+  }
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    strong { font-size: 14.5px; font-weight: 700; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    span {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--txt2);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+  .chip { flex-shrink: 0; }
+}
+
+.cgf-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--re-l);
+  border: 1px solid #f7caca;
+  color: #b91c1c;
+  font-size: 12.5px;
+  line-height: 1.6;
+  app-icon { flex-shrink: 0; margin-top: 2px; }
+}
+
+.cgf-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cgf-counter {
+  font-size: 11px;
+  color: var(--txt3);
+  font-variant-numeric: tabular-nums;
+  &.is-near { color: #b45309; font-weight: 600; }
+}
+
+/* ── Active toggle ── */
+.cgf-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--brd);
+  background: #f9fbfb;
+  > div { display: grid; gap: 2px; }
+  strong { font-size: 13px; color: var(--txt); }
+  span { font-size: 11.5px; color: var(--txt3); }
+  .switch:disabled { cursor: not-allowed; opacity: 0.6; }
+}

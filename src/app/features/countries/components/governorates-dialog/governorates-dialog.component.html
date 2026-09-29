@@ -1,4 +1,4 @@
-<app-modal [open]="open() && !!country()" [title]="title()" size="lg" [closeOnBackdrop]="!saving()" [closeOnEsc]="!saving()" (closed)="close()">
+<app-modal [open]="open() && !!country()" [title]="title()" size="lg" [closeOnBackdrop]="!busy()" [closeOnEsc]="!busy()" (closed)="close()">
   @if (country(); as c) {
     <!-- Country summary -->
     <header class="gv-hero">
@@ -84,13 +84,19 @@
     } @else {
       <ul class="gv-list" role="list">
         @for (g of filtered(); track g.id; let i = $index) {
-          <li class="gv-item" [class.is-fresh]="freshIds().has(g.id)">
+          @let isRemoving = removing().has(g.id);
+          <li class="gv-item" [class.is-fresh]="freshIds().has(g.id)" [class.is-busy]="isRemoving" [attr.aria-busy]="isRemoving || null">
             <span class="gv-item__no">{{ i + 1 }}</span>
             <span class="gv-item__text">
               <strong [attr.title]="g.name">{{ g.name }}</strong>
               @if (g.nameEn) { <span dir="ltr" [attr.title]="g.nameEn">{{ g.nameEn }}</span> }
             </span>
             @if (freshIds().has(g.id)) { <span class="chip chip--green">جديد</span> }
+            <button type="button" class="icon-btn icon-btn--red gv-item__del" [attr.aria-label]="'حذف ' + g.name"
+              [attr.title]="'حذف ' + g.name" [disabled]="isRemoving" (click)="remove(g)">
+              @if (isRemoving) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+              @else { <app-icon name="trash" [size]="14" /> }
+            </button>
           </li>
         }
       </ul>
@@ -98,6 +104,6 @@
   }
 
   <ng-container modal-footer>
-    <button type="button" class="btn btn-ghost" [disabled]="saving()" (click)="close()">إغلاق</button>
+    <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="close()">إغلاق</button>
   </ng-container>
 </app-modal>

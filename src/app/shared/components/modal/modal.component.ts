@@ -128,6 +128,9 @@ export class ModalComponent {
     // but only writes the plain `hasLockedBody` field — no NG0600 hazard.
     effect(() => {
       const isOpen = this.open();
+      // Opening moves the host to the end of <body> so the newest modal always
+      // stacks on top — e.g. a confirm dialog raised from inside another modal.
+      if (isOpen && el.nextElementSibling) document.body.appendChild(el);
       if (isOpen && !this.hasLockedBody) {
         this.lockBody();
       } else if (!isOpen && this.hasLockedBody) {

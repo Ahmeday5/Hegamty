@@ -1,73 +1,99 @@
-<app-modal [open]="open()" [title]="title()" size="md" (closed)="closed.emit()">
+<app-modal [open]="open()" [title]="title()" [size]="isEdit() ? 'md' : 'lg'" [closeOnBackdrop]="!saving()" [closeOnEsc]="!saving()" (closed)="close()">
+  @if (serverError(); as err) {
+    <div class="sf-alert" role="alert"><app-icon name="alert" [size]="16" /> <span>{{ err }}</span></div>
+  }
+
   <form id="service-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <div>
-      <label class="form-label" for="sf-country">الدولة</label>
-      <select id="sf-country" class="form-select" formControlName="countryId" [class.is-invalid]="invalid('countryId')">
-        @for (c of countries(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
-      </select>
-      <app-form-error [control]="form.controls.countryId" label="الدولة" />
-    </div>
-
-    <div>
-      <label class="form-label" for="sf-cat">التصنيف</label>
-      <select id="sf-cat" class="form-select" formControlName="categoryId" [class.is-invalid]="invalid('categoryId')">
-        <option value="" disabled>اختر التصنيف</option>
-        @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}{{ c.active ? '' : ' (موقوف)' }}</option> }
-      </select>
-      <app-form-error [control]="form.controls.categoryId" label="التصنيف" />
-    </div>
-
+    <!-- Basics -->
     <div class="span-2">
-      <label class="form-label" for="sf-name">اسم الخدمة</label>
-      <input id="sf-name" class="form-control" formControlName="name" placeholder="مثال: حجامة رطبة" [class.is-invalid]="invalid('name')" />
+      <label class="form-label" for="sf-name">اسم الخدمة <span class="req">*</span></label>
+      <input id="sf-name" class="form-control" formControlName="name" placeholder="مثال: حجامة رطبة" autocomplete="off"
+        [attr.maxlength]="nameMax" [class.is-invalid]="invalid('name')" />
       <app-form-error [control]="form.controls.name" label="اسم الخدمة" />
     </div>
 
     <div class="span-2">
-      <label class="form-label" for="sf-price">السعر ({{ currency() }})</label>
-      <input id="sf-price" type="number" min="1" class="form-control" formControlName="price" [class.is-invalid]="invalid('price')" />
-      <app-form-error [control]="form.controls.price" label="السعر" />
+      <label class="form-label" for="sf-section">القسم <span class="req">*</span></label>
+      <select id="sf-section" class="form-select" formControlName="sectionId" [class.is-invalid]="invalid('sectionId')">
+        <option value="" disabled>اختر القسم</option>
+        @for (s of sections(); track s.id) {
+          <option [value]="s.id">{{ s.name }}{{ s.active ? '' : ' (موقوف)' }}</option>
+        }
+      </select>
+      <app-form-error [control]="form.controls.sectionId" label="القسم" />
+      @if (!sections().length) { <small class="sf-hint">لا توجد أقسام بعد — أضف قسمًا أولًا من صفحة الأقسام.</small> }
+      @else if (sectionGaps().length) {
+        <div class="sf-warn" role="status">
+          <app-icon name="alert" [size]="14" />
+          <span>هذا القسم غير متاح في: <strong>{{ sectionGaps().join('، ') }}</strong> — لن تظهر الخدمة للعملاء هناك حتى تضيف الدولة للقسم.</span>
+        </div>
+      }
     </div>
-
-    <div class="span-2 sf-toggle">
-      <div>
-        <strong>للخدمة مدة محددة</strong>
-        <span>أوقفها للخدمات التي ليس لها وقت ثابت</span>
-      </div>
-      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.hasDuration.value"
-        [attr.aria-checked]="form.controls.hasDuration.value" aria-label="مدة محددة" (click)="toggle('hasDuration')"></button>
-    </div>
-
-    @if (form.controls.hasDuration.value) {
-      <div class="span-2">
-        <label class="form-label" for="sf-duration">المدة (دقيقة)</label>
-        <input id="sf-duration" type="number" min="5" class="form-control" formControlName="durationMin" [class.is-invalid]="invalid('durationMin')" />
-        <app-form-error [control]="form.controls.durationMin" label="المدة" />
-      </div>
-    }
 
     <div class="span-2">
-      <label class="form-label" for="sf-desc">وصف الخدمة</label>
-      <textarea id="sf-desc" class="form-control" rows="3" formControlName="description" maxlength="200"
-        placeholder="وصف مختصر يظهر للعملاء في التطبيق…" [class.is-invalid]="invalid('description')"></textarea>
+      <div class="sf-label-row">
+        <label class="form-label" for="sf-desc">الوصف <span class="opt">(اختياري)</span></label>
+        <span class="sf-counter" [class.is-near]="descLength() > descMax * 0.9">{{ descLength() }}/{{ descMax }}</span>
+      </div>
+      <textarea id="sf-desc" class="form-control" rows="3" formControlName="description" [attr.maxlength]="descMax"
+        placeholder="ما الذي تتضمنه الجلسة؟ يظهر للعميل في صفحة الخدمة" [class.is-invalid]="invalid('description')"></textarea>
       <app-form-error [control]="form.controls.description" label="الوصف" />
     </div>
 
     <div class="span-2 sf-toggle">
       <div>
         <strong>الخدمة مفعّلة</strong>
-        <span>الخدمات الموقوفة لا تظهر للعملاء ولا يمكن حجزها</span>
+        <span>{{ active() ? 'تظهر للعملاء في الدول التي لها أسعار' : 'مخفية من التطبيق في كل الدول' }}</span>
       </div>
-      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value"
-        [attr.aria-checked]="form.controls.active.value" aria-label="تفعيل الخدمة" (click)="toggle('active')"></button>
+      <button type="button" class="switch" role="switch" [class.is-on]="active()" [attr.aria-checked]="active()"
+        aria-label="تفعيل الخدمة" [disabled]="saving()" (click)="toggleActive()"></button>
     </div>
+
+    <!-- Pricing -->
+    @if (!isEdit()) {
+      <section class="span-2 sf-pricing" aria-labelledby="sf-pricing-title">
+        <header class="sf-pricing__head">
+          <div>
+            <h4 id="sf-pricing-title">أين تُقدَّم الخدمة وبكم؟ <span class="req">*</span></h4>
+            <p>لكل دولة: اختر المحافظات المتاحة، ثم أضف مدة أو أكثر ونطاق السعر لكل مدة بعملة الدولة.</p>
+          </div>
+        </header>
+
+        <div class="sf-pricing__rows">
+          @for (block of pricings.controls; track block; let i = $index) {
+            <app-country-pricing-editor [group]="block" [idPrefix]="'sf-c' + i" [removable]="pricings.length > 1"
+              [excludedCountryIds]="usedCountriesExcept(i)" [disabled]="saving()"
+              [blockError]="duplicateBlocks().has(i) ? 'هذه الدولة مضافة بالفعل — أضف المدد داخل بطاقتها بدلًا من تكرارها' : null"
+              (remove)="removePricing(i)" />
+          }
+        </div>
+
+        @if (noPricings()) { <div class="sf-err">أضف دولة واحدة على الأقل</div> }
+
+        @if (canAddCountry()) {
+          <button type="button" class="btn btn-soft btn-sm sf-pricing__add" [disabled]="saving()" (click)="addCountry()">
+            <app-icon name="globe" [size]="15" /> إضافة دولة أخرى
+          </button>
+        }
+      </section>
+    } @else if (service()) {
+      @let s = service()!;
+      <div class="span-2 sf-manage">
+        <span class="tile tile--sm"><app-icon name="wallet" [size]="16" /></span>
+        <div class="sf-manage__text">
+          <strong>الدول والأسعار</strong>
+          <span>{{ s.pricings.length ? 'الأسعار المسجّلة: ' + s.pricings.length : 'لا توجد أسعار بعد — لن تظهر الخدمة في أي دولة' }}</span>
+        </div>
+        <button type="button" class="btn btn-soft btn-sm" [disabled]="saving()" (click)="openPricing()">إدارة الأسعار</button>
+      </div>
+    }
   </form>
 
   <ng-container modal-footer>
-    <button type="button" class="btn btn-ghost" (click)="closed.emit()">إلغاء</button>
+    <button type="button" class="btn btn-ghost" [disabled]="saving()" (click)="close()">إلغاء</button>
     <button type="submit" form="service-form" class="btn btn-pr" [disabled]="saving()">
       @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
-      @else { {{ service() ? 'حفظ التغييرات' : 'إضافة الخدمة' }} }
+      @else { {{ isEdit() ? 'حفظ التعديلات' : 'إضافة الخدمة' }} }
     </button>
   </ng-container>
 </app-modal>

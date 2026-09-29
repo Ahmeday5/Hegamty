@@ -1,0 +1,61 @@
+<app-modal [open]="open() && !!section()" [title]="'دول قسم ' + (section()?.name ?? '')" size="md" (closed)="closed.emit()">
+  @if (section(); as s) {
+    <header class="scd-hero">
+      <app-section-icon [url]="s.iconUrl" [size]="52" />
+      <div class="scd-hero__text">
+        <strong>{{ s.name }}</strong>
+        <span>{{ s.active ? 'ظاهر في التطبيق' : 'موقوف — مخفي من التطبيق' }}</span>
+      </div>
+      <div class="scd-hero__stat">
+        <strong>{{ countLabel() }}</strong>
+        <span>{{ coverageRatio() }}% من الدول</span>
+      </div>
+    </header>
+
+    @if (rows().length > searchThreshold) {
+      <label class="search scd-search">
+        <app-icon name="search" [size]="16" />
+        <input type="search" [value]="query()" (input)="query.set($any($event.target).value)" placeholder="ابحث عن دولة بالعربية أو الإنجليزية"
+          aria-label="بحث في دول القسم" />
+      </label>
+    }
+
+    @if (!rows().length) {
+      <div class="empty">
+        <span class="empty__icon empty__icon--amber"><app-icon name="globe" [size]="26" /></span>
+        <h4 class="empty__title">القسم غير متاح في أي دولة</h4>
+        <p class="empty__text">لن يظهر هذا القسم لأي عميل حتى تضيف له دولة واحدة على الأقل.</p>
+        <button type="button" class="btn btn-pr btn-sm" (click)="onEdit()"><app-icon name="plus" [size]="14" [stroke]="2.4" /> إضافة دول</button>
+      </div>
+    } @else if (!filtered().length) {
+      <div class="empty">
+        <span class="empty__icon"><app-icon name="search" [size]="24" /></span>
+        <h4 class="empty__title">لا توجد نتائج</h4>
+        <p class="empty__text">لا توجد دولة تطابق «{{ query() }}» في هذا القسم.</p>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="query.set('')">مسح البحث</button>
+      </div>
+    } @else {
+      <ul class="scd-list" role="list">
+        @for (r of filtered(); track r.id; let i = $index) {
+          <li class="scd-item" [class.is-focus]="r.id === focusCountryId()" [style.--d]="i">
+            <app-country-flag [countryId]="r.id" [name]="r.name" [size]="36" />
+            <div class="scd-item__text">
+              <strong [attr.title]="r.name">{{ r.name }}</strong>
+              @if (r.nameEn) { <span dir="ltr" [attr.title]="r.nameEn">{{ r.nameEn }}</span> }
+            </div>
+            <div class="scd-item__meta">
+              @if (r.currency) { <span class="scd-tag"><app-icon name="wallet" [size]="12" /> {{ r.currency }}</span> }
+              @if (r.division) { <span class="scd-tag"><app-icon name="map-pin" [size]="12" /> {{ r.divisions | divisions: r.division }}</span> }
+              @if (r.id === focusCountryId()) { <span class="chip chip--green">الدولة المختارة</span> }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" (click)="closed.emit()">إغلاق</button>
+    <button type="button" class="btn btn-soft" (click)="onEdit()"><app-icon name="edit" [size]="15" /> تعديل الدول</button>
+  </ng-container>
+</app-modal>

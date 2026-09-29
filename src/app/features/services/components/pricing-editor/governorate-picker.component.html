@@ -1,0 +1,46 @@
+<div class="gp" [class.is-invalid]="invalid()" [class.is-disabled]="disabled()" [class.is-open]="isOpen()">
+  @if (!country()) {
+    <p class="gp__hint"><app-icon name="map-pin" [size]="14" /> اختر الدولة أولًا لتحديد المناطق المتاحة</p>
+  } @else if (!options().length) {
+    <p class="gp__hint gp__hint--warn"><app-icon name="alert" [size]="14" /> لا توجد {{ plural() }} مسجّلة لهذه الدولة — أضفها من صفحة الدول</p>
+  } @else {
+    <button type="button" class="gp__summary" [disabled]="disabled()" [attr.aria-expanded]="isOpen()" (click)="toggleOpen()">
+      <span class="gp__summary-icon" [class.is-all]="allSelected()"><app-icon name="map-pin" [size]="14" /></span>
+      <span class="gp__summary-text">
+        <strong>{{ value().length ? summary() : 'لم يتم اختيار أي ' + singular() }}</strong>
+        @if (value().length && !allSelected()) { <small>من أصل {{ options().length }}</small> }
+      </span>
+      <span class="gp__summary-action">{{ isOpen() ? 'إخفاء' : 'تخصيص' }} <app-icon [name]="isOpen() ? 'chevron-up' : 'chevron-down'" [size]="14" /></span>
+    </button>
+
+    @if (isOpen()) {
+      <div class="gp__panel">
+        <div class="gp__bar">
+          @if (options().length >= searchThreshold) {
+            <label class="search gp__search">
+              <app-icon name="search" [size]="14" />
+              <input type="search" [value]="query()" (input)="query.set($any($event.target).value)" [disabled]="disabled()"
+                [placeholder]="'ابحث في ال' + plural()" [attr.aria-label]="'بحث في ال' + plural()" />
+            </label>
+          }
+          <div class="gp__bulk">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="disabled() || allSelected()" (click)="selectAll()">تحديد الكل</button>
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="disabled() || !value().length" (click)="clear()">إلغاء التحديد</button>
+          </div>
+        </div>
+        <div class="gp__grid" role="group" [attr.aria-label]="plural()">
+          @for (g of filtered(); track g.id) {
+            @let on = selected().has(g.id);
+            <button type="button" class="gp__opt" role="checkbox" [class.is-on]="on" [attr.aria-checked]="on" [disabled]="disabled()"
+              (click)="toggle(g.id)">
+              <span class="gp__check" aria-hidden="true">@if (on) { <app-icon name="check" [size]="11" [stroke]="3" /> }</span>
+              <span class="gp__name" [attr.title]="g.name">{{ g.name }}</span>
+            </button>
+          } @empty {
+            <p class="gp__empty">لا توجد نتائج</p>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { withInlineHandling } from '../../core/http/http-context.tokens';
-import { asList } from '../../core/utils/api-list.util';
+import { asPaged, fetchAllPages } from '../../core/utils/api-list.util';
 import { Country, CountryCreate, CountryUpdate, Governorate } from './countries.models';
 import { resolveCountryMeta } from './country-registry';
 
@@ -54,8 +54,16 @@ function toCountry(dto: CountryDto): Country {
 export class CountriesApi {
   private readonly api = inject(ApiService);
 
+  /**
+   * The whole catalog. The endpoint is paginated, but every screen needs the
+   * full list (country switcher, scope, pickers), so all pages are drained.
+   */
   list(): Observable<Country[]> {
-    return this.api.get<unknown>(ENDPOINT).pipe(map((res) => asList<CountryDto>(res).map(toCountry)));
+    return fetchAllPages((pageIndex, pageSize) =>
+      this.api
+        .get<unknown>(ENDPOINT, { params: { PageIndex: pageIndex, PageSize: pageSize } })
+        .pipe(map((res) => asPaged<CountryDto>(res))),
+    ).pipe(map((list) => list.map(toCountry)));
   }
 
   get(id: string): Observable<Country> {
@@ -79,5 +87,11 @@ export class CountriesApi {
     return this.api
       .post<CountryDto>(`${ENDPOINT}/${id}/governorates`, { governorateNames }, { context: withInlineHandling() })
       .pipe(map(toCountry));
+  }
+
+  removeGovernorate(countryId: string, governorateId: string): Observable<void> {
+    return this.api
+      .delete<unknown>(`${ENDPOINT}/${countryId}/governorates/${governorateId}`, { context: withInlineHandling() })
+      .pipe(map(() => undefined));
   }
 }

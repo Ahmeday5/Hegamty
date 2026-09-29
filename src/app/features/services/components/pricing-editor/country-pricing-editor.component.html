@@ -1,0 +1,66 @@
+<fieldset class="cpe" [formGroup]="group()" [disabled]="disabled()" [class.has-error]="!!blockError()">
+  <!-- Country -->
+  <header class="cpe__head">
+    @if (lockCountry()) {
+      <div class="cpe__country-locked">
+        <app-country-flag [countryId]="countryId()" [size]="28" />
+        <div>
+          <strong>{{ country()?.name ?? '—' }}</strong>
+          <span>{{ currency() }}</span>
+        </div>
+      </div>
+    } @else {
+      <div class="cpe__country">
+        <label class="cpe__label" [for]="idPrefix() + '-country'">الدولة</label>
+        <div class="cpe__select">
+          @if (country()) { <app-country-flag class="cpe__select-flag" [countryId]="countryId()" [size]="20" /> }
+          <select class="form-select" [id]="idPrefix() + '-country'" formControlName="countryId" [class.has-flag]="!!country()"
+            [class.is-invalid]="countryError()">
+            <option value="" disabled>اختر الدولة</option>
+            @for (c of countryOptions(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+          </select>
+        </div>
+        @if (countryError()) { <small class="cpe__err">اختر الدولة</small> }
+      </div>
+    }
+    @if (removable()) {
+      <button type="button" class="btn btn-ghost btn-sm cpe__remove" [disabled]="disabled()" (click)="remove.emit()">
+        <app-icon name="trash" [size]="14" /> حذف الدولة
+      </button>
+    }
+  </header>
+
+  @if (blockError(); as e) {
+    <div class="cpe__block-err" role="alert"><app-icon name="alert" [size]="14" /> {{ e }}</div>
+  }
+
+  <!-- Governorates -->
+  <div class="cpe__part">
+    <span class="cpe__label">{{ divisionPlural() }} المتاحة فيها الخدمة</span>
+    <app-governorate-picker formControlName="governorateIds" [countryId]="countryId()" [invalid]="governoratesError()" />
+    @if (governoratesError()) { <small class="cpe__err">اختر {{ divisionPlural() }} التي تُقدَّم فيها الخدمة</small> }
+  </div>
+
+  <!-- Durations & prices -->
+  <div class="cpe__part">
+    <span class="cpe__label">المدد والأسعار</span>
+    <div class="cpe__rows">
+      @for (row of prices(); track row; let i = $index) {
+        <app-duration-price-row [group]="row" [idPrefix]="idPrefix() + '-d' + i" [currency]="currency()"
+          [removable]="prices().length > 1" [allowOpen]="rowAllowOpen()" [openHint]="openHint()" [disabled]="disabled()" [rowError]="rowError(i)"
+          (remove)="removeDuration(i)" />
+      }
+    </div>
+    <button type="button" class="btn btn-soft btn-sm cpe__add" [disabled]="disabled() || hasOpen()"
+      [attr.title]="addDurationHint()" [attr.aria-describedby]="hasOpen() ? idPrefix() + '-open-note' : null" (click)="addDuration()">
+      <app-icon name="plus" [size]="14" [stroke]="2.4" /> إضافة مدة أخرى
+    </button>
+    @if (hasOpen()) {
+      <p class="cpe__note" [id]="idPrefix() + '-open-note'">
+        <app-icon name="clock" [size]="13" />
+        الجلسة مفتوحة في {{ country()?.name ?? 'هذه الدولة' }}: نطاق السعر (من – إلى) يُطبَّق على الخدمة كلها فيها فقط، ولا تُضاف مدد أخرى.
+        الدول الأخرى مستقلة ويمكن أن يكون لها أكثر من مدة.
+      </p>
+    }
+  </div>
+</fieldset>

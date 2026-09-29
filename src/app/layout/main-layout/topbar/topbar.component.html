@@ -69,12 +69,15 @@
             @if (scope.isAll()) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
           </button>
           <div class="menu__sep"></div>
-          @for (c of countries(); track c.id) {
-            <button type="button" class="menu__item" [class.is-sel]="scope.selected() === c.id" (click)="selectCountry(c.id)">
-              <app-country-flag [countryId]="c.id" [size]="24" />
-              @if (scope.selected() === c.id) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
-            </button>
-          }
+          <div class="t-countries__list">
+            @for (c of countries(); track c.id) {
+              <button type="button" class="menu__item" [class.is-sel]="scope.selected() === c.id" (click)="selectCountry(c.id)">
+                <app-country-flag [countryId]="c.id" [size]="24" />
+                <span class="t-countries__name">{{ c.name }}@if (c.currency) {<small>{{ c.currency }}</small>}</span>
+                @if (scope.selected() === c.id) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
+              </button>
+            }
+          </div>
         </div>
       }
     </div>

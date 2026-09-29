@@ -1,0 +1,112 @@
+:host { display: block; }
+
+.dp {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px;
+  min-width: 0;
+  border: 1px solid var(--brd);
+  border-radius: 11px;
+  background: var(--white);
+  transition: border-color 0.18s;
+
+  &.has-error { border-color: #f5b5b5; background: #fffafa; }
+  &:disabled { opacity: 0.65; }
+
+  @media (max-width: 720px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    .dp__field--type { grid-column: 1 / -1; }
+    .dp__remove { grid-column: 1 / -1; justify-self: end; margin-top: 0; }
+  }
+}
+
+.dp__field { display: grid; gap: 4px; min-width: 0; }
+.dp__label { font-size: 11px; font-weight: 600; color: var(--txt2); }
+.dp__err { font-size: 10.5px; line-height: 1.4; color: var(--re); }
+.dp__hint { font-size: 10.5px; line-height: 1.4; color: var(--txt3); }
+
+.dp__seg {
+  padding: 3px;
+  .seg__btn { padding: 5px 10px; font-size: 11.5px; }
+  .seg__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.dp__open {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  border: 1.5px dashed var(--brd);
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--txt3);
+}
+
+/*
+ * Input group: the field and its unit (دقيقة / currency) sit side by side,
+ * never stacked — digits can't slide under the unit, whatever the text
+ * direction (Chrome lays number inputs out LTR even on an RTL page).
+ */
+.dp__affix {
+  display: flex;
+  align-items: stretch;
+  min-height: 38px;
+  border: 1.5px solid var(--brd);
+  border-radius: var(--r);
+  background: var(--white);
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+
+  &:hover:not(:focus-within) { border-color: var(--brd2); }
+  &:focus-within { border-color: var(--pr); box-shadow: 0 0 0 4px var(--pr-ring); }
+  &.is-invalid { border-color: var(--re); }
+  &.is-invalid:focus-within { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12); }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--txt);
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    &::placeholder { color: #a0abb0; font-weight: 400; }
+    &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  }
+}
+.dp__suffix {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: 96px;
+  padding: 0 9px;
+  border-inline-start: 1px solid var(--brd);
+  background: var(--bg);
+  color: var(--txt2);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp__remove { margin-top: 20px; }
+
+.dp__row-err {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #b91c1c;
+}

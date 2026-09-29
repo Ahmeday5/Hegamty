@@ -1,0 +1,56 @@
+<fieldset class="dp" [formGroup]="group()" [disabled]="disabled()" [class.has-error]="!!rowError()">
+  <div class="dp__field dp__field--type">
+    <span class="dp__label" [id]="idPrefix() + '-type'">نوع الجلسة</span>
+    <div class="seg dp__seg" role="radiogroup" [attr.aria-labelledby]="idPrefix() + '-type'">
+      <button type="button" class="seg__btn" role="radio" [class.is-on]="hasDuration()" [attr.aria-checked]="hasDuration()"
+        (click)="setTimed(true)"><app-icon name="clock" [size]="13" /> مدة محددة</button>
+      <button type="button" class="seg__btn" role="radio" [class.is-on]="!hasDuration()" [attr.aria-checked]="!hasDuration()"
+        [disabled]="!!openBlockedReason()" [attr.title]="openBlockedReason()" (click)="setTimed(false)">مفتوحة</button>
+    </div>
+    @if (!hasDuration()) { <small class="dp__hint">سعر واحد للخدمة كلها في هذه الدولة</small> }
+  </div>
+
+  <div class="dp__field">
+    <label class="dp__label" [for]="idPrefix() + '-dur'">المدة</label>
+    @if (hasDuration()) {
+      <div class="dp__affix" [class.is-invalid]="!!err('durationMin')">
+        <input type="number" inputmode="numeric" min="1" [attr.max]="durationMax" step="1" [id]="idPrefix() + '-dur'"
+          formControlName="durationMin" placeholder="30" />
+        <span class="dp__suffix">دقيقة</span>
+      </div>
+      @if (err('durationMin'); as e) { <small class="dp__err">{{ e }}</small> }
+    } @else {
+      <div class="dp__open" [id]="idPrefix() + '-dur'">بدون مدة ثابتة</div>
+    }
+  </div>
+
+  <div class="dp__field">
+    <label class="dp__label" [for]="idPrefix() + '-min'">السعر من</label>
+    <div class="dp__affix" [class.is-invalid]="!!err('priceMin')">
+      <input type="number" inputmode="decimal" min="0" step="any" [id]="idPrefix() + '-min'"
+        formControlName="priceMin" placeholder="0" />
+      @if (currency()) { <span class="dp__suffix" [attr.title]="currency()">{{ currency() }}</span> }
+    </div>
+    @if (err('priceMin'); as e) { <small class="dp__err">{{ e }}</small> }
+  </div>
+
+  <div class="dp__field">
+    <label class="dp__label" [for]="idPrefix() + '-max'">إلى</label>
+    <div class="dp__affix" [class.is-invalid]="!!err('priceMax')">
+      <input type="number" inputmode="decimal" min="0" step="any" [id]="idPrefix() + '-max'"
+        formControlName="priceMax" placeholder="0" />
+      @if (currency()) { <span class="dp__suffix" [attr.title]="currency()">{{ currency() }}</span> }
+    </div>
+    @if (err('priceMax'); as e) { <small class="dp__err">{{ e }}</small> }
+  </div>
+
+  @if (removable()) {
+    <button type="button" class="icon-btn icon-btn--red dp__remove" aria-label="حذف هذه المدة" title="حذف هذه المدة" (click)="remove.emit()">
+      <app-icon name="trash" [size]="15" />
+    </button>
+  }
+
+  @if (rowError(); as e) {
+    <div class="dp__row-err" role="alert"><app-icon name="alert" [size]="13" /> {{ e }}</div>
+  }
+</fieldset>

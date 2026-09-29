@@ -17,16 +17,18 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 import { TagInputComponent } from '../../../../shared/components/tag-input/tag-input.component';
 import { foldText } from '../../../../shared/utils/text-normalize.util';
 import { ToastService } from '../../../../core/services/toast.service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
 import { CountriesStore } from '../../countries.store';
+import { Governorate } from '../../countries.models';
 import { CountryFlagComponent } from '../../country-flag.component';
 import { countDivisions } from '../../country-registry';
 import { DivisionCountPipe } from '../../country.pipes';
 
 /**
  * Browse a country's governorates (or regions / states — the wording follows
- * the country) and append new ones. Reads the country live from the store,
+ * the country), append new ones and delete existing ones. Reads the country live from the store,
  * so the list refreshes as soon as the add request returns.
  */
 @Component({
@@ -46,6 +48,7 @@ export class GovernoratesDialogComponent {
 
   private readonly store = inject(CountriesStore);
   private readonly toast = inject(ToastService);
+  private readonly dialog = inject(DialogService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly tagInput = viewChild(TagInputComponent);
 
@@ -63,6 +66,8 @@ export class GovernoratesDialogComponent {
   protected readonly submitted = signal(false);
   /** Ids returned by the last add — highlighted in the list. */
   protected readonly freshIds = signal<ReadonlySet<string>>(new Set());
+  /** Ids with an in-flight delete. */
+  protected readonly removing = signal<ReadonlySet<string>>(new Set());
 
   protected readonly existingNames = computed(() => this.country()?.governorates.map((g) => g.name) ?? []);
 
@@ -96,8 +101,10 @@ export class GovernoratesDialogComponent {
     );
   }
 
+  protected readonly busy = computed(() => this.saving() || this.removing().size > 0);
+
   protected close(): void {
-    if (!this.saving()) this.closed.emit();
+    if (!this.busy()) this.closed.emit();
   }
 
   protected startAdd(): void {
@@ -138,6 +145,46 @@ export class GovernoratesDialogComponent {
           this.error.set(apiErrorToMessage(err, `تعذّرت إضافة ال${c.division.plural}`));
         },
       });
+  }
+
+  protected async remove(g: Governorate): Promise<void> {
+    const c = this.country();
+    if (!c || this.removing().has(g.id)) return;
+    const ok = await this.dialog.confirm({
+      title: `حذف ${c.division.singular} "${g.name}"`,
+      message: `سيتم حذف "${g.name}" من ${c.division.plural} ${c.name} نهائيًا. لن يكتمل الحذف إذا كانت مرتبطة بعناوين أو حسابات مسجّلة.`,
+      confirmText: 'حذف نهائي',
+      type: 'danger',
+    });
+    if (!ok) return;
+
+    this.setRemoving(g.id, true);
+    this.store
+      .removeGovernorate(c.id, g.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.setRemoving(g.id, false);
+          this.toast.success(`تم حذف "${g.name}" من ${c.name}`);
+        },
+        error: (err: ApiError) => {
+          this.setRemoving(g.id, false);
+          const message =
+            err?.status === 409
+              ? `"${g.name}" مرتبطة ببيانات أخرى (عناوين أو حسابات)، لذلك لا يمكن حذفها حاليًا.`
+              : apiErrorToMessage(err, 'حدث خطأ أثناء الحذف، حاول مرة أخرى.');
+          this.toast.error(message, { title: `تعذّر حذف "${g.name}"` });
+        },
+      });
+  }
+
+  private setRemoving(id: string, on: boolean): void {
+    this.removing.update((set) => {
+      const next = new Set(set);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   }
 
   private resetAdd(): void {

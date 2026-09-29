@@ -30,9 +30,9 @@
         <input type="search" [value]="search()" (input)="setFilter(search, $any($event.target).value)"
           placeholder="ابحث بالاسم أو الجوال أو البريد أو رقم الهوية…" [attr.aria-label]="'بحث في ' + cfg().title" />
       </label>
-      <select class="form-select select-sm" [value]="city()" (change)="setFilter(city, $any($event.target).value)" aria-label="المدينة">
-        <option value="all">كل المدن</option>
-        @for (c of cities(); track c) { <option [value]="c">{{ c }}</option> }
+      <select class="form-select select-sm" (change)="setFilter(city, $any($event.target).value)" aria-label="المدينة">
+        <option value="all" [selected]="city() === 'all'">كل المدن</option>
+        @for (c of cities(); track c) { <option [value]="c" [selected]="city() === c">{{ c }}</option> }
       </select>
       @if (hasFilters()) {
         <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>

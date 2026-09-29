@@ -6,83 +6,164 @@
         <span class="crumbs__sep">/</span>
         <a routerLink="/services">الخدمات</a>
         <span class="crumbs__sep">/</span>
-        <span class="crumbs__current">الاقسام</span>
+        <span class="crumbs__current">الأقسام</span>
       </nav>
-      <h1 class="page-head__title">اقسام الخدمات</h1>
+      <h1 class="page-head__title">أقسام الخدمات</h1>
       <p class="page-head__sub">كل قسم يضم مجموعة خدمات، ويظهر للعميل في التطبيق لتسهيل اختيار الخدمة</p>
     </div>
     <div class="page-head__actions">
-      <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="16"
-          [stroke]="2.2" /> قسم جديد</button>
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [class.is-spinning]="refreshing()" [disabled]="refreshing() || status() === 'loading'" (click)="refresh()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn btn-pr" (click)="openCreate()">
+        <app-icon name="plus" [size]="16" [stroke]="2.2" /> قسم جديد
+      </button>
     </div>
   </header>
 
-  <div class="cats">
-    @for (r of rows(); track r.category.id; let i = $index) {
-    <article class="cat panel" [class.is-off]="!r.category.active" [style.--d]="i">
-      <header class="cat__head">
-        <span class="cat__no">{{ i + 1 }}</span>
-        <div class="cat__title">
-          <h3>{{ r.category.name }}</h3>
-          <span>{{ r.services }} خدمة · {{ r.activeServices }} مفعّلة</span>
-        </div>
-        <button type="button" class="switch" role="switch" [class.is-on]="r.category.active"
-          [attr.aria-checked]="r.category.active"
-          [attr.aria-label]="(r.category.active ? 'إيقاف ' : 'تفعيل ') + r.category.name"
-          (click)="toggleActive(r.category)"></button>
-      </header>
-      <p class="cat__desc">{{ r.category.description || 'بدون وصف' }}</p>
-      <div class="cat__tags">
-        @for (n of r.names; track n) { <span>{{ n }}</span> }
-        @if (r.services > r.names.length) { <span class="more">+{{ r.services - r.names.length }}</span> }
-        @if (!r.services) { <span class="none">لا توجد خدمات في هذا التصنيف بعد</span> }
-      </div>
-      <footer class="cat__foot">
-        <span class="muted"><app-icon name="calendar" [size]="13" /> {{ r.bookings | num }} حجز</span>
-        <div class="actions">
-          <button type="button" class="icon-btn icon-btn--blue" data-tip="عرض الخدمات" aria-label="عرض الخدمات"
-            (click)="openServices()"><app-icon name="eye" [size]="16" /></button>
-          <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل"
-            (click)="openEdit(r.category)"><app-icon name="edit" [size]="16" /></button>
-          <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف"
-            (click)="remove(r.category)"><app-icon name="trash" [size]="16" /></button>
-        </div>
-      </footer>
-    </article>
-    }
-    <button type="button" class="cat-add" [style.--d]="rows().length" (click)="openCreate()">
-      <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
-      <strong>تصنيف جديد</strong>
-    </button>
+  <!-- Global country scope (header switcher) -->
+  @if (scopedCountry(); as sc) {
+    <div class="scope-bar fx" role="status">
+      <app-country-flag [countryId]="sc.id" [size]="26" />
+      <p>تعرض الأقسام المتاحة في <strong>{{ sc.name }}</strong> فقط.</p>
+      <button type="button" class="btn btn-sm scope-bar__btn" (click)="showAllCountries()"><app-icon name="globe" [size]="14" /> كل الدول</button>
+    </div>
+  }
+
+  <div class="grid grid--3">
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي الأقسام" [value]="counts().all" icon="grid" tone="green" />
+    <app-kpi-card class="fx" style="--d: 2" label="ظاهرة في التطبيق" [value]="counts().active" icon="eye" tone="teal" />
+    <app-kpi-card class="fx" style="--d: 3" label="موقوفة" [value]="counts().inactive" icon="ban" tone="amber" />
   </div>
 
-  <app-modal [open]="formOpen()" [title]="editing() ? 'تعديل القسم' : 'قسم جديد'" size="sm"
-    (closed)="formOpen.set(false)">
-    <form id="cat-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="span-2">
-        <label class="form-label" for="cat-name">اسم القسم</label>
-        <input id="cat-name" class="form-control" formControlName="name" placeholder="مثال: الحجامة"
-          [class.is-invalid]="invalid('name')" />
-        <app-form-error [control]="form.controls.name" label="اسم القسم" />
+  @if (!hasItems() && status() === 'loading') {
+    <div class="cats" aria-busy="true" aria-label="جارٍ تحميل الأقسام">
+      @for (s of skeletons; track s) {
+        <div class="cat panel cat--skel" aria-hidden="true">
+          <div class="cat__head">
+            <span class="skel cat__skel-icon"></span>
+            <div class="cat__title"><span class="skel" style="width: 55%; height: 14px"></span><span class="skel" style="width: 30%"></span></div>
+          </div>
+          <span class="skel" style="width: 95%"></span>
+          <span class="skel" style="width: 70%"></span>
+        </div>
+      }
+    </div>
+  } @else if (!hasItems() && status() === 'error') {
+    <div class="card state">
+      <div class="empty">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="28" /></span>
+        <h3 class="empty__title">تعذّر تحميل الأقسام</h3>
+        <p class="empty__text">{{ loadError() }}</p>
+        <button type="button" class="btn btn-pr" (click)="retry()"><app-icon name="refresh" [size]="15" /> إعادة المحاولة</button>
       </div>
-      <div class="span-2">
-        <label class="form-label" for="cat-desc">الوصف (اختياري)</label>
-        <textarea id="cat-desc" class="form-control" rows="3" formControlName="description" maxlength="160"
-          [class.is-invalid]="invalid('description')"></textarea>
+    </div>
+  } @else if (!hasItems()) {
+    <div class="card state">
+      <div class="empty">
+        <span class="empty__icon"><app-icon name="grid" [size]="28" /></span>
+        <h3 class="empty__title">لا توجد أقسام بعد</h3>
+        <p class="empty__text">أنشئ أول قسم (مثل الحجامة أو المساج) لتبدأ بإضافة الخدمات تحته.</p>
+        <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="15" [stroke]="2.2" /> قسم جديد</button>
       </div>
-      <div class="span-2 cat-toggle">
-        <div><strong>القسم مفعّل</strong><span>الأقسام الموقوفة تُخفى من التطبيق مع خدماتها</span></div>
-        <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value"
-          [attr.aria-checked]="form.controls.active.value" aria-label="تفعيل القسم"
-          (click)="toggleFormActive()"></button>
+    </div>
+  } @else {
+    <div class="list-bar fx" style="--d: 4">
+      <label class="search list-bar__search">
+        <app-icon name="search" [size]="16" />
+        <input type="search" [value]="query()" (input)="query.set($any($event.target).value)"
+          placeholder="ابحث باسم القسم" aria-label="بحث في الأقسام" />
+        @if (searching()) { <span class="spinner-border spinner-border-sm list-bar__spin" aria-label="جارٍ البحث"></span> }
+      </label>
+      <div class="seg" role="tablist" aria-label="تصفية حسب الحالة">
+        @for (f of filters(); track f.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="filter() === f.id" [attr.aria-selected]="filter() === f.id"
+            (click)="filter.set(f.id)">
+            {{ f.label }} <span class="seg__count">{{ f.count | num }}</span>
+          </button>
+        }
       </div>
-    </form>
-    <ng-container modal-footer>
-      <button type="button" class="btn btn-ghost" (click)="formOpen.set(false)">إلغاء</button>
-      <button type="submit" form="cat-form" class="btn btn-pr" [disabled]="saving()">
-        @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… } @else {
-        حفظ }
-      </button>
-    </ng-container>
-  </app-modal>
+    </div>
+
+    @if (!visible().length) {
+      <div class="card state">
+        <div class="empty">
+          <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+          <h3 class="empty__title">لا توجد نتائج</h3>
+          <p class="empty__text">
+            @if (scopedCountry(); as sc) { لا توجد أقسام متاحة في {{ sc.name }} تطابق التصفية الحالية. }
+            @else { لا توجد أقسام تطابق البحث أو التصفية الحالية. }
+          </p>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">مسح التصفية</button>
+        </div>
+      </div>
+    } @else {
+      <div class="cats">
+        @for (c of visible(); track c.id; let i = $index) {
+          @let isBusy = busy().has(c.id);
+          <article class="cat panel" [class.is-off]="!c.active" [class.is-busy]="isBusy" [style.--d]="i" [attr.aria-busy]="isBusy || null">
+            <header class="cat__head">
+              <app-section-icon class="cat__icon" [url]="c.iconUrl" [size]="46" />
+              <div class="cat__title">
+                <h3 [attr.title]="c.name">{{ c.name }}</h3>
+                <span class="cat__status" [class.is-on]="c.active">{{ c.active ? 'ظاهر في التطبيق' : 'موقوف — مخفي من التطبيق' }}</span>
+              </div>
+              <button type="button" class="switch" role="switch" [class.is-on]="c.active" [attr.aria-checked]="c.active"
+                [attr.aria-label]="(c.active ? 'إيقاف قسم ' : 'تفعيل قسم ') + c.name" [disabled]="isBusy" (click)="toggleActive(c)"></button>
+            </header>
+
+            <p class="cat__desc" [class.is-empty]="!c.description">{{ c.description || 'لا يوجد وصف لهذا القسم' }}</p>
+
+            <button type="button" class="cat__countries" [attr.aria-label]="'عرض دول قسم ' + c.name + ' (' + c.countries.length + ')'"
+              (click)="openCountries(c)">
+              @if (c.countries.length) {
+                <span class="cat__flags">
+                  @for (x of c.countries.slice(0, flagPreview); track x.id) {
+                    <app-country-flag [countryId]="x.id" [name]="x.name" [size]="22" />
+                  }
+                  @if (c.countries.length > flagPreview) { <span class="cat__flags-more">+{{ c.countries.length - flagPreview }}</span> }
+                </span>
+                <span class="cat__countries-names" [attr.title]="countryNames(c)">{{ countrySummary(c) }}</span>
+                <span class="cat__countries-more">عرض الكل <app-icon name="chevron-left" [size]="13" [stroke]="2.4" /></span>
+              } @else {
+                <span class="cat__countries-none"><app-icon name="alert" [size]="13" /> غير متاح في أي دولة</span>
+                <span class="cat__countries-more">إضافة <app-icon name="chevron-left" [size]="13" [stroke]="2.4" /></span>
+              }
+            </button>
+
+            <footer class="cat__foot">
+              <span class="cat__id" dir="ltr">#{{ c.id }}</span>
+              <div class="actions">
+                <a class="icon-btn icon-btn--blue" data-tip="عرض الخدمات" [attr.aria-label]="'عرض خدمات ' + c.name"
+                  routerLink="/services" [queryParams]="{ section: c.id }"><app-icon name="eye" [size]="16" /></a>
+                <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" [attr.aria-label]="'تعديل ' + c.name"
+                  [disabled]="isBusy" (click)="openEdit(c)">
+                  <app-icon name="edit" [size]="16" />
+                </button>
+                <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" [attr.aria-label]="'حذف ' + c.name"
+                  [disabled]="isBusy" (click)="remove(c)">
+                  @if (isBusy) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+                  @else { <app-icon name="trash" [size]="16" /> }
+                </button>
+              </div>
+            </footer>
+          </article>
+        }
+
+        @if (!isFiltered()) {
+          <button type="button" class="cat-add" [style.--d]="visible().length" (click)="openCreate()">
+            <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
+            <strong>قسم جديد</strong>
+            <small>أضف قسمًا ثم أضف خدماته</small>
+          </button>
+        }
+      </div>
+    }
+  }
+
+  <app-category-form [open]="formOpen()" [category]="editing()" [countryId]="scope.isAll() ? null : scope.selected()"
+    (closed)="formOpen.set(false)" />
+  <app-section-countries-dialog [open]="countriesOpen()" [section]="countriesSection()"
+    [focusCountryId]="scope.isAll() ? null : scope.selected()" (closed)="countriesOpen.set(false)" (edit)="editFromCountries($event)" />
 </section>

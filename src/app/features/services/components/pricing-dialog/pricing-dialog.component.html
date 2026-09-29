@@ -1,0 +1,145 @@
+<app-modal [open]="open() && !!service()" [title]="'الأسعار والتغطية — ' + (service()?.name ?? '')" size="xl"
+  [closeOnBackdrop]="!busy()" [closeOnEsc]="!busy()" (closed)="close()">
+  @if (service(); as s) {
+    <!-- Service summary -->
+    <header class="pd-hero">
+      <span class="pd-hero__icon"><app-icon name="wallet" [size]="22" /></span>
+      <div class="pd-hero__text">
+        <strong>{{ s.name }}</strong>
+        <span>{{ s.sectionName || 'بدون قسم' }}</span>
+      </div>
+      <div class="pd-hero__stats">
+        <span class="pd-stat"><app-icon name="globe" [size]="14" /> الدول: {{ groups().length }}</span>
+        <span class="pd-stat"><app-icon name="clock" [size]="14" /> الأسعار: {{ s.pricings.length }}</span>
+        @if (!s.active) { <span class="pd-stat pd-stat--off">الخدمة موقوفة</span> }
+      </div>
+    </header>
+
+    <!-- Add panel -->
+    @if (addMode(); as mode) {
+      <section class="pd-add" aria-labelledby="pd-add-title">
+        <div class="pd-add__head">
+          <h4 id="pd-add-title">{{ mode.kind === 'country' ? 'إضافة دولة جديدة للخدمة' : 'إضافة مدد جديدة' }}</h4>
+          <small>
+            @if (mode.kind === 'country') { اختر الدولة ومناطقها، ثم أضف مدة أو أكثر مع نطاق السعر لكل مدة. }
+            @else { المدد الجديدة تُضاف بجانب المدد الحالية لنفس الدولة. }
+          </small>
+        </div>
+        <form [formGroup]="addForm()" (ngSubmit)="submitAdd()" novalidate>
+          <app-country-pricing-editor [group]="addForm()" idPrefix="pd-add" [lockCountry]="mode.kind === 'durations'"
+            [excludedCountryIds]="pricedCountryIds()" [existingDurations]="existingDurations()"
+            [allowOpen]="mode.kind === 'country'" [disabled]="saving()" />
+          @if (addError(); as e) { <div class="pd-alert" role="alert"><app-icon name="alert" [size]="15" /> <span>{{ e }}</span></div> }
+          <div class="pd-actions">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="saving()" (click)="cancelAdd()">إلغاء</button>
+            <button type="submit" class="btn btn-pr btn-sm" [disabled]="saving()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
+              @else { <app-icon name="check" [size]="15" [stroke]="2.4" /> حفظ }
+            </button>
+          </div>
+        </form>
+      </section>
+    } @else if (s.pricings.length && canAddCountry()) {
+      <div class="pd-toolbar">
+        <button type="button" class="btn btn-soft" [disabled]="busy()" (click)="startAddCountry()">
+          <app-icon name="globe" [size]="15" /> إضافة دولة
+        </button>
+      </div>
+    }
+
+    <!-- Countries -->
+    @if (!s.pricings.length) {
+      @if (!addMode()) {
+        <div class="empty">
+          <span class="empty__icon empty__icon--amber"><app-icon name="alert" [size]="28" /></span>
+          <h4 class="empty__title">لا توجد أسعار لهذه الخدمة</h4>
+          <p class="empty__text">الخدمة لن تظهر للعملاء في أي دولة حتى تضيف دولة ومناطقها وأسعارها.</p>
+          <button type="button" class="btn btn-pr" (click)="startAddCountry()"><app-icon name="plus" [size]="15" [stroke]="2.4" /> إضافة أول دولة</button>
+        </div>
+      }
+    } @else {
+      <div class="pd-groups">
+        @for (g of groups(); track g.countryId) {
+          <section class="pd-group" [class.is-focus]="g.countryId === focusCountryId()" [attr.aria-label]="g.countryName">
+            <header class="pd-group__head">
+              <app-country-flag [countryId]="g.countryId" [name]="g.countryName" [size]="28" />
+              <div class="pd-group__title">
+                <strong>{{ g.countryName }}</strong>
+                <span>{{ g.currency }}</span>
+              </div>
+              <span class="pd-cover" [class.is-all]="g.coversAll"><app-icon name="map-pin" [size]="13" /> {{ g.coverage }}</span>
+              @if (g.countryId === focusCountryId()) { <span class="chip chip--green">الدولة المختارة</span> }
+              @if (g.openEnded) {
+                <span class="pd-open" title="جلسة مفتوحة: نطاق سعر واحد يُطبَّق على الخدمة كلها في هذه الدولة">
+                  <app-icon name="clock" [size]="13" /> سعر موحّد
+                </span>
+              } @else {
+                <button type="button" class="btn btn-ghost btn-sm pd-group__add" [disabled]="busy()" (click)="startAddDurations(g)"
+                  [attr.aria-label]="'إضافة مدة في ' + g.countryName">
+                  <app-icon name="plus" [size]="14" [stroke]="2.4" /> مدة
+                </button>
+              }
+            </header>
+
+            <ul class="pd-list" role="list">
+              @for (p of g.pricings; track p.id) {
+                @let isRemoving = removing().has(p.id);
+                @if (editingId() === p.id && editForm(); as form) {
+                  <li class="pd-item pd-item--edit">
+                    <form [formGroup]="form" (ngSubmit)="submitEdit(p)" novalidate>
+                      <app-duration-price-row [group]="form.controls.price" [idPrefix]="'pd-e' + p.id" [currency]="g.currency"
+                        [allowOpen]="g.pricings.length === 1" openHint="لهذه الدولة مدد أخرى — احذفها أولًا لتحويل السعر إلى جلسة مفتوحة"
+                        [disabled]="saving()" />
+                      <div class="pd-edit-gov">
+                        <span class="pd-edit-gov__label">المناطق التي يسري عليها هذا السعر</span>
+                        <app-governorate-picker formControlName="governorateIds" [countryId]="p.countryId"
+                          [invalid]="form.controls.governorateIds.invalid && form.controls.governorateIds.touched" />
+                      </div>
+                      @if (editError(); as e) { <div class="pd-alert" role="alert"><app-icon name="alert" [size]="15" /> <span>{{ e }}</span></div> }
+                      <div class="pd-actions">
+                        <button type="button" class="btn btn-ghost btn-sm" [disabled]="saving()" (click)="cancelEdit()">إلغاء</button>
+                        <button type="submit" class="btn btn-pr btn-sm" [disabled]="saving()">
+                          @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
+                          @else { <app-icon name="check" [size]="15" [stroke]="2.4" /> حفظ التعديل }
+                        </button>
+                      </div>
+                    </form>
+                  </li>
+                } @else {
+                  <li class="pd-item" [class.is-busy]="isRemoving" [attr.aria-busy]="isRemoving || null">
+                    <span class="pd-item__dur" [class.is-open]="p.durationMin === null"><app-icon name="clock" [size]="14" /> {{ p.durationMin | minutes }}</span>
+                    <span class="pd-item__price">{{ p | priceRange }}</span>
+                    @if (g.mixedCoverage) {
+                      <span class="pd-item__cover" [attr.title]="governorateNames(p)"><app-icon name="map-pin" [size]="12" /> {{ coverageOf(p) }}</span>
+                    }
+                    <div class="pd-item__actions">
+                      <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" [attr.aria-label]="'تعديل سعر ' + g.countryName"
+                        [disabled]="busy()" (click)="startEdit(p)">
+                        <app-icon name="edit" [size]="15" />
+                      </button>
+                      <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" [attr.aria-label]="'حذف سعر ' + g.countryName"
+                        [disabled]="busy()" (click)="remove(p)">
+                        @if (isRemoving) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+                        @else { <app-icon name="trash" [size]="15" /> }
+                      </button>
+                    </div>
+                  </li>
+                }
+              }
+            </ul>
+
+            @if (!g.coversAll && !g.mixedCoverage && g.pricings[0].governorates.length) {
+              <footer class="pd-group__foot" [attr.title]="governorateNames(g.pricings[0])">
+                <app-icon name="map-pin" [size]="12" /> متاحة في: {{ governorateNames(g.pricings[0]) }}
+              </footer>
+            }
+          </section>
+        }
+      </div>
+    }
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

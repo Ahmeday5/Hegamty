@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 import { countriesResolver } from './features/countries/countries.resolver';
+import { categoriesResolver } from './features/services/categories.resolver';
 
 export const routes: Routes = [
   // Auth area — only reachable when NOT signed in
@@ -51,13 +52,15 @@ export const routes: Routes = [
       },
       {
         path: 'services',
+        resolve: { categories: categoriesResolver },
         title: 'الخدمات · HiCan',
         loadComponent: () =>
           import('./features/services/pages/services-page/services-page.component').then((m) => m.ServicesPageComponent),
       },
       {
         path: 'service-categories',
-        title: 'تصنيفات الخدمات · HiCan',
+        resolve: { categories: categoriesResolver },
+        title: 'أقسام الخدمات · HiCan',
         loadComponent: () =>
           import('./features/services/pages/categories-page/categories-page.component').then((m) => m.CategoriesPageComponent),
       },

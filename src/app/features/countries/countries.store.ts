@@ -1,10 +1,9 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 import { ApiError } from '../../core/models/api-response.model';
+import { LoadStatus } from '../../core/models/load-status.model';
 import { CountriesApi } from './countries.api';
 import { Country, CountryCreate, CountryUpdate } from './countries.models';
-
-export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 const collator = new Intl.Collator('ar');
 const byName = (a: Country, b: Country) => collator.compare(a.name, b.name);
@@ -74,6 +73,16 @@ export class CountriesStore {
 
   addGovernorates(id: string, names: string[]): Observable<Country> {
     return this.api.addGovernorates(id, names).pipe(tap((c) => this.upsert(c)));
+  }
+
+  /** The endpoint returns no body, so the country is patched locally. */
+  removeGovernorate(countryId: string, governorateId: string): Observable<void> {
+    return this.api.removeGovernorate(countryId, governorateId).pipe(
+      tap(() => {
+        const c = this.byId(countryId);
+        if (c) this.upsert({ ...c, governorates: c.governorates.filter((g) => g.id !== governorateId) });
+      }),
+    );
   }
 
   remove(id: string): Observable<void> {
