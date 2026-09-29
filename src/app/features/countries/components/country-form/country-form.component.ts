@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -8,30 +9,34 @@ import {
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormErrorComponent } from '../../../../shared/components/form-error/form-error.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { TagInputComponent } from '../../../../shared/components/tag-input/tag-input.component';
 import { ToastService } from '../../../../core/services/toast.service';
-import { Country, CountryDraft } from '../../countries.models';
+import { ApiError } from '../../../../core/models/api-response.model';
+import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
+import { Country } from '../../countries.models';
 import { CountriesStore } from '../../countries.store';
+import { CountryFlagComponent } from '../../country-flag.component';
+import { countDivisions, resolveCountryMeta } from '../../country-registry';
+import { DivisionCountPipe } from '../../country.pipes';
 
-/** Add / edit a market: name, currency, dialing code and its cities. */
+/**
+ * Add / edit a market. Creating also seeds its first governorates; on edit
+ * they're managed from the governorates dialog (the update endpoint only
+ * accepts the country's own fields).
+ */
 @Component({
   selector: 'app-country-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule,
-    ModalComponent,
-    FormErrorComponent,
-    IconComponent,
-  ],
+  imports: [ReactiveFormsModule, ModalComponent, FormErrorComponent, IconComponent, TagInputComponent, CountryFlagComponent, DivisionCountPipe],
   templateUrl: './country-form.component.html',
   styleUrl: './country-form.component.scss',
 })
@@ -39,23 +44,40 @@ export class CountryFormComponent {
   readonly open = input.required<boolean>();
   readonly country = input<Country | null>(null);
   readonly closed = output<void>();
+  /** Edit mode shortcut to the governorates dialog. */
+  readonly manageGovernorates = output<Country>();
 
   private readonly fb = inject(FormBuilder);
   private readonly store = inject(CountriesStore);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly tags = viewChild(TagInputComponent);
 
   protected readonly saving = signal(false);
-  protected readonly cities = signal<string[]>([]);
-  protected readonly cityDraft = signal('');
-  protected readonly citiesTouched = signal(false);
-  protected readonly title = computed(() =>
-    this.country() ? `تعديل ${this.country()!.name}` : 'إضافة دولة جديدة',
-  );
+  protected readonly serverError = signal<string | null>(null);
+  protected readonly governorates = signal<string[]>([]);
+  protected readonly submitted = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    currency: ['', [Validators.required, Validators.maxLength(20)]],
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
+    nameEn: ['', [Validators.required, Validators.maxLength(60), Validators.pattern(/^[A-Za-z][A-Za-z .'()-]*$/)]],
+    currency: ['', [Validators.required, Validators.maxLength(30)]],
   });
+
+  private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  protected readonly isEdit = computed(() => !!this.country());
+  protected readonly title = computed(() => (this.country() ? `تعديل بيانات ${this.country()!.name}` : 'إضافة دولة جديدة'));
+
+  /** Live preview: the flag and division term follow what the admin types. */
+  protected readonly preview = computed(() => {
+    const v = this.value();
+    const name = v.name?.trim() ?? '';
+    const nameEn = v.nameEn?.trim() ?? '';
+    return { name, nameEn, ...resolveCountryMeta(name, nameEn) };
+  });
+  protected readonly governoratesInvalid = computed(() => this.submitted() && !this.governorates().length);
+  protected readonly governoratesSummary = computed(() => countDivisions(this.governorates().length, this.preview().division));
 
   constructor() {
     effect(
@@ -64,68 +86,59 @@ export class CountryFormComponent {
         const c = this.country();
         untracked(() => {
           this.saving.set(false);
-          this.cityDraft.set('');
-          this.citiesTouched.set(false);
-          this.cities.set(c ? [...c.cities] : []);
-          this.form.reset({ name: c?.name ?? '', currency: c?.currency ?? '' });
+          this.submitted.set(false);
+          this.serverError.set(null);
+          this.governorates.set([]);
+          this.form.reset({ name: c?.name ?? '', nameEn: c?.nameEn ?? '', currency: c?.currency ?? '' });
         });
       },
       { allowSignalWrites: true },
     );
   }
 
-  protected invalid(name: 'name' | 'currency'): boolean {
+  protected invalid(name: keyof typeof this.form.controls): boolean {
     const c = this.form.controls[name];
     return c.invalid && c.touched;
   }
 
-  protected addCity(event?: Event): void {
-    event?.preventDefault();
-    const parts = this.cityDraft()
-      .split(/[،,\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (!parts.length) return;
-    this.cities.update((list) => [
-      ...list,
-      ...parts.filter((p) => !list.includes(p)),
-    ]);
-    this.cityDraft.set('');
+  protected close(): void {
+    if (!this.saving()) this.closed.emit();
   }
 
-  protected removeCity(city: string): void {
-    this.cities.update((list) => list.filter((c) => c !== city));
-    this.citiesTouched.set(true);
+  protected openGovernorates(): void {
+    const c = this.country();
+    if (c) this.manageGovernorates.emit(c);
   }
 
   protected submit(): void {
     if (this.saving()) return;
-    this.addCity();
-    this.citiesTouched.set(true);
-    if (this.form.invalid || !this.cities().length) {
+    this.tags()?.commit();
+    this.submitted.set(true);
+    this.serverError.set(null);
+
+    const existing = this.country();
+    if (this.form.invalid || (!existing && !this.governorates().length)) {
       this.form.markAllAsTouched();
       return;
     }
+
     const v = this.form.getRawValue();
-    const draft: CountryDraft = {
-      name: v.name.trim(),
-      currency: v.currency.trim(),
-      cities: this.cities(),
-    };
+    const fields = { name: v.name.trim(), nameEn: v.nameEn.trim(), currency: v.currency.trim() };
+    const request$: Observable<Country> = existing
+      ? this.store.update(existing.id, fields)
+      : this.store.create({ ...fields, governorateNames: this.governorates() });
+
     this.saving.set(true);
-    setTimeout(() => {
-      const existing = this.country();
-      if (existing) {
-        this.store.update(existing.id, draft);
-        this.toast.success(`تم تحديث بيانات ${draft.name}`);
-      } else {
-        this.store.create(draft);
-        this.toast.success(
-          `تمت إضافة ${draft.name} — أضف الآن خدماتها وباقات فنييها`,
-        );
-      }
-      this.saving.set(false);
-      this.closed.emit();
-    }, 500);
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (c) => {
+        this.saving.set(false);
+        this.toast.success(existing ? `تم تحديث بيانات ${c.name}` : `تمت إضافة ${c.name} بنجاح`);
+        this.closed.emit();
+      },
+      error: (err: ApiError) => {
+        this.saving.set(false);
+        this.serverError.set(apiErrorToMessage(err, existing ? 'تعذّر حفظ التعديلات' : 'تعذّرت إضافة الدولة'));
+      },
+    });
   }
 }

@@ -49,7 +49,7 @@
         </p>
         <div class="profile__chips">
           <span class="chip chip--dot {{ statusMeta[p.status].chip }}">{{ statusMeta[p.status].label }}</span>
-          <span class="chip chip--slate chip--flag"><app-country-flag [code]="p.countryId" [size]="16" /> {{ p.countryId | countryName }}</span>
+          <span class="chip chip--slate chip--flag"><app-country-flag [countryId]="p.countryId" [size]="16" /> {{ p.countryId | countryName }}</span>
           <span class="chip chip--blue"><app-icon name="map-pin" [size]="12" /> {{ p.city }}</span>
           @if (p.specialty) { <span class="chip chip--purple">{{ p.specialty }}</span> }
           @if (subscription(); as s) { <span class="chip {{ subMeta[s.state].chip }}"><app-icon name="award" [size]="12" /> {{ subMeta[s.state].label }}</span> }

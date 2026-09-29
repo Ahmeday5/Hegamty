@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
+import { countriesResolver } from './features/countries/countries.resolver';
 
 export const routes: Routes = [
   // Auth area — only reachable when NOT signed in
@@ -29,6 +30,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [authGuard],
     canActivateChild: [authGuard],
+    resolve: { countries: countriesResolver },
     loadComponent: () =>
       import('./layout/main-layout/main-layout.component').then(
         (m) => m.MainLayoutComponent,

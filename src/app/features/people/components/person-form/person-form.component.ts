@@ -58,12 +58,12 @@ export class PersonFormComponent {
 
   private readonly countryId = toSignal(this.form.controls.countryId.valueChanges, { initialValue: '' });
   protected readonly country = computed(() => this.countriesStore.byId(this.countryId()));
-  protected readonly cities = computed(() => this.country()?.cities ?? []);
+  protected readonly cities = computed(() => this.country()?.governorates.map((g) => g.name) ?? []);
 
   constructor() {
     this.form.controls.countryId.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
       const c = this.countriesStore.byId(id);
-      if (c && !c.cities.includes(this.form.controls.city.value)) this.form.controls.city.setValue('');
+      if (c && !c.governorates.some((g) => g.name === this.form.controls.city.value)) this.form.controls.city.setValue('');
     });
 
     effect(() => {

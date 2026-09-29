@@ -114,7 +114,7 @@ export class PackagesStore {
 
   private seedPackages(): TechPackage[] {
     return this.countries.all().flatMap((c) => {
-      const factor = PRICE_FACTOR[c.id];
+      const factor = c.iso ? PRICE_FACTOR[c.iso] : undefined;
       if (!factor) return [];
       const step = factor < 0.2 ? 1 : factor > 3 ? 50 : 10;
       return TEMPLATES.map((t, i) => ({

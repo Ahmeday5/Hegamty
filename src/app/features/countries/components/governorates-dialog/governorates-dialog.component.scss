@@ -1,0 +1,164 @@
+/* ── Country summary ── */
+.gv-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.16), transparent 55%), var(--grad-pr);
+  color: var(--white);
+
+  app-country-flag { filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25)); }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    strong { font-size: 17px; font-weight: 700; color: var(--white); }
+    span { font-size: 12px; color: rgba(255, 255, 255, 0.78); text-align: start; }
+  }
+  &__stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+  @media (max-width: 520px) {
+    flex-wrap: wrap;
+    &__stats { width: 100%; justify-content: flex-start; }
+  }
+}
+
+/* Glass chips on the dark brand gradient — white text on a translucent dark-teal fill. */
+.gv-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--muted { background: rgba(0, 0, 0, 0.14); border-color: rgba(255, 255, 255, 0.14); }
+}
+
+/* ── Add panel ── */
+.gv-add {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px dashed #b8dcdf;
+  background: #f5fbfb;
+  animation: fx-pop 0.25s var(--ease);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    h4 { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--pr-d); }
+  }
+  &__count {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--white);
+    border: 1px solid #cfe7e9;
+    color: var(--pr-d);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  &__actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px; }
+}
+.gv-hint { font-size: 11.5px; color: var(--txt3); }
+.gv-err { font-size: 11.5px; color: var(--re); }
+.gv-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--re-l);
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.6;
+  app-icon { flex-shrink: 0; margin-top: 2px; }
+}
+
+/* ── Toolbar ── */
+.gv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  &__search { flex: 1 1 240px; min-width: 0; }
+}
+.gv-result { margin: -4px 0 10px; font-size: 12px; color: var(--txt3); }
+
+/* ── List ── */
+.gv-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gv-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--brd);
+  background: var(--white);
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+
+  &:hover { border-color: #b8dcdf; background: #fafdfd; box-shadow: var(--shadow); }
+
+  &__no {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--pr-l);
+    color: var(--pr-d);
+    font-size: 11.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    strong, span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    strong { font-size: 13px; font-weight: 600; color: var(--txt); }
+    span { font-size: 11.5px; color: var(--txt3); text-align: start; }
+  }
+
+  &.is-fresh {
+    border-color: #9fd8b5;
+    background: var(--gr-l);
+    animation: gv-flash 1.6s var(--ease);
+    .gv-item__no { background: var(--white); color: #15803d; }
+  }
+}
+
+@keyframes gv-flash {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.35); }
+  60% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gv-add, .gv-item.is-fresh { animation: none; }
+}

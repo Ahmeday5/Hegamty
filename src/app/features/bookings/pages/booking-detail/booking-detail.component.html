@@ -12,7 +12,7 @@
       <h1 class="page-head__title title-row">
         تفاصيل الحجز <span class="bk-id">{{ b.id }}</span>
         <span class="chip chip--dot {{ bookingMeta[b.status].chip }}">{{ bookingMeta[b.status].label }}</span>
-        <span class="chip chip--slate chip--flag"><app-country-flag [code]="b.countryId" [size]="16" /> {{ b.countryId | countryName }}</span>
+        <span class="chip chip--slate chip--flag"><app-country-flag [countryId]="b.countryId" [size]="16" /> {{ b.countryId | countryName }}</span>
       </h1>
       <p class="page-head__sub">تم الحجز من التطبيق {{ b.date | relTime }} · {{ b.date | arDate: true }}</p>
     </div>

@@ -29,7 +29,8 @@ export class CountryScopeService {
   constructor() {
     effect(() => {
       const id = this.selected();
-      if (id !== ALL_COUNTRIES && !this.countries.byId(id)) this.selected.set(ALL_COUNTRIES);
+      // Only drop a stale selection once the catalog is known — never while it's still loading.
+      if (this.countries.loaded() && id !== ALL_COUNTRIES && !this.countries.byId(id)) this.selected.set(ALL_COUNTRIES);
       try { localStorage.setItem(STORAGE_KEY, this.selected()); } catch { /* storage unavailable */ }
     }, { allowSignalWrites: true });
   }

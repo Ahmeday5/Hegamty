@@ -2,6 +2,7 @@ import { Pipe, PipeTransform, inject } from '@angular/core';
 import { formatNumber } from '../../shared/utils/format.util';
 import { CountriesStore } from './countries.store';
 import { CountryScopeService } from './country-scope.service';
+import { DivisionTerm, countDivisions } from './country-registry';
 
 /**
  * `{{ amount | cmoney: record.countryId }}` — amount in its country's
@@ -46,4 +47,12 @@ export class CountryCurrencyPipe implements PipeTransform {
   }
 }
 
-export const COUNTRY_PIPES = [CountryMoneyPipe, ScopeMoneyPipe, CountryNamePipe, CountryCurrencyPipe] as const;
+/** `{{ c.governorates.length | divisions: c.division }}` → "13 منطقة", "محافظتان", "5 ولايات". */
+@Pipe({ name: 'divisions', standalone: true })
+export class DivisionCountPipe implements PipeTransform {
+  transform(count: number | null | undefined, term: DivisionTerm): string {
+    return countDivisions(count ?? 0, term);
+  }
+}
+
+export const COUNTRY_PIPES = [CountryMoneyPipe, ScopeMoneyPipe, CountryNamePipe, CountryCurrencyPipe, DivisionCountPipe] as const;

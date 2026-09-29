@@ -1,75 +1,34 @@
-import { Injectable, Signal, computed, signal } from '@angular/core';
-import { Country, CountryDraft } from './countries.models';
+import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
+import { ApiError } from '../../core/models/api-response.model';
+import { CountriesApi } from './countries.api';
+import { Country, CountryCreate, CountryUpdate } from './countries.models';
 
-const DAY = 86400000;
+export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-const SEED: Omit<Country, 'createdAt'>[] = [
-  {
-    id: 'SA',
-    name: 'السعودية',
-    currency: 'ريال',
-    cities: [
-      'الرياض',
-      'جدة',
-      'مكة المكرمة',
-      'المدينة المنورة',
-      'الدمام',
-      'الخبر',
-      'الطائف',
-      'أبها',
-      'تبوك',
-      'بريدة',
-    ],
-  },
-  {
-    id: 'EG',
-    name: 'مصر',
-    currency: 'جنيه',
-    cities: [
-      'القاهرة',
-      'الجيزة',
-      'الإسكندرية',
-      'المنصورة',
-      'طنطا',
-      'أسيوط',
-      'الأقصر',
-      'بورسعيد',
-    ],
-  },
-  {
-    id: 'AE',
-    name: 'الإمارات',
-    currency: 'درهم',
-    cities: ['دبي', 'أبوظبي', 'الشارقة', 'عجمان', 'العين', 'رأس الخيمة'],
-  },
-  {
-    id: 'KW',
-    name: 'الكويت',
-    currency: 'دينار',
-    cities: ['مدينة الكويت', 'حولي', 'الفروانية', 'الجهراء', 'الأحمدي'],
-  },
-  {
-    id: 'JO',
-    name: 'الأردن',
-    currency: 'دينار',
-    cities: ['عمّان', 'إربد', 'الزرقاء', 'العقبة'],
-  },
-];
+const collator = new Intl.Collator('ar');
+const byName = (a: Country, b: Country) => collator.compare(a.name, b.name);
 
-/** Countries catalog — the root of every other record. */
+/**
+ * Countries catalog — the root of every other record. Loaded once before the
+ * app shell renders (see `countriesResolver`) and kept in sync locally from
+ * each mutation's response, so no refetch is needed after a write.
+ */
 @Injectable({ providedIn: 'root' })
 export class CountriesStore {
-  private readonly items = signal<Country[]>(
-    SEED.map((c, i) => ({
-      ...c,
-      createdAt: new Date(Date.now() - (720 - i * 120) * DAY).toISOString(),
-    })),
-  );
+  private readonly api = inject(CountriesApi);
+
+  private readonly items = signal<Country[]>([]);
+  private readonly loadStatus = signal<LoadStatus>('idle');
+  private readonly loadError = signal<string | null>(null);
+  private inflight: Observable<Country[]> | null = null;
 
   readonly all: Signal<Country[]> = this.items.asReadonly();
-  private readonly byIdMap = computed(
-    () => new Map(this.items().map((c) => [c.id, c])),
-  );
+  readonly status: Signal<LoadStatus> = this.loadStatus.asReadonly();
+  readonly error: Signal<string | null> = this.loadError.asReadonly();
+  readonly loaded = computed(() => this.loadStatus() === 'ready');
+
+  private readonly byIdMap = computed(() => new Map(this.items().map((c) => [c.id, c])));
 
   byId(id: string | null | undefined): Country | undefined {
     return id ? this.byIdMap().get(id) : undefined;
@@ -79,23 +38,52 @@ export class CountriesStore {
     return this.byId(id)?.currency ?? '';
   }
 
-  create(draft: CountryDraft): Country {
-    const country: Country = {
-      ...draft,
-      id: `C${Date.now().toString(36).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-    };
-    this.items.update((list) => [...list, country]);
-    return country;
+  /** Loads once; concurrent callers share the same request. */
+  ensureLoaded(): Observable<Country[]> {
+    return this.loaded() ? of(this.items()) : this.load();
   }
 
-  update(id: string, draft: CountryDraft): void {
-    this.items.update((list) =>
-      list.map((c) => (c.id === id ? { ...c, ...draft } : c)),
+  load(): Observable<Country[]> {
+    if (this.inflight) return this.inflight;
+    this.loadStatus.set('loading');
+    this.loadError.set(null);
+    this.inflight = this.api.list().pipe(
+      map((list) => [...list].sort(byName)),
+      tap((list) => {
+        this.items.set(list);
+        this.loadStatus.set('ready');
+      }),
+      catchError((err: ApiError) => {
+        this.loadStatus.set('error');
+        this.loadError.set(err?.message || 'تعذّر تحميل الدول');
+        return throwError(() => err);
+      }),
+      finalize(() => (this.inflight = null)),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.inflight;
   }
 
-  remove(id: string): void {
-    this.items.update((list) => list.filter((c) => c.id !== id));
+  create(body: CountryCreate): Observable<Country> {
+    return this.api.create(body).pipe(tap((c) => this.upsert(c)));
+  }
+
+  update(id: string, body: CountryUpdate): Observable<Country> {
+    return this.api.update(id, body).pipe(tap((c) => this.upsert(c)));
+  }
+
+  addGovernorates(id: string, names: string[]): Observable<Country> {
+    return this.api.addGovernorates(id, names).pipe(tap((c) => this.upsert(c)));
+  }
+
+  remove(id: string): Observable<void> {
+    return this.api.remove(id).pipe(tap(() => this.items.update((list) => list.filter((c) => c.id !== id))));
+  }
+
+  private upsert(country: Country): void {
+    this.items.update((list) => {
+      const exists = list.some((c) => c.id === country.id);
+      return (exists ? list.map((c) => (c.id === country.id ? country : c)) : [...list, country]).sort(byName);
+    });
   }
 }

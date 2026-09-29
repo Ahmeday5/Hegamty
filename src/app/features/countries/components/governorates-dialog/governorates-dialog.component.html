@@ -1,0 +1,103 @@
+<app-modal [open]="open() && !!country()" [title]="title()" size="lg" [closeOnBackdrop]="!saving()" [closeOnEsc]="!saving()" (closed)="close()">
+  @if (country(); as c) {
+    <!-- Country summary -->
+    <header class="gv-hero">
+      <app-country-flag [countryId]="c.id" [size]="56" />
+      <div class="gv-hero__text">
+        <strong>{{ c.name }}</strong>
+        @if (c.nameEn) { <span dir="ltr">{{ c.nameEn }}</span> }
+      </div>
+      <div class="gv-hero__stats">
+        <span class="gv-stat">
+          <app-icon name="map-pin" [size]="14" />
+          {{ c.governorates.length | divisions: c.division }}
+        </span>
+        @if (c.currency) { <span class="gv-stat gv-stat--muted"><app-icon name="wallet" [size]="14" /> {{ c.currency }}</span> }
+      </div>
+    </header>
+
+    <!-- Add panel -->
+    @if (adding()) {
+      <section class="gv-add" aria-labelledby="gv-add-title">
+        <div class="gv-add__head">
+          <h4 id="gv-add-title">إضافة {{ c.division.plural }} جديدة</h4>
+          @if (drafts().length) { <span class="gv-add__count">{{ draftsSummary() }}</span> }
+        </div>
+        <app-tag-input inputId="gv-new" [(values)]="drafts" [exclude]="existingNames()" [disabled]="saving()"
+          [invalid]="submitted() && !drafts().length"
+          [placeholder]="'اكتب اسم ال' + c.division.singular + ' واضغط Enter — أو الصق قائمة'" />
+        @if (error(); as err) {
+          <div class="gv-alert" role="alert"><app-icon name="alert" [size]="15" /> <span>{{ err }}</span></div>
+        } @else if (submitted() && !drafts().length) {
+          <div class="gv-err">أضف {{ 1 | divisions: c.division }} على الأقل</div>
+        } @else {
+          <small class="gv-hint">الأسماء الموجودة مسبقًا يتم تجاهلها تلقائيًا</small>
+        }
+        <div class="gv-add__actions">
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="saving()" (click)="cancelAdd()">إلغاء</button>
+          <button type="button" class="btn btn-pr btn-sm" [disabled]="saving()" (click)="save()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
+            @else { <app-icon name="check" [size]="15" [stroke]="2.4" /> حفظ {{ c.division.plural }} }
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- Toolbar -->
+    @if (c.governorates.length) {
+      <div class="gv-toolbar">
+        <label class="search gv-toolbar__search">
+          <app-icon name="search" [size]="16" />
+          <input type="search" [value]="query()" (input)="query.set($any($event.target).value)"
+            [placeholder]="'ابحث عن ' + c.division.singular + ' بالعربية أو الإنجليزية'" [attr.aria-label]="'بحث في ال' + c.division.plural" />
+        </label>
+        @if (!adding()) {
+          <button type="button" class="btn btn-soft" (click)="startAdd()">
+            <app-icon name="plus" [size]="15" [stroke]="2.4" /> إضافة {{ c.division.singular }}
+          </button>
+        }
+      </div>
+      @if (query()) {
+        <p class="gv-result" aria-live="polite">{{ filtered().length }} نتيجة من {{ c.governorates.length }}</p>
+      }
+    }
+
+    <!-- List -->
+    @if (!c.governorates.length) {
+      @if (!adding()) {
+        <div class="empty">
+          <span class="empty__icon"><app-icon name="map-pin" [size]="28" /></span>
+          <h4 class="empty__title">لا توجد {{ c.division.plural }} بعد</h4>
+          <p class="empty__text">أضف {{ c.division.plural }} {{ c.name }} ليتمكن العملاء من اختيار عناوينهم داخل التطبيق.</p>
+          <button type="button" class="btn btn-pr" (click)="startAdd()">
+            <app-icon name="plus" [size]="15" [stroke]="2.4" /> إضافة {{ c.division.plural }}
+          </button>
+        </div>
+      }
+    } @else if (!filtered().length) {
+      <div class="empty">
+        <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+        <h4 class="empty__title">لا توجد نتائج</h4>
+        <p class="empty__text">لا توجد {{ c.division.singular }} تطابق «{{ query() }}».</p>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="query.set('')">مسح البحث</button>
+      </div>
+    } @else {
+      <ul class="gv-list" role="list">
+        @for (g of filtered(); track g.id; let i = $index) {
+          <li class="gv-item" [class.is-fresh]="freshIds().has(g.id)">
+            <span class="gv-item__no">{{ i + 1 }}</span>
+            <span class="gv-item__text">
+              <strong [attr.title]="g.name">{{ g.name }}</strong>
+              @if (g.nameEn) { <span dir="ltr" [attr.title]="g.nameEn">{{ g.nameEn }}</span> }
+            </span>
+            @if (freshIds().has(g.id)) { <span class="chip chip--green">جديد</span> }
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-ghost" [disabled]="saving()" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

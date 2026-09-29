@@ -83,7 +83,7 @@
               <div class="svc-card__chips">
                 <span class="chip chip--green">{{ categoryName(s.categoryId) }}</span>
                 @if (scope.isAll()) {
-                  <span class="chip chip--slate chip--flag"><app-country-flag [code]="s.countryId" [size]="15" /> {{ s.countryId | countryName }}</span>
+                  <span class="chip chip--slate chip--flag"><app-country-flag [countryId]="s.countryId" [size]="15" /> {{ s.countryId | countryName }}</span>
                 }
                 @if (!s.active) { <span class="chip chip--slate">موقوفة</span> }
               </div>
@@ -130,7 +130,7 @@
             @for (s of filtered(); track s.id; let i = $index) {
               <tr [style.--d]="i" [class.is-off]="!s.active">
                 <td><div class="svc-row"><strong>{{ s.name }}</strong><span>{{ s.description }}</span></div></td>
-                @if (scope.isAll()) { <td><span class="flag-cell"><app-country-flag [code]="s.countryId" [size]="20" /> {{ s.countryId | countryName }}</span></td> }
+                @if (scope.isAll()) { <td><span class="flag-cell"><app-country-flag [countryId]="s.countryId" [size]="20" /> {{ s.countryId | countryName }}</span></td> }
                 <td><span class="chip chip--green">{{ categoryName(s.categoryId) }}</span></td>
                 <td class="num">{{ s.price | cmoney: s.countryId }}</td>
                 <td>{{ s.durationMin ? s.durationMin + ' دقيقة' : 'غير محددة' }}</td>
@@ -166,7 +166,7 @@
       <div class="copy-list">
         @for (c of copyTargets(); track c.id) {
           <button type="button" class="copy-opt" [class.is-on]="copyTarget() === c.id" (click)="copyTarget.set(c.id)">
-            <app-country-flag [code]="c.id" [size]="28" />
+            <app-country-flag [countryId]="c.id" [size]="28" />
             <span><strong>{{ c.name }}</strong><small>العملة: {{ c.currency }}</small></span>
           </button>
         }

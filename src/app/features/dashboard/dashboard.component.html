@@ -15,7 +15,7 @@
       <div class="hero__meta">
         <span class="hero__date"><app-icon name="calendar" [size]="15" /> {{ today }}</span>
         <span class="hero__date">
-          @if (scope.country(); as c) { <app-country-flag [code]="c.id" [size]="16" /> {{ c.name }} }
+          @if (scope.country(); as c) { <app-country-flag [countryId]="c.id" [size]="16" /> {{ c.name }} }
           @else { <app-icon name="globe" [size]="14" /> كل الدول }
         </span>
       </div>
@@ -77,10 +77,10 @@
         @for (r of byCountry(); track r.country.id; let i = $index) {
           <button type="button" class="ctry" [class.is-off]="!r.services" [style.--d]="i" (click)="scope.select(r.country.id)">
             <div class="ctry__head">
-              <app-country-flag [code]="r.country.id" [size]="30" />
+              <app-country-flag [countryId]="r.country.id" [size]="30" />
               <div>
                 <strong>{{ r.country.name }}</strong>
-                <span>{{ r.country.currency }} · {{ r.country.cities.length }} مدن</span>
+                <span>{{ r.country.currency }} · {{ r.country.governorates.length | divisions: r.country.division }}</span>
               </div>
               @if (!r.services) { <span class="chip chip--slate">بدون خدمات</span> }
             </div>
@@ -241,7 +241,7 @@
           @for (b of recent(); track b.id; let i = $index) {
             <tr class="is-link" [style.--d]="i" [routerLink]="['/bookings', b.id]">
               <td class="num">{{ b.id }}</td>
-              @if (scope.isAll()) { <td><app-country-flag [code]="b.countryId" [size]="22" /></td> }
+              @if (scope.isAll()) { <td><app-country-flag [countryId]="b.countryId" [size]="22" /></td> }
               <td>
                 <span class="who">
                   <app-avatar [name]="b.customerName" [size]="34" />

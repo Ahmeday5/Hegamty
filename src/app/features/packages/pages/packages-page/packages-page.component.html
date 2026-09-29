@@ -46,7 +46,7 @@
         </ul>
         <footer class="pkg__foot">
           <span class="pkg__meta">
-            @if (scope.isAll()) { <app-country-flag [code]="r.pkg.countryId" [size]="16" /> }
+            @if (scope.isAll()) { <app-country-flag [countryId]="r.pkg.countryId" [size]="16" /> }
             <app-icon name="users" [size]="13" /> {{ r.subscribers }} مشترك
           </span>
           <div class="actions">
@@ -95,7 +95,7 @@
                   <div class="who__txt"><strong>{{ r.tech.name }}</strong><span><bdi>{{ r.tech.phone }}</bdi></span></div>
                 </div>
               </td>
-              @if (scope.isAll()) { <td><app-country-flag [code]="r.sub.countryId" [size]="20" /></td> }
+              @if (scope.isAll()) { <td><app-country-flag [countryId]="r.sub.countryId" [size]="20" /></td> }
               <td>{{ r.pkg?.name ?? '—' }}</td>
               <td class="num">{{ r.sub.price | cmoney: r.sub.countryId }}</td>
               <td class="muted">{{ r.sub.startedAt | arDate }}</td>

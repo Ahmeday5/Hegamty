@@ -81,7 +81,7 @@
             @for (b of rows(); track b.id; let i = $index) {
               <tr class="is-link" [style.--d]="i" (click)="openDetails(b)">
                 <td><span class="bk-id">{{ b.id }}</span></td>
-                @if (scope.isAll()) { <td><span class="who"><app-country-flag [code]="b.countryId" [size]="20" /> {{ b.countryId | countryName }}</span></td> }
+                @if (scope.isAll()) { <td><span class="who"><app-country-flag [countryId]="b.countryId" [size]="20" /> {{ b.countryId | countryName }}</span></td> }
                 <td>
                   <div class="who">
                     <app-avatar [name]="b.customerName" [size]="32" />

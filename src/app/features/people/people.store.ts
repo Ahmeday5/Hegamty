@@ -34,7 +34,7 @@ export class PeopleStore {
   history(person: Person): PersonHistory {
     let h = this.historyCache.get(person.id);
     if (!h) {
-      h = generateHistory(person);
+      h = generateHistory(person, this.countries.byId(person.countryId)?.iso ?? null);
       this.historyCache.set(person.id, h);
     }
     return h;

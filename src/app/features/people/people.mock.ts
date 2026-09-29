@@ -46,7 +46,7 @@ const PHONE_FORMAT: Record<string, { prefixes: readonly string[]; length: number
   AE: { prefixes: ['050', '052', '055', '056'], length: 10 },
   KW: { prefixes: ['5', '6', '9'], length: 8 },
 };
-/** Local price level vs. SA, used to author amounts in each currency. */
+/** Local price level vs. SA (keyed by ISO code), used to author amounts in each currency. */
 export const PRICE_FACTOR: Record<string, number> = { SA: 1, EG: 5.6, AE: 1.05, KW: 0.085 };
 
 const VEHICLES = ['تويوتا كامري', 'هيونداي إلنترا', 'كيا K5', 'نيسان صني', 'شيفروليه ماليبو', 'تويوتا هايلكس'];
@@ -54,12 +54,12 @@ const COLORS = ['أبيض', 'أسود', 'فضي', 'رمادي', 'أزرق', 'أ�
 const PLATE_LETTERS = ['أ ب ج', 'د ر س', 'ص ط ع', 'ق ك ل', 'م ن هـ', 'و ي ب'];
 
 const COUNTS: Record<PersonKind, number> = { customers: 96, drivers: 38, technicians: 52 };
-/** Rough market split for the fixtures (share of accounts per country). */
+/** Rough market split for the fixtures (share of accounts per country, keyed by ISO code). */
 const COUNTRY_WEIGHTS: Record<string, number> = { SA: 0.45, EG: 0.25, AE: 0.18, KW: 0.12 };
 const DAY = 86400000;
 
 function pickCountry(r: () => number, countries: readonly Country[]): Country {
-  const weighted = countries.map((c) => ({ c, w: COUNTRY_WEIGHTS[c.id] ?? 0 })).filter((x) => x.w > 0);
+  const weighted = countries.map((c) => ({ c, w: (c.iso && COUNTRY_WEIGHTS[c.iso]) || 0 })).filter((x) => x.w > 0);
   const total = weighted.reduce((a, x) => a + x.w, 0);
   let roll = r() * total;
   for (const x of weighted) {
@@ -69,8 +69,8 @@ function pickCountry(r: () => number, countries: readonly Country[]): Country {
   return weighted[weighted.length - 1].c;
 }
 
-function makePhone(r: () => number, countryId: string): string {
-  const f = PHONE_FORMAT[countryId] ?? { prefixes: ['0'], length: 10 };
+function makePhone(r: () => number, iso: string | null): string {
+  const f = (iso && PHONE_FORMAT[iso]) || { prefixes: ['0'], length: 10 };
   const prefix = pick(r, f.prefixes);
   return prefix + Array.from({ length: f.length - prefix.length }, () => int(r, 0, 9)).join('');
 }
@@ -97,10 +97,10 @@ function makePerson(kind: PersonKind, index: number, countries: readonly Country
     kind,
     countryId: country.id,
     name,
-    phone: makePhone(r, country.id),
+    phone: makePhone(r, country.iso),
     email: `${latin}.${int(r, 10, 99)}@email.com`,
-    city: pick(r, country.cities),
-    district: pick(r, DISTRICTS[country.id] ?? FALLBACK_DISTRICTS),
+    city: country.governorates.length ? pick(r, country.governorates).name : '',
+    district: pick(r, (country.iso && DISTRICTS[country.iso]) || FALLBACK_DISTRICTS),
     gender: female ? 'female' : 'male',
     birthDate: birth.toISOString().slice(0, 10),
     ...(kind !== 'customers' && { nationalId: String(int(r, 1000000000, 2999999999)) }),
@@ -125,7 +125,7 @@ function makePerson(kind: PersonKind, index: number, countries: readonly Country
 }
 
 export function generatePeople(kind: PersonKind, countries: readonly Country[]): Person[] {
-  if (!countries.some((c) => COUNTRY_WEIGHTS[c.id])) return [];
+  if (!countries.some((c) => c.iso && COUNTRY_WEIGHTS[c.iso])) return [];
   return Array.from({ length: COUNTS[kind] }, (_, i) => makePerson(kind, i, countries)).sort(
     (a, b) => +new Date(b.joinedAt) - +new Date(a.joinedAt),
   );
@@ -143,10 +143,10 @@ const COMMENTS = [
   'من أفضل التجارب، سأكرر الحجز بالتأكيد.',
 ];
 
-export function generateHistory(p: Person): PersonHistory {
+export function generateHistory(p: Person, iso: string | null): PersonHistory {
   const r = rng(hash(p.id + ':history'));
   const now = Date.now();
-  const factor = PRICE_FACTOR[p.countryId] ?? 1;
+  const factor = (iso && PRICE_FACTOR[iso]) || 1;
   const partyPool = [...MALE, ...FEMALE].map(([n]) => `${n} ${pick(r, FAMILIES)}`);
 
   const bookings: PersonBooking[] = Array.from({ length: Math.min(p.bookings, 14) }, (_, i) => {

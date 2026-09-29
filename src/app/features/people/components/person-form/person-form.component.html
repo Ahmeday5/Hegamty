@@ -7,9 +7,6 @@
     </div>
 
     <div>
-      <label class="form-label" for="pf-phone">
-        رقم الجوال @if (country(); as c) { <small class="text-muted" dir="ltr">({{ c.dialCode }})</small> }
-      </label>
       <input id="pf-phone" class="form-control" formControlName="phone" inputmode="tel" dir="ltr" [class.is-invalid]="invalid('phone')" />
       <app-form-error [control]="form.controls.phone" label="رقم الجوال" />
     </div>

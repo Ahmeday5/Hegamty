@@ -107,7 +107,7 @@
                   </div>
                 </td>
                 @if (scope.isAll()) {
-                  <td><span class="with-icon"><app-country-flag [code]="p.countryId" [size]="20" /> {{ p.countryId | countryName }}</span></td>
+                  <td><span class="with-icon"><app-country-flag [countryId]="p.countryId" [size]="20" /> {{ p.countryId | countryName }}</span></td>
                 }
                 <td><span class="ltr">{{ p.phone }}</span></td>
                 <td>{{ p.city }} <span class="muted">· {{ p.district }}</span></td>

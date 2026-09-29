@@ -19,7 +19,7 @@ const CATALOG: Template[] = [
   { categoryId: 'CT-4', name: 'جلسة استشارة', description: 'تقييم الحالة وتحديد نوع الجلسة المناسبة وعددها.', price: 100, durationMin: null, active: true, bookingsCount: 356, rating: 4.7 },
 ];
 
-/** Which catalog entries each market sells. */
+/** Which catalog entries each market sells (keyed by ISO code). */
 const MARKETS: Record<string, { items: number[]; demand: number }> = {
   SA: { items: [0, 1, 2, 3, 4, 5, 6, 7], demand: 1 },
   EG: { items: [0, 1, 2, 4, 7], demand: 0.55 },
@@ -79,8 +79,9 @@ export class ServicesStore {
   private seed(): ClinicService[] {
     let no = 101;
     return this.countries.all().flatMap((country) => {
-      const m = MARKETS[country.id];
-      const factor = PRICE_FACTOR[country.id];
+      if (!country.iso) return [];
+      const m = MARKETS[country.iso];
+      const factor = PRICE_FACTOR[country.iso];
       if (!m || !factor) return [];
       const step = factor < 0.2 ? 1 : factor > 3 ? 50 : 5;
       return m.items.map((idx, i) => {

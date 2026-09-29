@@ -49,7 +49,7 @@
       <button type="button" class="t-country" [class.is-on]="openMenu() === 'country'" aria-label="اختيار الدولة"
         (click)="toggleMenu('country', $event)">
         @if (scope.country(); as c) {
-          <app-country-flag [code]="c.id" [size]="24" />
+          <app-country-flag [countryId]="c.id" [size]="24" />
         } @else {
           <span class="t-country__globe"><app-icon name="globe" [size]="17" /></span>
         }
@@ -71,8 +71,7 @@
           <div class="menu__sep"></div>
           @for (c of countries(); track c.id) {
             <button type="button" class="menu__item" [class.is-sel]="scope.selected() === c.id" (click)="selectCountry(c.id)">
-              <app-country-flag [code]="c.id" [size]="24" />
-              <span class="t-countries__name">{{ c.name }}<small>{{ c.currency }} · <bdi>{{ c.dialCode }}</bdi></small></span>
+              <app-country-flag [countryId]="c.id" [size]="24" />
               @if (scope.selected() === c.id) { <app-icon class="t-countries__check" name="check" [size]="17" [stroke]="2.4" /> }
             </button>
           }

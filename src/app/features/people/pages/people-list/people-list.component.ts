@@ -70,7 +70,8 @@ export class PeopleListComponent {
   /** City filter options follow the selected country. */
   protected readonly cities = computed(() => {
     const c = this.scope.country();
-    return c ? c.cities : [...new Set(this.countries.all().flatMap((x) => x.cities))];
+    const names = (list: readonly { governorates: { name: string }[] }[]) => list.flatMap((x) => x.governorates.map((g) => g.name));
+    return c ? names([c]) : [...new Set(names(this.countries.all()))];
   });
 
   // ── filter / sort / paging state ──

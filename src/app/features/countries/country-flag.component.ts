@@ -1,57 +1,86 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { CountriesStore } from './countries.store';
+import { flagUrl } from './country-registry';
 
 /**
- * Stylized CSS flags for the seeded markets (flag emoji don't render on
- * Windows). Countries added later from the dashboard fall back to their ISO
- * code on the country's tone color.
+ * Real country flag (bundled 4:3 SVGs from `flag-icons`, MIT — emoji flags
+ * don't render on Windows). Countries outside the registry, or a flag that
+ * fails to load, get a brand-colored monogram instead.
+ *
+ *   <app-country-flag [countryId]="b.countryId" [size]="20" />
+ *   <app-country-flag [iso]="preview.iso" [name]="draftName" />   // live preview
  */
-const FLAGS: Record<string, string> = {
-  SA: 'linear-gradient(#006c35, #006c35)',
-  EG: 'linear-gradient(#ce1126 0 33.3%, #fff 33.3% 66.6%, #000 66.6%)',
-  AE: 'linear-gradient(90deg, #ef3340 0 26%, transparent 26%), linear-gradient(#00843d 0 33.3%, #fff 33.3% 66.6%, #000 66.6%)',
-  KW: 'linear-gradient(90deg, #000 0 24%, transparent 24%), linear-gradient(#007a3d 0 33.3%, #fff 33.3% 66.6%, #ce1126 66.6%)',
-  JO: 'linear-gradient(90deg, #ce1126 0 30%, transparent 30%), linear-gradient(#000 0 33.3%, #fff 33.3% 66.6%, #007a3d 66.6%)',
-};
-
-/** Brand-green badge with initials for markets added from the dashboard. */
-const FALLBACK_BG = 'linear-gradient(135deg, #0c6a72, #064a50)';
-
 @Component({
   selector: 'app-country-flag',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="flag" [style.--w.px]="size()" [style.background]="bg()" [attr.title]="name()" role="img"
-      [attr.aria-label]="name()">
-      @if (!known()) { <span class="flag__code">{{ initial() }}</span> }
-      @if (code() === 'SA') { <span class="flag__sa"></span> }
+    <span class="flag" [style.--w.px]="size()" [attr.title]="label()" role="img" [attr.aria-label]="label()">
+      @if (src(); as url) {
+        <img [src]="url" alt="" width="4" height="3" decoding="async" (error)="failed.set(true)" />
+      } @else {
+        <span class="flag__mono">{{ initial() }}</span>
+      }
     </span>
   `,
   styles: [`
-    :host { display: inline-flex; flex-shrink: 0; }
+    :host { display: inline-flex; flex-shrink: 0; vertical-align: middle; }
     .flag {
       position: relative;
       display: grid;
       place-items: center;
       width: var(--w);
-      height: calc(var(--w) * 0.7);
-      border-radius: 4px;
+      aspect-ratio: 4 / 3;
+      border-radius: max(2px, calc(var(--w) * 0.08));
       overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.08);
+      background: linear-gradient(135deg, #11868f, #064a50);
+      box-shadow: 0 1px 2px rgba(10, 38, 42, 0.14);
     }
-    .flag__code { font-size: calc(var(--w) * 0.34); font-weight: 700; color: #fff; letter-spacing: 0.02em; }
-    /* hint of the Saudi sword + script */
-    .flag__sa { width: 60%; height: 8%; border-radius: 2px; background: rgba(255, 255, 255, 0.85); translate: 0 60%; }
+    /* Hairline inside the edge so white flag fields never melt into a white card. */
+    .flag::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(10, 38, 42, 0.14);
+      pointer-events: none;
+    }
+    img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .flag__mono {
+      font-size: calc(var(--w) * 0.4);
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+    }
   `],
 })
 export class CountryFlagComponent {
-  readonly code = input.required<string>();
+  /** Country to render; its ISO code and name come from the store. */
+  readonly countryId = input<string | null | undefined>(null);
+  /** Explicit ISO code (overrides the store lookup, e.g. for a form preview). */
+  readonly iso = input<string | null | undefined>(undefined);
+  /** Explicit accessible name (overrides the store lookup). */
+  readonly name = input<string>('');
+  /** Width in px; height follows the 4:3 ratio. */
   readonly size = input(24);
 
   private readonly countries = inject(CountriesStore);
-  protected readonly known = computed(() => this.code() in FLAGS);
-  protected readonly name = computed(() => this.countries.byId(this.code())?.name ?? this.code());
-  protected readonly initial = computed(() => this.countries.byId(this.code())?.name.charAt(0) ?? '؟');
-  protected readonly bg = computed(() => FLAGS[this.code()] ?? FALLBACK_BG);
+  private readonly country = computed(() => this.countries.byId(this.countryId()));
+
+  protected readonly failed = signal(false);
+  protected readonly label = computed(() => this.name() || this.country()?.name || '');
+  protected readonly initial = computed(() => this.label().trim().replace(/^ال/, '').charAt(0) || '؟');
+  protected readonly src = computed(() => {
+    const iso = this.iso() !== undefined ? this.iso() : this.country()?.iso;
+    return iso && !this.failed() ? flagUrl(iso) : null;
+  });
+
+  constructor() {
+    // A new country / ISO gets a fresh attempt even if the previous image failed.
+    effect(() => {
+      this.iso();
+      this.countryId();
+      this.failed.set(false);
+    }, { allowSignalWrites: true });
+  }
 }

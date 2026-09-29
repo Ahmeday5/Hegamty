@@ -10,6 +10,10 @@
       <p class="page-head__sub">التطبيق يعرض لكل مستخدم خدمات وفنيي وسائقي وباقات دولته فقط</p>
     </div>
     <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [class.is-spinning]="refreshing()" [disabled]="refreshing() || status() === 'loading'" (click)="refresh()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
       <button type="button" class="btn btn-pr" (click)="openCreate()">
         <app-icon name="plus" [size]="16" [stroke]="2.2" /> إضافة دولة
       </button>
@@ -19,63 +23,160 @@
   <div class="grid grid--4">
     <app-kpi-card class="fx" style="--d: 1" label="إجمالي الدول" [value]="kpis().total" icon="globe" tone="green" />
     <app-kpi-card class="fx" style="--d: 2" label="دول بها خدمات مفعّلة" [value]="kpis().live" icon="check-circle" tone="blue" />
-    <app-kpi-card class="fx" style="--d: 3" label="المدن المغطاة" [value]="kpis().cities" icon="map-pin" tone="teal" />
+    <app-kpi-card class="fx" style="--d: 3" label="المحافظات والمناطق" [value]="kpis().divisions" icon="map-pin" tone="teal" />
     <app-kpi-card class="fx" style="--d: 4" label="العملات" [value]="kpis().currencies" icon="wallet" tone="purple" />
   </div>
 
-  <div class="cards">
-    @for (r of rows(); track r.country.id; let i = $index) {
-      <article class="ctry-card" [style.--d]="i">
-        <div class="ctry-card__cover" aria-hidden="true"></div>
-        <header class="ctry-card__head">
-          <app-country-flag [code]="r.country.id" [size]="46" />
-          <div class="ctry-card__title">
-            <h3>{{ r.country.name }}</h3>
-          </div>
-        </header>
-
-        <dl class="ctry-card__stats">
-          <div><dt>العملاء</dt><dd>{{ r.customers | num }}</dd></div>
-          <div><dt>الفنيون</dt><dd>{{ r.technicians | num }}</dd></div>
-          <div><dt>السائقون</dt><dd>{{ r.drivers | num }}</dd></div>
-          <div><dt>الخدمات</dt><dd>{{ r.services | num }}</dd></div>
-          <div><dt>الحجوزات</dt><dd>{{ r.bookings | num }}</dd></div>
-        </dl>
-
-        <div class="ctry-card__cities">
-          <span class="ctry-card__label"><app-icon name="map-pin" [size]="14" /> {{ r.country.cities.length }} مدن</span>
-          <div class="ctry-card__tags">
-            @for (c of r.country.cities.slice(0, 6); track c) { <span>{{ c }}</span> }
-            @if (r.country.cities.length > 6) { <span class="more">+{{ r.country.cities.length - 6 }}</span> }
-          </div>
+  @if (!hasCountries() && status() === 'loading') {
+    <!-- First load -->
+    <div class="cards" aria-busy="true" aria-label="جارٍ تحميل الدول">
+      @for (s of skeletons; track s) {
+        <div class="ctry-card ctry-card--skel" aria-hidden="true">
+          <div class="ctry-card__cover"><span class="skel ctry-card__skel-flag"></span></div>
+          <div class="ctry-card__head"><span class="skel" style="width: 45%; height: 16px"></span><span class="skel" style="width: 30%"></span></div>
+          <span class="skel" style="height: 54px; border-radius: 12px"></span>
+          <span class="skel" style="width: 35%"></span>
+          <span class="skel" style="height: 24px; width: 80%"></span>
         </div>
+      }
+    </div>
+  } @else if (!hasCountries() && status() === 'error') {
+    <div class="card state">
+      <div class="empty">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="28" /></span>
+        <h3 class="empty__title">تعذّر تحميل الدول</h3>
+        <p class="empty__text">{{ loadError() }}</p>
+        <button type="button" class="btn btn-pr" (click)="retry()"><app-icon name="refresh" [size]="15" /> إعادة المحاولة</button>
+      </div>
+    </div>
+  } @else if (!hasCountries()) {
+    <div class="card state">
+      <div class="empty">
+        <span class="empty__icon"><app-icon name="globe" [size]="28" /></span>
+        <h3 class="empty__title">لا توجد دول بعد</h3>
+        <p class="empty__text">أطلق أول دولة لتبدأ بإضافة خدماتها وفنييها وباقاتها.</p>
+        <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="15" [stroke]="2.2" /> إضافة دولة</button>
+      </div>
+    </div>
+  } @else {
+    <div class="list-bar fx" style="--d: 5">
+      <label class="search list-bar__search">
+        <app-icon name="search" [size]="16" />
+        <input type="search" [value]="query()" (input)="query.set($any($event.target).value)"
+          placeholder="ابحث باسم الدولة أو العملة" aria-label="بحث في الدول" />
+      </label>
+      <span class="list-bar__count">
+        @if (query()) { {{ visibleRows().length | num }} من {{ kpis().total | num }} دولة } @else { {{ kpis().total | num }} دولة }
+      </span>
+    </div>
 
-        @if (!r.services || !r.packages) {
-          <div class="ctry-card__warn">
-            <app-icon name="alert" [size]="15" />
-            {{ !r.services ? 'لا توجد خدمات مفعّلة — لن يتمكن العملاء من الحجز' : 'لا توجد باقات مفعّلة — لن يتمكن الفنيون من الاشتراك' }}
-          </div>
+    @if (!visibleRows().length) {
+      <div class="card state">
+        <div class="empty">
+          <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+          <h3 class="empty__title">لا توجد نتائج</h3>
+          <p class="empty__text">لا توجد دولة تطابق «{{ query() }}».</p>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="query.set('')">مسح البحث</button>
+        </div>
+      </div>
+    } @else {
+      <div class="cards">
+        @for (r of visibleRows(); track r.country.id; let i = $index) {
+          @let c = r.country;
+          <article class="ctry-card" [class.is-busy]="deleting().has(c.id)" [style.--d]="i" [attr.aria-busy]="deleting().has(c.id) || null">
+            <div class="ctry-card__cover">
+              <app-country-flag class="ctry-card__flag" [countryId]="c.id" [size]="72" />
+              @if (c.currency) {
+                <span class="ctry-card__ccy" [attr.title]="'العملة: ' + c.currency"><app-icon name="wallet" [size]="12" /> {{ c.currency }}</span>
+              }
+            </div>
+
+            <header class="ctry-card__head">
+              <h3 [attr.title]="c.name">{{ c.name }}</h3>
+              @if (c.nameEn) { <span dir="ltr" [attr.title]="c.nameEn">{{ c.nameEn }}</span> }
+            </header>
+
+            <dl class="ctry-card__stats">
+              <div><dt>العملاء</dt><dd>{{ r.customers | num }}</dd></div>
+              <div><dt>الفنيون</dt><dd>{{ r.technicians | num }}</dd></div>
+              <div><dt>السائقون</dt><dd>{{ r.drivers | num }}</dd></div>
+              <div><dt>الخدمات</dt><dd>{{ r.services | num }}</dd></div>
+              <div><dt>الحجوزات</dt><dd>{{ r.bookings | num }}</dd></div>
+            </dl>
+
+            <section class="ctry-card__divs" [attr.aria-label]="c.division.plural">
+              <div class="ctry-card__divs-head">
+                <span class="ctry-card__label"><app-icon name="map-pin" [size]="14" /> {{ c.governorates.length | divisions: c.division }}</span>
+                <div class="ctry-card__divs-actions">
+                  <button type="button" class="icon-btn icon-btn--green icon-btn--sm" [attr.data-tip]="'إضافة ' + c.division.singular"
+                    [attr.aria-label]="'إضافة ' + c.division.singular + ' إلى ' + c.name" (click)="openGovernorates(c, true)">
+                    <app-icon name="plus" [size]="15" [stroke]="2.3" />
+                  </button>
+                  <button type="button" class="btn btn-soft btn-xs" (click)="openGovernorates(c)">
+                    {{ c.division.plural }}
+                    <app-icon name="chevron-left" [size]="13" [stroke]="2.3" />
+                  </button>
+                </div>
+              </div>
+              @if (c.governorates.length) {
+                <div class="ctry-card__tags">
+                  @for (g of c.governorates.slice(0, previewCount); track g.id) { <span>{{ g.name }}</span> }
+                  @if (c.governorates.length > previewCount) {
+                    <button type="button" class="more" [attr.aria-label]="'عرض كل ' + c.division.plural + ' ' + c.name" (click)="openGovernorates(c)">
+                      +{{ c.governorates.length - previewCount | num }}
+                    </button>
+                  }
+                </div>
+              } @else {
+                <p class="ctry-card__none">لم تُضف أي {{ c.division.singular }} بعد</p>
+              }
+            </section>
+
+            @if (!r.services || !r.packages) {
+              <div class="ctry-card__warn">
+                <app-icon name="alert" [size]="15" />
+                {{ !r.services ? 'لا توجد خدمات مفعّلة — لن يتمكن العملاء من الحجز' : 'لا توجد باقات مفعّلة — لن يتمكن الفنيون من الاشتراك' }}
+              </div>
+            }
+
+            <footer class="ctry-card__foot">
+              <!-- Wired once the per-country dashboard and services endpoints land. -->
+              <div class="ctry-card__links">
+                <button type="button" class="btn btn-soft btn-sm is-soon" aria-disabled="true" data-tip="قريبًا">
+                  <app-icon name="grid" [size]="14" /> لوحتها
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm is-soon" aria-disabled="true" data-tip="قريبًا">
+                  <app-icon name="droplet" [size]="14" /> الخدمات
+                </button>
+              </div>
+              <div class="actions">
+                <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" [attr.aria-label]="'تعديل ' + c.name"
+                  [disabled]="deleting().has(c.id)" (click)="openEdit(c)">
+                  <app-icon name="edit" [size]="16" />
+                </button>
+                <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" [attr.aria-label]="'حذف ' + c.name"
+                  [disabled]="deleting().has(c.id)" (click)="remove(c)">
+                  @if (deleting().has(c.id)) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+                  @else { <app-icon name="trash" [size]="16" /> }
+                </button>
+              </div>
+            </footer>
+          </article>
         }
 
-        <footer class="ctry-card__foot">
-          <div class="ctry-card__links">
-            <button type="button" class="btn btn-soft btn-sm" (click)="viewIn(r.country, '/dashboard')"><app-icon name="grid" [size]="14" /> لوحتها</button>
-            <button type="button" class="btn btn-ghost btn-sm" (click)="viewIn(r.country, '/services')"><app-icon name="droplet" [size]="14" /> الخدمات</button>
-          </div>
-          <div class="actions">
-            <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(r.country)"><app-icon name="edit" [size]="16" /></button>
-            <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(r.country)"><app-icon name="trash" [size]="16" /></button>
-          </div>
-        </footer>
-      </article>
+        @if (!query()) {
+          <button type="button" class="ctry-add" [style.--d]="visibleRows().length" (click)="openCreate()">
+            <span><app-icon name="globe" [size]="24" /></span>
+            <strong>إطلاق دولة جديدة</strong>
+            <small>أضف الدولة ومحافظاتها ثم خدماتها وباقات فنييها</small>
+          </button>
+        }
+      </div>
     }
+  }
 
-    <button type="button" class="ctry-add" [style.--d]="rows().length" (click)="openCreate()">
-      <span><app-icon name="globe" [size]="24" /></span>
-      <strong>إطلاق دولة جديدة</strong>
-      <small>أضف الدولة ثم خدماتها وباقات فنييها</small>
-    </button>
-  </div>
-
-  <app-country-form [open]="formOpen()" [country]="editing()" (closed)="formOpen.set(false)" />
+  <app-country-form [open]="formOpen()" [country]="editing()" (closed)="formOpen.set(false)"
+    (manageGovernorates)="switchToGovernorates($event)" />
+  <app-governorates-dialog [open]="govOpen()" [countryId]="govCountryId()" [startAdding]="govStartAdding()"
+    (closed)="govOpen.set(false)" />
 </section>

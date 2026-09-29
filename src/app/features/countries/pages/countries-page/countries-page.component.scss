@@ -1,5 +1,31 @@
 :host { display: block; }
 
+.page-head__actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn.is-spinning app-icon { animation: ctry-spin 0.9s linear infinite; }
+.icon-btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+
+/* ── Search bar ── */
+.list-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+
+  &__search {
+    flex: 0 1 360px;
+    min-width: 0;
+    input { background: var(--white); }
+  }
+  &__count { font-size: 12.5px; font-weight: 600; color: var(--txt3); }
+
+  @media (max-width: 520px) { &__search { flex-basis: 100%; } }
+}
+
+.state { padding: 8px; }
+.empty__icon--red { background: var(--re-l); color: var(--re); }
+
+/* ── Cards ── */
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
@@ -17,33 +43,79 @@
   padding: 0 16px 14px;
   border-radius: 18px;
   background: var(--white);
+  color: var(--txt);
   border: 1px solid var(--brd);
   box-shadow: var(--shadow);
-  transition: transform 0.35s var(--ease), box-shadow 0.35s;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s, opacity 0.25s;
   animation: fx-rise 0.55s var(--ease) both;
-  animation-delay: calc(var(--d, 0) * 70ms + 150ms);
+  animation-delay: calc(min(var(--d, 0), 12) * 60ms + 120ms);
 
   &:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  &:hover &__flag { transform: translateY(-2px) scale(1.04); }
+  &.is-busy { opacity: 0.6; pointer-events: none; }
 
+  /* Brand cover with the flag framed in its center */
   &__cover {
-    height: 52px;
-    margin: 0 -16px;
-    background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.22), transparent 55%), var(--grad-pr);
-  }
-  &__head {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    margin-top: -28px;
-    app-country-flag { filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25)); }
-  }
-  &__title {
-    flex: 1;
-    min-width: 0;
+    position: relative;
     display: grid;
-    padding-top: 26px;
-    h3 { margin: 0; font-size: 16px; font-weight: 700; }
-    span { font-size: 12px; color: var(--txt3); }
+    place-items: center;
+    height: 100px;
+    margin: 0 -16px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.2), transparent 45%),
+      radial-gradient(circle at 92% 110%, rgba(255, 255, 255, 0.12), transparent 40%),
+      var(--grad-pr);
+
+    /* faint dot texture */
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+      background-size: 14px 14px;
+      mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+      pointer-events: none;
+    }
+  }
+  &__flag {
+    position: relative;
+    padding: 3px;
+    border-radius: 9px;
+    background: var(--white);
+    box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(255, 255, 255, 0.14);
+    transition: transform 0.35s var(--ease);
+  }
+  /* Glass chip: white text on a translucent fill over the dark-teal cover */
+  &__ccy {
+    position: absolute;
+    top: 10px;
+    inset-inline-end: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 45%;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    backdrop-filter: blur(4px);
+  }
+
+  &__head {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    min-width: 0;
+    text-align: center;
+    h3, span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    h3 { margin: 0; font-size: 16.5px; font-weight: 700; color: var(--txt); }
+    span { font-size: 12px; font-weight: 500; color: var(--txt3); }
   }
 
   &__stats {
@@ -56,18 +128,41 @@
     > div { padding: 8px 4px; text-align: center; border-inline-start: 1px solid var(--brd); }
     > div:first-child { border-inline-start: none; }
     dt { font-size: 10.5px; font-weight: 500; color: var(--txt3); }
-    dd { margin: 2px 0 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    dd { margin: 2px 0 0; font-size: 14px; font-weight: 700; color: var(--txt); font-variant-numeric: tabular-nums; }
   }
 
-  &__cities { display: grid; gap: 6px; }
-  &__label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--txt2); }
+  /* Governorates / regions / states */
+  &__divs { display: grid; gap: 8px; }
+  &__divs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  &__divs-actions { display: flex; align-items: center; gap: 4px; }
+  &__label { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: var(--txt2); }
   &__tags {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
-    span { padding: 2px 8px; border-radius: 7px; background: var(--bg3); font-size: 11.5px; color: var(--txt2); }
-    .more { background: var(--pr-l); color: var(--pr); font-weight: 700; }
+    span {
+      padding: 2px 8px;
+      border-radius: 7px;
+      background: var(--bg3);
+      color: var(--txt2);
+      font-size: 11.5px;
+    }
+    .more {
+      padding: 2px 8px;
+      border: none;
+      border-radius: 7px;
+      background: var(--pr-l);
+      color: var(--pr);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      &:hover { background: #d2ecee; color: var(--pr-d); }
+      &:focus-visible { outline: 2px solid var(--pr); outline-offset: 1px; }
+    }
   }
+  &__none { margin: 0; font-size: 12px; color: var(--txt3); }
 
   &__warn {
     display: flex;
@@ -78,6 +173,7 @@
     background: var(--am-l);
     color: #92400e;
     font-size: 12px;
+    app-icon { flex-shrink: 0; }
   }
 
   &__foot {
@@ -91,6 +187,28 @@
     .actions { display: flex; gap: 2px; }
   }
   &__links { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Loading placeholder */
+  &--skel {
+    gap: 14px;
+    animation: fx-fade 0.3s both;
+    &:hover { transform: none; box-shadow: var(--shadow); }
+    .ctry-card__cover { background: #e6efef; &::before { display: none; } }
+    .ctry-card__head { gap: 8px; }
+  }
+  &__skel-flag { width: 72px; height: 54px; border-radius: 8px; background-color: #f4f8f8; }
+}
+
+.icon-btn--sm { width: 28px; height: 28px; border-radius: 8px; }
+.btn-xs { gap: 3px; padding: 4px 8px 4px 6px; font-size: 11.5px; border-radius: 8px; }
+
+/* Placeholder actions — visible for discoverability, not yet functional */
+.btn.is-soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+  &:hover { transform: none; }
+  &.btn-soft:hover { background: var(--pr-l); color: var(--pr); }
+  &.btn-ghost:hover { background: transparent; color: var(--txt2); }
 }
 
 .ctry-add {
@@ -98,16 +216,18 @@
   place-content: center;
   justify-items: center;
   gap: 6px;
-  min-height: 300px;
+  min-height: 320px;
+  padding: 20px;
   border-radius: 18px;
   border: 2px dashed #c9e2e4;
   background: #f5fbfb;
   font-family: inherit;
+  text-align: center;
   color: var(--pr);
   cursor: pointer;
   transition: border-color 0.25s, background 0.25s, transform 0.3s var(--ease);
   animation: fx-rise 0.55s var(--ease) both;
-  animation-delay: calc(var(--d, 0) * 70ms + 150ms);
+  animation-delay: calc(min(var(--d, 0), 12) * 60ms + 120ms);
 
   > span {
     display: grid;
@@ -119,7 +239,16 @@
     color: var(--white);
     transition: rotate 0.6s var(--ease);
   }
-  strong { font-size: 14px; }
+  strong { font-size: 14px; color: var(--pr-d); }
   small { font-size: 12px; color: var(--txt3); }
   &:hover { border-color: var(--pr); background: var(--pr-l); transform: translateY(-4px); > span { rotate: 360deg; } }
+  &:focus-visible { outline: 3px solid var(--pr-ring); outline-offset: 2px; }
+}
+
+@keyframes ctry-spin { to { rotate: 360deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ctry-card, .ctry-add { animation: none; }
+  .ctry-card:hover, .ctry-add:hover { transform: none; }
+  .icon-btn.is-spinning app-icon { animation-duration: 3s; }
 }
