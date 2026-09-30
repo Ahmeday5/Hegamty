@@ -1,0 +1,271 @@
+@if (specialist(); as s) {
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a routerLink="/technicians">الفنيون</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">{{ s.fullName }}</span>
+      </nav>
+      <h1 class="page-head__title">{{ s.fullName }}</h1>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث البيانات"
+        [disabled]="record.loading()" [class.is-spinning]="record.loading()" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" disabled data-tip="قيد التطوير"><app-icon name="bell" [size]="16" /> إرسال إشعار</button>
+      @if (s.status === 'approved') {
+        <button type="button" class="btn" [disabled]="busy()" (click)="reject()"><app-icon name="x" [size]="16" /> إلغاء الاعتماد</button>
+      }
+      @if (s.banned) {
+        <button type="button" class="btn btn-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="unlock" [size]="16" /> رفع الحظر</button>
+      } @else {
+        <button type="button" class="btn btn-danger-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="ban" [size]="16" /> حظر الحساب</button>
+      }
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--red" disabled data-tip="الحذف قيد التطوير" aria-label="حذف">
+        <app-icon name="trash" [size]="17" />
+      </button>
+    </div>
+  </header>
+
+  @if (s.banned) {
+    <div class="banner banner--red fx">
+      <app-icon name="ban" [size]="18" />
+      <span>هذا الحساب محظور ولا يمكنه استخدام التطبيق أو استقبال الطلبات.</span>
+      <div class="banner__actions">
+        <button type="button" class="btn btn-sm" [disabled]="busy()" (click)="toggleBan()">رفع الحظر</button>
+      </div>
+    </div>
+  }
+  @if (s.status === 'pending') {
+    <div class="banner banner--amber fx">
+      <app-icon name="user-plus" [size]="18" />
+      <span>طلب انضمام جديد بانتظار المراجعة — راجع البيانات والمستندات ثم اعتمد الفني أو ارفض الطلب.</span>
+      <div class="banner__actions">
+        <button type="button" class="btn btn-pr btn-sm" [disabled]="busy()" (click)="approve()"><app-icon name="check-circle" [size]="14" /> اعتماد</button>
+        <button type="button" class="btn btn-sm" [disabled]="busy()" (click)="reject()"><app-icon name="x" [size]="14" /> رفض</button>
+      </div>
+    </div>
+  } @else if (s.status === 'rejected') {
+    <div class="banner banner--slate fx">
+      <app-icon name="alert" [size]="18" />
+      <span>تم رفض طلب انضمام هذا الفني ولا يظهر للعملاء. يمكنك اعتماده إذا استوفى الشروط.</span>
+      <div class="banner__actions">
+        <button type="button" class="btn btn-soft btn-sm" [disabled]="busy()" (click)="approve()"><app-icon name="check-circle" [size]="14" /> اعتماد</button>
+      </div>
+    </div>
+  }
+
+  <app-account-hero class="fx" style="--d: 1" [name]="s.fullName" [photoUrl]="s.photoUrl" [stats]="heroStats()">
+    <ng-container heroMeta>
+      <span><app-icon name="phone" [size]="14" /> <bdi>{{ s.phone || '—' }}</bdi></span>
+      <span><app-icon name="user" [size]="14" /> #{{ s.id }}</span>
+    </ng-container>
+    <ng-container heroChips>
+      <span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span>
+      @if (s.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
+      @if (s.experienceYears) { <span class="chip chip--purple">خبرة {{ s.experienceYears | years }}</span> }
+    </ng-container>
+  </app-account-hero>
+
+  <app-account-tabs class="fx" style="--d: 2" [tabs]="tabs()" [active]="activeTab()" (select)="selectTab($event)" />
+
+  @switch (activeTab()) {
+    @case ('overview') {
+      <div class="tab-pane">
+        <div class="grid grid--2">
+          <div class="panel fx" style="--d: 0">
+            <div class="panel__head"><h3 class="panel__title">البيانات الشخصية</h3></div>
+            <div class="panel__body">
+              <div class="kv"><span class="kv__k">الاسم الكامل</span><span class="kv__v">{{ s.fullName }}</span></div>
+              <div class="kv"><span class="kv__k">رقم الجوال</span><span class="kv__v"><bdi>{{ s.phone || '—' }}</bdi></span></div>
+              <div class="kv"><span class="kv__k">العمر</span><span class="kv__v">{{ s.age | years }}</span></div>
+              <div class="kv"><span class="kv__k">سنوات الخبرة</span><span class="kv__v">{{ s.experienceYears ? (s.experienceYears | years) : 'بدون خبرة' }}</span></div>
+              <div class="kv">
+                <span class="kv__k">حالة المراجعة</span>
+                <span class="kv__v"><span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span></span>
+              </div>
+              <div class="kv">
+                <span class="kv__k">حالة الحساب</span>
+                <span class="kv__v">
+                  @if (s.banned) { <span class="chip chip--red">محظور</span> } @else { <span class="chip chip--green">مسموح</span> }
+                </span>
+              </div>
+              <div class="kv"><span class="kv__k">الدولة / المحافظة</span><span class="kv__v"><app-dev-badge /></span></div>
+              <div class="kv"><span class="kv__k">تاريخ التسجيل</span><span class="kv__v"><app-dev-badge /></span></div>
+              <div class="kv">
+                <span class="kv__k">نبذة</span>
+                <span class="kv__v kv__v--wrap">@if (s.description) { {{ s.description }} } @else { <span class="muted">لم يُضف نبذة</span> }</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col">
+            @if (activity(); as a) {
+              <app-activity-stats class="fx" style="--d: 1" [stats]="a" countLabel="الجلسات" [preview]="true" />
+            }
+
+            @if (subscription(); as sub) {
+              <div class="panel sub-card fx" style="--d: 2" [class.is-off]="sub.state === 'expired' || sub.state === 'none'">
+                <div class="panel__head">
+                  <h3 class="panel__title">الباقة الحالية</h3>
+                  <app-dev-badge tip="بيانات تجريبية للعرض فقط" />
+                </div>
+                <div class="panel__body">
+                  @if (sub.sub && sub.pkg) {
+                    <div class="sub-card__main">
+                      <span class="tile tile--brand"><app-icon name="award" [size]="20" /></span>
+                      <div>
+                        <strong>{{ sub.pkg.name }} <span class="chip {{ subMeta[sub.state].chip }}">{{ subMeta[sub.state].label }}</span></strong>
+                        <span>{{ sub.sub.price | cmoney: sub.sub.countryId }} · {{ periodMeta[sub.pkg.period].label }}</span>
+                      </div>
+                    </div>
+                    <div class="rate">
+                      <div class="rate__head">
+                        <span>{{ sub.sub.startedAt | arDate }} ← {{ sub.sub.endsAt | arDate }}</span>
+                        <strong>{{ sub.left }} يوم متبقي</strong>
+                      </div>
+                      <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="sub.pct"></span></div>
+                    </div>
+                  } @else {
+                    <p class="sub-card__none">لم يشترك هذا الفني في أي باقة بعد، ولن يستقبل طلبات حتى يشترك من التطبيق.</p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <app-account-documents class="fx spaced" style="--d: 3" [docs]="documents()" [owner]="s.fullName" />
+      </div>
+    }
+
+    @case ('services') {
+      <div class="tab-pane panel">
+        <div class="panel__head">
+          <div>
+            <h3 class="panel__title">الخدمات التي يقدمها</h3>
+            <p class="panel__sub">السعر الذي حدده الفني لكل خدمة، ضمن النطاق المسموح به في كل دولة</p>
+          </div>
+        </div>
+        @switch (offered.state()) {
+          @case ('loading') {
+            <div class="panel__body" aria-busy="true">
+              @for (r of [0, 1, 2]; track r) { <span class="skel svc-skel"></span> }
+            </div>
+          }
+          @case ('error') {
+            <div class="empty">
+              <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="24" /></span>
+              <p class="empty__title">تعذّر تحميل الخدمات</p>
+              <p class="empty__text">{{ offered.error() }}</p>
+              <button type="button" class="btn btn-soft btn-sm" (click)="offered.reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+            </div>
+          }
+          @default {
+            <div class="dtable-wrap">
+              <table class="dtable">
+                <thead><tr><th>الخدمة</th><th>القسم</th><th>الدولة</th><th>سعر الفني</th><th>النطاق المسموح</th><th>المدة</th></tr></thead>
+                <tbody>
+                  @for (svc of services(); track svc.id; let i = $index) {
+                    <tr [style.--d]="i">
+                      <td>
+                        <div class="svc">
+                          <strong>{{ svc.name }}</strong>
+                          @if (svc.description) { <span>{{ svc.description }}</span> }
+                        </div>
+                      </td>
+                      <td><span class="chip chip--teal">{{ svc.sectionName || '—' }}</span></td>
+                      <td>
+                        @if (svc.countryName) {
+                          <span class="with-flag"><app-country-flag [name]="svc.countryName" [size]="20" /> {{ svc.countryName }}</span>
+                        } @else { — }
+                      </td>
+                      <td class="num">
+                        <strong>{{ svc.price | money: svc.currency }}</strong>
+                        @if (svc.price < svc.priceMin || svc.price > svc.priceMax) {
+                          <span class="chip chip--red chip--xs" data-tip="السعر خارج النطاق المسموح">خارج النطاق</span>
+                        }
+                      </td>
+                      <td class="muted">{{ svc | priceRange }}</td>
+                      <td class="muted">{{ svc.durationMin | minutes }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6">
+                        <div class="empty">
+                          <span class="empty__icon"><app-icon name="droplet" [size]="24" /></span>
+                          <p class="empty__title">لم يضف الفني أي خدمة بعد</p>
+                          <p class="empty__text">تظهر هنا الخدمات التي يختارها الفني من التطبيق مع أسعاره.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    @case ('sessions') {
+      <div class="tab-pane">
+        <app-preview-notice>سجل الجلسات قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-bookings [bookings]="a.history.bookings" title="الجلسات" partyLabel="العميل" /> }
+      </div>
+    }
+
+    @case ('reviews') {
+      <div class="tab-pane">
+        <app-preview-notice>تقييمات العملاء قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-reviews [reviews]="a.history.reviews" [rating]="a.rating" [reviewsCount]="a.reviewsCount" /> }
+      </div>
+    }
+
+    @case ('notifications') {
+      <div class="tab-pane">
+        <app-preview-notice>إشعارات الحساب قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-notifications [notifications]="a.history.notifications" /> }
+      </div>
+    }
+  }
+</section>
+} @else {
+  <section class="page">
+    @switch (record.state()) {
+      @case ('loading') {
+        <div class="panel hero-skel fx" aria-busy="true" aria-label="جارٍ التحميل">
+          <span class="skel skel--circle" style="width: 72px; height: 72px"></span>
+          <div><span class="skel" style="width: 180px; height: 16px"></span><span class="skel" style="width: 120px"></span></div>
+        </div>
+        <div class="grid grid--2">
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2, 3, 4]; track r) { <span class="skel kv-skel"></span> }</div></div>
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2]; track r) { <span class="skel kv-skel"></span> }</div></div>
+        </div>
+      }
+      @case ('error') {
+        <div class="panel empty fx">
+          <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+          <p class="empty__title">تعذّر تحميل بيانات الفني</p>
+          <p class="empty__text">{{ record.error() }}</p>
+          <div class="state-actions">
+            <button type="button" class="btn btn-pr btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+            <a class="btn btn-ghost btn-sm" routerLink="/technicians">العودة إلى الفنيين</a>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="panel empty fx">
+          <span class="empty__icon"><app-icon name="user" [size]="26" /></span>
+          <p class="empty__title">الفني غير موجود</p>
+          <p class="empty__text">ربما تم حذف هذا الحساب أو أن الرابط غير صحيح.</p>
+          <a class="btn btn-pr btn-sm" routerLink="/technicians">العودة إلى الفنيين</a>
+        </div>
+      }
+    }
+  </section>
+}

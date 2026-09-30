@@ -6,6 +6,7 @@ import {
   formatMoney,
   formatNumber,
   formatRelative,
+  formatYears,
 } from '../utils/format.util';
 
 @Pipe({ name: 'num', standalone: true })
@@ -47,4 +48,12 @@ export class RelTimePipe implements PipeTransform {
   }
 }
 
-export const FORMAT_PIPES = [NumPipe, CompactPipe, MoneyPipe, ArDatePipe, RelTimePipe] as const;
+/** `{{ age | years }}` → "30 سنة"; empty values render "—". */
+@Pipe({ name: 'years', standalone: true })
+export class YearsPipe implements PipeTransform {
+  transform(value: number | null | undefined): string {
+    return value ? formatYears(value) : '—';
+  }
+}
+
+export const FORMAT_PIPES = [NumPipe, CompactPipe, MoneyPipe, ArDatePipe, RelTimePipe, YearsPipe] as const;

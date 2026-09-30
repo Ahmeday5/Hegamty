@@ -49,15 +49,7 @@ export interface CatalogFilter {
 
 export const NO_FILTER: CatalogFilter = { name: '', sectionId: null, countryId: null, governorateId: null, active: null };
 
-export interface PageRequest {
-  pageIndex: number;
-  pageSize: number;
-}
-
-export interface PageMeta extends PageRequest {
-  count: number;
-  totalPages: number;
-}
+export type { PageMeta, PageRequest } from '../../core/models/page.model';
 
 // ─────────── write models ───────────
 

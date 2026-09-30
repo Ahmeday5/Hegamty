@@ -1,0 +1,161 @@
+@if (client(); as c) {
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a routerLink="/customers">العملاء</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">{{ c.fullName }}</span>
+      </nav>
+      <h1 class="page-head__title">{{ c.fullName }}</h1>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث البيانات"
+        [disabled]="record.loading()" [class.is-spinning]="record.loading()" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" disabled data-tip="قيد التطوير"><app-icon name="bell" [size]="16" /> إرسال إشعار</button>
+      @if (c.banned) {
+        <button type="button" class="btn btn-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="unlock" [size]="16" /> رفع الحظر</button>
+      } @else {
+        <button type="button" class="btn btn-danger-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="ban" [size]="16" /> حظر الحساب</button>
+      }
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--red" disabled data-tip="الحذف قيد التطوير" aria-label="حذف">
+        <app-icon name="trash" [size]="17" />
+      </button>
+    </div>
+  </header>
+
+  @if (c.banned) {
+    <div class="banner banner--red fx">
+      <app-icon name="ban" [size]="18" />
+      <span>هذا الحساب محظور ولا يمكنه استخدام التطبيق أو إجراء الحجوزات.</span>
+      <div class="banner__actions">
+        <button type="button" class="btn btn-sm" [disabled]="busy()" (click)="toggleBan()">رفع الحظر</button>
+      </div>
+    </div>
+  } @else if (!c.active) {
+    <div class="banner banner--slate fx">
+      <app-icon name="clock" [size]="18" />
+      <span>هذا الحساب غير نشط حاليًا.</span>
+    </div>
+  }
+
+  <app-account-hero class="fx" style="--d: 1" [name]="c.fullName" [photoUrl]="c.photoUrl" [stats]="heroStats()">
+    <ng-container heroMeta>
+      <span><app-icon name="phone" [size]="14" /> <bdi>{{ c.phone || '—' }}</bdi></span>
+      @if (c.email) { <span><app-icon name="mail" [size]="14" /> {{ c.email }}</span> }
+      <span><app-icon name="user" [size]="14" /> #{{ c.id }}</span>
+    </ng-container>
+    <ng-container heroChips>
+      <span class="chip chip--dot {{ activityMeta[activityOf(c)].chip }}">{{ activityMeta[activityOf(c)].label }}</span>
+      @if (c.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
+      @if (c.countryName) { <span class="chip chip--slate chip--flag"><app-country-flag [name]="c.countryName" [size]="16" /> {{ c.countryName }}</span> }
+      @if (c.governorateName) { <span class="chip chip--blue"><app-icon name="map-pin" [size]="12" /> {{ c.governorateName }}</span> }
+    </ng-container>
+  </app-account-hero>
+
+  <app-account-tabs class="fx" style="--d: 2" [tabs]="tabs" [active]="activeTab()" (select)="selectTab($event)" />
+
+  @switch (activeTab()) {
+    @case ('overview') {
+      <div class="tab-pane">
+        <div class="grid grid--2">
+          <div class="panel fx" style="--d: 0">
+            <div class="panel__head"><h3 class="panel__title">البيانات الشخصية</h3></div>
+            <div class="panel__body">
+              <div class="kv"><span class="kv__k">الاسم الكامل</span><span class="kv__v">{{ c.fullName }}</span></div>
+              <div class="kv"><span class="kv__k">رقم الجوال</span><span class="kv__v"><bdi>{{ c.phone || '—' }}</bdi></span></div>
+              <div class="kv"><span class="kv__k">البريد الإلكتروني</span><span class="kv__v">{{ c.email || '—' }}</span></div>
+              <div class="kv"><span class="kv__k">العمر</span><span class="kv__v">{{ c.age | years }}</span></div>
+              <div class="kv">
+                <span class="kv__k">الدولة</span>
+                <span class="kv__v">
+                  @if (c.countryName) { <span class="with-flag"><app-country-flag [name]="c.countryName" [size]="18" /> {{ c.countryName }}</span> } @else { — }
+                </span>
+              </div>
+              <div class="kv"><span class="kv__k">المحافظة</span><span class="kv__v">{{ c.governorateName || '—' }}</span></div>
+              <div class="kv"><span class="kv__k">تاريخ التسجيل</span><span class="kv__v">{{ c.createdAt | arDate: true }}</span></div>
+              <div class="kv">
+                <span class="kv__k">حالة الحساب</span>
+                <span class="kv__v"><span class="chip chip--dot {{ activityMeta[activityOf(c)].chip }}">{{ activityMeta[activityOf(c)].label }}</span></span>
+              </div>
+              <div class="kv">
+                <span class="kv__k">الحظر</span>
+                <span class="kv__v">
+                  @if (c.banned) { <span class="chip chip--red">محظور</span> } @else { <span class="chip chip--green">غير محظور</span> }
+                </span>
+              </div>
+              <div class="kv"><span class="kv__k">آخر نشاط</span><span class="kv__v"><app-dev-badge /></span></div>
+            </div>
+          </div>
+
+          <div class="col">
+            @if (activity(); as a) {
+              <app-activity-stats class="fx" style="--d: 1" [stats]="a" countLabel="الحجوزات" [preview]="true" />
+            }
+            <app-account-documents class="fx" style="--d: 2" [docs]="documents()" [owner]="c.fullName" />
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('bookings') {
+      <div class="tab-pane">
+        <app-preview-notice>سجل الحجوزات قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-bookings [bookings]="a.history.bookings" title="الحجوزات" partyLabel="الفني" /> }
+      </div>
+    }
+
+    @case ('reviews') {
+      <div class="tab-pane">
+        <app-preview-notice>تقييمات العميل قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-reviews [reviews]="a.history.reviews" [rating]="a.rating" [reviewsCount]="a.reviewsCount" /> }
+      </div>
+    }
+
+    @case ('notifications') {
+      <div class="tab-pane">
+        <app-preview-notice>إشعارات الحساب قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
+        @if (activity(); as a) { <app-activity-notifications [notifications]="a.history.notifications" /> }
+      </div>
+    }
+  }
+</section>
+} @else {
+  <section class="page">
+    @switch (record.state()) {
+      @case ('loading') {
+        <div class="panel hero-skel fx" aria-busy="true" aria-label="جارٍ التحميل">
+          <span class="skel skel--circle" style="width: 72px; height: 72px"></span>
+          <div><span class="skel" style="width: 180px; height: 16px"></span><span class="skel" style="width: 120px"></span></div>
+        </div>
+        <div class="grid grid--2">
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2, 3, 4]; track r) { <span class="skel kv-skel"></span> }</div></div>
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2]; track r) { <span class="skel kv-skel"></span> }</div></div>
+        </div>
+      }
+      @case ('error') {
+        <div class="panel empty fx">
+          <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+          <p class="empty__title">تعذّر تحميل بيانات العميل</p>
+          <p class="empty__text">{{ record.error() }}</p>
+          <div class="state-actions">
+            <button type="button" class="btn btn-pr btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+            <a class="btn btn-ghost btn-sm" routerLink="/customers">العودة إلى العملاء</a>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="panel empty fx">
+          <span class="empty__icon"><app-icon name="user" [size]="26" /></span>
+          <p class="empty__title">العميل غير موجود</p>
+          <p class="empty__text">ربما تم حذف هذا الحساب أو أن الرابط غير صحيح.</p>
+          <a class="btn btn-pr btn-sm" routerLink="/customers">العودة إلى العملاء</a>
+        </div>
+      }
+    }
+  </section>
+}

@@ -31,6 +31,14 @@ export function formatMoney(value: number, symbol: string): string {
   return `${formatNumber(value)} ${symbol}`.trim();
 }
 
+/** Arabic count agreement: "سنة واحدة" · "سنتان" · "5 سنوات" · "30 سنة". */
+export function formatYears(value: number): string {
+  if (value === 1) return 'سنة واحدة';
+  if (value === 2) return 'سنتان';
+  const mod = value % 100;
+  return `${formatNumber(value)} ${mod >= 3 && mod <= 10 ? 'سنوات' : 'سنة'}`;
+}
+
 export function formatDate(value: string | number | Date): string {
   return dateFmt.format(new Date(value));
 }

@@ -4,6 +4,7 @@ import { ApiError } from '../../core/models/api-response.model';
 import { LoadStatus } from '../../core/models/load-status.model';
 import { CountriesApi } from './countries.api';
 import { Country, CountryCreate, CountryUpdate } from './countries.models';
+import { foldText } from '../../shared/utils/text-normalize.util';
 
 const collator = new Intl.Collator('ar');
 const byName = (a: Country, b: Country) => collator.compare(a.name, b.name);
@@ -28,9 +29,19 @@ export class CountriesStore {
   readonly loaded = computed(() => this.loadStatus() === 'ready');
 
   private readonly byIdMap = computed(() => new Map(this.items().map((c) => [c.id, c])));
+  /** Arabic and English names, folded — for records that reference a country by name only. */
+  private readonly byNameMap = computed(
+    () => new Map(this.items().flatMap((c) => [[foldText(c.name), c], [foldText(c.nameEn), c]] as const).filter(([k]) => !!k)),
+  );
 
   byId(id: string | null | undefined): Country | undefined {
     return id ? this.byIdMap().get(id) : undefined;
+  }
+
+  /** Matches a name in either language, ignoring case, diacritics and hamza/ya/ta-marbuta variants. */
+  byName(name: string | null | undefined): Country | undefined {
+    const key = foldText(name);
+    return key ? this.byNameMap().get(key) : undefined;
   }
 
   currency(id: string): string {

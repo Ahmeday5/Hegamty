@@ -1,0 +1,41 @@
+<div class="panel">
+  <div class="panel__head">
+    <div>
+      <h3 class="panel__title">المستندات المرفوعة</h3>
+      <p class="panel__sub">الصور التي رفعها المستخدم من التطبيق أثناء التسجيل · {{ uploaded() }} من {{ docs().length }}</p>
+    </div>
+  </div>
+  <div class="panel__body docs">
+    @for (doc of items(); track doc.key; let i = $index) {
+      @if (doc.url; as url) {
+        <button type="button" class="doc" [style.--d]="i" (click)="viewingKey.set(doc.key)" [attr.aria-label]="'عرض ' + doc.label">
+          <span class="doc__thumb">
+            <img [src]="url" [alt]="doc.label + ' — ' + owner()" loading="lazy" decoding="async" (error)="markBroken(url)" />
+          </span>
+          <span class="doc__label">{{ doc.label }}</span>
+          <span class="doc__view"><app-icon name="eye" [size]="13" /> عرض</span>
+        </button>
+      } @else {
+        <div class="doc is-missing" [style.--d]="i">
+          <span class="doc__thumb doc__thumb--empty"><app-icon [name]="doc.icon" [size]="24" /></span>
+          <span class="doc__label">{{ doc.label }}</span>
+          <span class="doc__none">لم يُرفع</span>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<app-modal [open]="!!viewing()" [title]="viewing() ? viewing()!.label + ' — ' + owner() : ''" size="lg" (closed)="viewingKey.set(null)">
+  @if (viewing(); as doc) {
+    <figure class="viewer">
+      <img [src]="doc.url" [alt]="doc.label + ' — ' + owner()" />
+    </figure>
+  }
+  <ng-container modal-footer>
+    @if (viewing(); as doc) {
+      <a class="btn btn-ghost" [href]="doc.url" target="_blank" rel="noopener"><app-icon name="arrow-up-right" [size]="15" /> فتح في تبويب جديد</a>
+    }
+    <button type="button" class="btn btn-pr" (click)="viewingKey.set(null)">إغلاق</button>
+  </ng-container>
+</app-modal>

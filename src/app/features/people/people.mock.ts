@@ -143,7 +143,10 @@ const COMMENTS = [
   'من أفضل التجارب، سأكرر الحجز بالتأكيد.',
 ];
 
-export function generateHistory(p: Person, iso: string | null): PersonHistory {
+/** The activity figures a history is generated from. */
+export type HistorySeed = Pick<Person, 'id' | 'kind' | 'bookings' | 'reviewsCount' | 'rating'>;
+
+export function generateHistory(p: HistorySeed, iso: string | null): PersonHistory {
   const r = rng(hash(p.id + ':history'));
   const now = Date.now();
   const factor = (iso && PRICE_FACTOR[iso]) || 1;

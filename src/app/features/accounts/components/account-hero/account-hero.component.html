@@ -1,0 +1,31 @@
+<div class="profile panel">
+  <div class="profile__cover" aria-hidden="true">
+    <span class="profile__orb profile__orb--1"></span>
+    <span class="profile__orb profile__orb--2"></span>
+  </div>
+  <div class="profile__body">
+    <app-avatar class="profile__avatar" [name]="name()" [src]="photoUrl()" [size]="72" [ring]="true" />
+    <div class="profile__info">
+      <h2 class="profile__name">{{ name() }}</h2>
+      <p class="profile__meta"><ng-content select="[heroMeta]" /></p>
+      <div class="profile__chips"><ng-content select="[heroChips]" /></div>
+    </div>
+    @if (stats().length) {
+      <dl class="profile__stats">
+        @for (s of stats(); track s.label) {
+          <div>
+            <dt>{{ s.label }}</dt>
+            <dd>
+              @if (s.dev) {
+                <app-dev-badge size="sm" />
+              } @else {
+                {{ s.value === null || s.value === undefined || s.value === '' ? '—' : s.value }}
+                @if (s.unit && s.value !== null && s.value !== undefined) { <small>{{ s.unit }}</small> }
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+    }
+  </div>
+</div>

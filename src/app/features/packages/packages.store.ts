@@ -10,6 +10,7 @@ import {
   PackagePeriod,
   Subscription,
   SubscriptionState,
+  SubscriptionSummary,
   TechPackage,
 } from './packages.models';
 
@@ -86,6 +87,20 @@ export class PackagesStore {
 
   daysLeft(s: Subscription): number {
     return Math.ceil((+new Date(s.endsAt) - Date.now()) / DAY);
+  }
+
+  summaryFor(technicianId: string): SubscriptionSummary {
+    const sub = this.latestFor(technicianId);
+    const total = sub ? Math.max(1, (+new Date(sub.endsAt) - +new Date(sub.startedAt)) / DAY) : 1;
+    const left = sub ? Math.max(0, this.daysLeft(sub)) : 0;
+    return {
+      sub,
+      pkg: sub ? this.byId(sub.packageId) : undefined,
+      state: this.stateOf(sub),
+      left,
+      pct: Math.round((left / total) * 100),
+      history: this.historyFor(technicianId),
+    };
   }
 
   subscribersOf(packageId: string): number {

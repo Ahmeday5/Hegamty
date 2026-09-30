@@ -13,7 +13,7 @@
   <div class="t-search" [class.is-open]="showResults()">
     <label class="search">
       <app-icon name="search" [size]="18" />
-      <input #searchInput type="search" [value]="term()" placeholder="ابحث عن عميل أو فني أو سائق…"
+      <input #searchInput type="search" [value]="term()" placeholder="ابحث عن عميل أو فني أو سائق بالاسم أو الجوال…"
         aria-label="بحث عام" autocomplete="off" (input)="onSearchInput($any($event.target).value)"
         (focus)="searchFocused.set(true)" (blur)="onSearchBlur()" (keydown)="onSearchKey($event)" />
       <kbd class="t-kbd">Ctrl K</kbd>
@@ -21,21 +21,26 @@
 
     @if (showResults()) {
       <div class="t-results" role="listbox">
-        @for (r of results(); track r.person.id; let i = $index) {
+        @for (r of results(); track r.id; let i = $index) {
+          @if (i > 0 && r.type === 'person' && results()[i - 1].type === 'search') { <div class="t-results__sep" role="separator"></div> }
           <button type="button" class="t-result" role="option" [class.is-active]="i === activeIndex()"
-            (mouseenter)="activeIndex.set(i)" (mousedown)="$event.preventDefault()" (click)="openPerson(r.person)">
-            <app-avatar [name]="r.person.name" [size]="34" />
-            <span class="t-result__txt">
-              <strong>{{ r.person.name }}</strong>
-              <span><bdi>{{ r.person.phone }}</bdi> · {{ r.person.city }}</span>
-            </span>
-            <span class="chip chip--slate"><app-icon [name]="r.icon" [size]="13" /> {{ r.kindLabel }}</span>
+            (mouseenter)="activeIndex.set(i)" (mousedown)="$event.preventDefault()" (click)="openHit(r)">
+            @if (r.type === 'search') {
+              <span class="t-result__icon"><app-icon [name]="r.icon" [size]="17" /></span>
+              <span class="t-result__txt">
+                <strong>{{ r.label }}</strong>
+                <span>"{{ term().trim() }}" — بالاسم أو رقم الجوال</span>
+              </span>
+              <app-icon class="t-result__go" name="arrow-left" [size]="16" />
+            } @else {
+              <app-avatar [name]="r.person.name" [size]="34" />
+              <span class="t-result__txt">
+                <strong>{{ r.person.name }}</strong>
+                <span><bdi>{{ r.person.phone }}</bdi> · {{ r.person.city }}</span>
+              </span>
+              <span class="chip chip--slate"><app-icon [name]="r.icon" [size]="13" /> {{ r.kindLabel }}</span>
+            }
           </button>
-        } @empty {
-          <div class="t-noresult">
-            <app-icon name="search" [size]="22" />
-            لا توجد نتائج لـ "{{ term() }}"
-          </div>
         }
       </div>
     }

@@ -2,7 +2,9 @@ import { Routes } from '@angular/router';
 import { PersonKind } from './people.models';
 
 /**
- * Same two screens for every people kind. `data.kind` is bound straight into
+ * Mock-backed list + detail screens, currently mounted for drivers only —
+ * customers and technicians are served by the API-backed `clients` and
+ * `specialists` features. `data.kind` is bound straight into
  * the components' `kind` input (router `withComponentInputBinding`), and
  * `paramsInheritanceStrategy: 'always'` lets the child routes see it.
  */

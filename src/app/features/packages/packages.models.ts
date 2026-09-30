@@ -49,5 +49,18 @@ export const SUB_STATE_META: Record<SubscriptionState | 'none', { label: string;
   none: { label: 'بدون باقة', chip: 'chip--slate' },
 };
 
+/** A technician's current package at a glance (the "الباقة الحالية" card). */
+export interface SubscriptionSummary {
+  sub: Subscription | undefined;
+  pkg: TechPackage | undefined;
+  state: SubscriptionState | 'none';
+  /** Days remaining (never negative). */
+  left: number;
+  /** Share of the period remaining, 0–100. */
+  pct: number;
+  /** Every subscription, newest first. */
+  history: Subscription[];
+}
+
 /** A valid subscription with ≤ this many days left counts as "expiring". */
 export const EXPIRING_DAYS = 7;

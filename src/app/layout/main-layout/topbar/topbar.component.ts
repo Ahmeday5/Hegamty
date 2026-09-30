@@ -42,6 +42,16 @@ interface SystemNote {
 
 const MIN = 60000;
 
+/** Lists searched on the server — the query is handed to the page as `?q=`. */
+const LIVE_SEARCHES = [
+  { route: '/customers', label: 'البحث في العملاء', icon: 'users' },
+  { route: '/technicians', label: 'البحث في الفنيين', icon: 'stethoscope' },
+] as const satisfies readonly { route: string; label: string; icon: IconName }[];
+
+type SearchHit =
+  | { type: 'search'; id: string; route: string; label: string; icon: IconName }
+  | { type: 'person'; id: string; person: Person; kindLabel: string; icon: IconName };
+
 @Component({
   selector: 'app-topbar',
   standalone: true,
@@ -75,18 +85,16 @@ export class TopbarComponent {
   protected readonly term = signal('');
   protected readonly searchFocused = signal(false);
   protected readonly activeIndex = signal(0);
-  protected readonly results = computed(() => {
+  /** Server-searched lists first, then matching (mock) drivers. */
+  protected readonly results = computed<SearchHit[]>(() => {
     const q = this.term().trim().toLowerCase();
     if (q.length < 2) return [];
-    const all: Person[] = this.scope.filter([
-      ...this.people.list('customers')(),
-      ...this.people.list('technicians')(),
-      ...this.people.list('drivers')(),
-    ]);
-    return all
+    const drivers: SearchHit[] = this.scope
+      .filter(this.people.list('drivers')())
       .filter((p) => p.name.toLowerCase().includes(q) || p.phone.includes(q) || p.id.toLowerCase().includes(q))
-      .slice(0, 7)
-      .map((p) => ({ person: p, kindLabel: PEOPLE_CONFIG[p.kind].singular, icon: PEOPLE_CONFIG[p.kind].icon }));
+      .slice(0, 5)
+      .map((p) => ({ type: 'person', id: p.id, person: p, kindLabel: PEOPLE_CONFIG[p.kind].singular, icon: PEOPLE_CONFIG[p.kind].icon }));
+    return [...LIVE_SEARCHES.map((s): SearchHit => ({ type: 'search', id: s.route, ...s })), ...drivers];
   });
   protected readonly showResults = computed(() => this.searchFocused() && this.term().trim().length >= 2);
 
@@ -133,18 +141,19 @@ export class TopbarComponent {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       const hit = rows[this.activeIndex()];
-      if (hit) this.openPerson(hit.person);
-      else if (this.term().trim()) this.router.navigate(['/customers'], { queryParams: { q: this.term().trim() } });
+      if (hit) this.openHit(hit);
     } else if (event.key === 'Escape') {
       (event.target as HTMLInputElement).blur();
     }
   }
 
-  protected openPerson(p: Person): void {
+  protected openHit(hit: SearchHit): void {
+    const q = this.term().trim();
     this.term.set('');
     this.searchFocused.set(false);
     this.searchInput()?.nativeElement.blur();
-    this.router.navigate(['/', p.kind, p.id]);
+    if (hit.type === 'search') this.router.navigate([hit.route], { queryParams: { q } });
+    else this.router.navigate(['/', hit.person.kind, hit.person.id]);
   }
 
   protected onSearchBlur(): void {

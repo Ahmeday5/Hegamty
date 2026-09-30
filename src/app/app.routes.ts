@@ -79,12 +79,12 @@ export const routes: Routes = [
       {
         path: 'customers',
         title: 'العملاء · HiCan',
-        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('customers')),
+        loadChildren: () => import('./features/clients/clients.routes').then((m) => m.clientsRoutes),
       },
       {
         path: 'technicians',
         title: 'الفنيون · HiCan',
-        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('technicians')),
+        loadChildren: () => import('./features/specialists/specialists.routes').then((m) => m.specialistsRoutes),
       },
       {
         path: 'drivers',

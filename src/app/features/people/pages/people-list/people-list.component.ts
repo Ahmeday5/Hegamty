@@ -6,6 +6,7 @@ import { KpiCardComponent, Tone } from '../../../../shared/components/kpi-card/k
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { formatDate } from '../../../../shared/utils/format.util';
+import { downloadCsv } from '../../../../shared/utils/csv.util';
 import { PersonFormComponent } from '../../components/person-form/person-form.component';
 import { PEOPLE_CONFIG, STATUS_META, isNewAccount } from '../../people.config';
 import { Person, PersonKind, PersonStatus } from '../../people.models';
@@ -227,22 +228,13 @@ export class PeopleListComponent {
     this.actions.remove(p);
   }
 
-  /** Excel-friendly CSV (UTF-8 BOM so Arabic renders correctly). */
   protected exportCsv(): void {
     const cfg = this.cfg();
     const header = ['المعرف', 'الاسم', 'الدولة', 'الهاتف', 'البريد', 'المدينة', 'الحي', cfg.countLabel, 'الحالة', 'تاريخ التسجيل'];
-    const lines = this.filtered().map((p) =>
-      [p.id, p.name, this.countries.byId(p.countryId)?.name ?? '', p.phone, p.email, p.city, p.district, p.bookings,
-        STATUS_META[p.status].label, formatDate(p.joinedAt)]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(','),
-    );
-    const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.kind()}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const rows = this.filtered().map((p) => [
+      p.id, p.name, this.countries.byId(p.countryId)?.name ?? '', p.phone, p.email, p.city, p.district, p.bookings,
+      STATUS_META[p.status].label, formatDate(p.joinedAt),
+    ]);
+    downloadCsv(this.kind(), header, rows);
   }
 }

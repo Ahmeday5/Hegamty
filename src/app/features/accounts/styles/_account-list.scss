@@ -1,0 +1,83 @@
+// Shared by the server-paged accounts list pages (customers, technicians).
+
+:host { display: block; }
+
+.page-head__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.icon-btn.is-spinning app-icon { animation: acc-spin 0.9s linear infinite; }
+.icon-btn:disabled, .btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+
+/* ── Global country scope notice (backend can't filter by country yet) ── */
+.scope-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fffaf1;
+  border: 1px dashed #e9c58b;
+
+  p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.6; color: #92400e; }
+  &__btn { flex-shrink: 0; background: var(--white); }
+}
+
+/* ── Toolbar ── */
+.filter-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--brd);
+  color: var(--txt3);
+  font-size: 12.5px;
+  cursor: not-allowed;
+  white-space: nowrap;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--brd);
+
+  .seg { max-width: 100%; overflow-x: auto; }
+}
+.result-count { font-size: 12.5px; color: var(--txt3); font-weight: 500; }
+
+/* ── Table ── */
+.dtable { transition: opacity 0.2s; }
+.dtable.is-stale { opacity: 0.55; pointer-events: none; }
+.th { display: inline-flex; align-items: center; gap: 6px; }
+.th-actions { text-align: end !important; }
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &__txt {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+
+    strong { font-weight: 600; color: var(--black); }
+    span { font-size: 12px; color: var(--txt3); }
+  }
+}
+
+.with-icon { display: inline-flex; align-items: center; gap: 6px; }
+.stack { display: flex; flex-wrap: wrap; gap: 4px; }
+.muted { color: var(--txt3); }
+.chip--xs { padding: 0 7px; font-size: 10.5px; margin-inline-start: 4px; vertical-align: middle; }
+.skel-row { animation: none !important; }
+.skel-row td { padding-block: 16px; }
+.empty__icon--red { background: var(--re-l); color: var(--re); }
+.btn-spin { width: 14px; height: 14px; }
+
+@keyframes acc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.is-spinning app-icon { animation-duration: 3s; } }

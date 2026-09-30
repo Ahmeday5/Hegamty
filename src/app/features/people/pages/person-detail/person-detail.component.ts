@@ -97,13 +97,7 @@ export class PersonDetailComponent {
   // ── Technician subscription ──
   protected readonly subscription = computed(() => {
     const p = this.person();
-    if (!p || p.kind !== 'technicians') return null;
-    const sub = this.packages.latestFor(p.id);
-    const pkg = sub ? this.packages.byId(sub.packageId) : undefined;
-    const state = this.packages.stateOf(sub);
-    const total = sub ? Math.max(1, (+new Date(sub.endsAt) - +new Date(sub.startedAt)) / 86400000) : 1;
-    const left = sub ? Math.max(0, this.packages.daysLeft(sub)) : 0;
-    return { sub, pkg, state, left, pct: Math.round((left / total) * 100), history: this.packages.historyFor(p.id) };
+    return p && p.kind === 'technicians' ? this.packages.summaryFor(p.id) : null;
   });
 
   // ── Overview ──

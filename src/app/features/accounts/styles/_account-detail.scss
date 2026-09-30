@@ -1,0 +1,43 @@
+// Shared by the accounts detail pages (customers, technicians).
+
+:host { display: block; }
+
+.page-head__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn:disabled, .icon-btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+.icon-btn.is-spinning app-icon { animation: acc-spin 0.9s linear infinite; }
+.muted { color: var(--txt3); }
+.col { display: grid; gap: 14px; align-content: start; }
+.chip--flag { padding-inline-start: 5px; }
+.with-flag { display: inline-flex; align-items: center; gap: 6px; }
+.tab-pane { animation: fx-rise 0.45s var(--ease) both; }
+.spaced { margin-top: 14px; }
+.kv__v--wrap { white-space: pre-line; text-align: start; line-height: 1.7; }
+
+/* ── State banners (review pending, banned…) ── */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+
+  > span { flex: 1; min-width: 200px; }
+  &__actions { display: flex; gap: 6px; }
+
+  &--amber { background: var(--am-l); border: 1px solid #f8dcaf; color: #92400e; }
+  &--red { background: var(--re-l); border: 1px solid #f5c2c2; color: #991b1b; }
+  &--slate { background: var(--sl-l); border: 1px solid var(--brd); color: var(--txt2); }
+}
+
+/* ── Loading / missing states ── */
+.hero-skel { display: flex; align-items: center; gap: 16px; padding: 22px 18px; margin-bottom: 14px; }
+.hero-skel > div { display: grid; gap: 8px; }
+.kv-skel { display: block; height: 14px; margin: 12px 0; }
+.state-actions { display: flex; gap: 8px; justify-content: center; }
+.empty__icon--red { background: var(--re-l); color: var(--re); }
+
+@keyframes acc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tab-pane { animation: none; } }

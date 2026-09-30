@@ -59,13 +59,20 @@ export class CountryFlagComponent {
   readonly countryId = input<string | null | undefined>(null);
   /** Explicit ISO code (overrides the store lookup, e.g. for a form preview). */
   readonly iso = input<string | null | undefined>(undefined);
-  /** Explicit accessible name (overrides the store lookup). */
+  /**
+   * Explicit accessible name (overrides the store lookup). Without a
+   * `countryId`, it is also matched against the store — for records that
+   * reference their country by name only.
+   */
   readonly name = input<string>('');
   /** Width in px; height follows the 4:3 ratio. */
   readonly size = input(24);
 
   private readonly countries = inject(CountriesStore);
-  private readonly country = computed(() => this.countries.byId(this.countryId()));
+  private readonly country = computed(() => {
+    const id = this.countryId();
+    return id ? this.countries.byId(id) : this.countries.byName(this.name());
+  });
 
   protected readonly failed = signal(false);
   protected readonly label = computed(() => this.name() || this.country()?.name || '');
@@ -79,7 +86,7 @@ export class CountryFlagComponent {
     // A new country / ISO gets a fresh attempt even if the previous image failed.
     effect(() => {
       this.iso();
-      this.countryId();
+      this.country();
       this.failed.set(false);
     }, { allowSignalWrites: true });
   }
