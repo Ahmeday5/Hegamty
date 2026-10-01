@@ -1,3 +1,5 @@
+import { AccountLocationFilter, AccountPlace, Gender, GeoPoint, PlaceRef } from '../accounts/account-profile';
+
 /**
  * Technicians — "specialists" in the backend (`/admin/specialists`). They
  * self-register from the mobile app with their identity documents and start
@@ -18,14 +20,27 @@ export interface Specialist {
   id: string;
   fullName: string;
   phone: string;
+  gender: Gender | null;
   age: number | null;
+  /** ISO timestamp, or `null` when not set. */
+  birthDate: string | null;
   experienceYears: number;
   description: string;
   status: SpecialistStatus;
   banned: boolean;
+  /** Toggled by the technician in the app: currently accepting requests. */
+  available: boolean;
+  /** Country and governorate the technician works in. */
+  workPlace: AccountPlace;
+  nationality: PlaceRef | null;
+  /** Last position reported by the app. */
+  position: GeoPoint | null;
   /** Absolute URLs (or `null` when not uploaded). */
   photoUrl: string | null;
   documents: SpecialistDocuments;
+  /** ISO timestamps, or `null` when the server sent none. */
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 /** A catalog service the technician offers, at their own price within the allowed range. */
@@ -44,8 +59,8 @@ export interface SpecialistService {
   description: string;
 }
 
-/** List filters; `null` = no constraint. */
-export interface SpecialistFilter {
+/** List filters; `null` = no constraint. The location is the technician's work area. */
+export interface SpecialistFilter extends AccountLocationFilter {
   name: string | null;
   phone: string | null;
   status: SpecialistStatus | null;
@@ -56,7 +71,14 @@ export interface SpecialistFilter {
   banned: boolean | null;
 }
 
-export const NO_SPECIALIST_FILTER: SpecialistFilter = { name: null, phone: null, status: null, banned: null };
+export const NO_SPECIALIST_FILTER: SpecialistFilter = {
+  name: null,
+  phone: null,
+  status: null,
+  banned: null,
+  countryId: null,
+  governorateId: null,
+};
 
 export type SpecialistCounts = Record<SpecialistStatus | 'all', number>;
 
@@ -67,3 +89,10 @@ export const SPECIALIST_STATUS_META: Record<SpecialistStatus, { label: string; c
   approved: { label: 'معتمد', chip: 'chip--green' },
   rejected: { label: 'مرفوض', chip: 'chip--red' },
 };
+
+export const AVAILABILITY_META: Record<'on' | 'off', { label: string; chip: string }> = {
+  on: { label: 'متاح للطلبات', chip: 'chip--green' },
+  off: { label: 'غير متاح', chip: 'chip--slate' },
+};
+
+export const availabilityOf = (s: Pick<Specialist, 'available'>): 'on' | 'off' => (s.available ? 'on' : 'off');

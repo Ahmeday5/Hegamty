@@ -1,3 +1,5 @@
+import { AccountLocationFilter, AccountPlace, Gender, GeoPoint, PlaceRef } from '../accounts/account-profile';
+
 /**
  * Customers — "clients" in the backend (`/admin/clients`). Accounts are
  * created from the mobile app; the dashboard reviews them and can ban /
@@ -9,19 +11,38 @@ export interface Client {
   fullName: string;
   phone: string;
   email: string;
+  gender: Gender | null;
   age: number | null;
+  /** Free-text address entered at registration. */
+  address: string;
   active: boolean;
   banned: boolean;
-  countryName: string;
-  governorateName: string;
-  /** Absolute URL, or `null` when not uploaded. */
+  /** Country and governorate the customer lives in. */
+  residence: AccountPlace;
+  nationality: PlaceRef | null;
+  /** Position captured at registration. */
+  position: GeoPoint | null;
+  /** Absolute URLs, or `null` when not uploaded. */
   photoUrl: string | null;
+  nationalIdUrl: string | null;
   /** ISO timestamp, or `null` when the server sent none. */
   createdAt: string | null;
 }
 
-/** List filters; `null` = no constraint. */
-export interface ClientFilter {
+/** A delivery address saved by the customer in the app (home, work …). */
+export interface ClientAddress {
+  id: string;
+  /** Customer-chosen name, e.g. "المنزل". */
+  label: string;
+  /** Contact number for visits to this address (may differ from the account's). */
+  phone: string;
+  text: string;
+  notes: string;
+  position: GeoPoint | null;
+}
+
+/** List filters; `null` = no constraint. The location is the customer's residence. */
+export interface ClientFilter extends AccountLocationFilter {
   name: string | null;
   phone: string | null;
   active: boolean | null;
@@ -32,7 +53,14 @@ export interface ClientFilter {
   banned: boolean | null;
 }
 
-export const NO_CLIENT_FILTER: ClientFilter = { name: null, phone: null, active: null, banned: null };
+export const NO_CLIENT_FILTER: ClientFilter = {
+  name: null,
+  phone: null,
+  active: null,
+  banned: null,
+  countryId: null,
+  governorateId: null,
+};
 
 export interface ClientCounts {
   all: number;

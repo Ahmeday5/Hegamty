@@ -1,5 +1,6 @@
-import { Observable, catchError, map, shareReplay } from 'rxjs';
-import { Page, PageRequest, pageOf } from '../../core/models/page.model';
+import { Observable } from 'rxjs';
+import { Page, PageRequest } from '../../core/models/page.model';
+import { LocallyFilteredPages } from '../../core/utils/locally-filtered-pages';
 
 export function byBan<T extends { banned: boolean }>(rows: T[], banned: boolean | null): T[] {
   return banned === null ? rows : rows.filter((r) => r.banned === banned);
@@ -7,32 +8,22 @@ export function byBan<T extends { banned: boolean }>(rows: T[], banned: boolean 
 
 /**
  * Client-side ban filter for accounts endpoints that can't filter by ban
- * state yet: every server match for the other filters is drained once
- * (cached per filter), filtered in the browser and paged locally — so counts
- * and paging stay exact. Call `invalidate()` after anything that changes ban
- * state or on an explicit refresh. Delete once the backend filters by ban.
+ * state yet (see `LocallyFilteredPages`). Call `invalidate()` after anything
+ * that changes ban state or on an explicit refresh. Delete once the backend
+ * filters by ban.
  */
 export class BanFilteredPages<T extends { banned: boolean }, F> {
-  private cache: { key: string; rows: Observable<T[]> } | null = null;
+  private readonly pages: LocallyFilteredPages<T, F>;
 
-  constructor(private readonly drainAll: (filter: F) => Observable<T[]>) {}
+  constructor(drainAll: (filter: F) => Observable<T[]>) {
+    this.pages = new LocallyFilteredPages(drainAll);
+  }
 
   page(filter: F, banned: boolean, page: PageRequest): Observable<Page<T>> {
-    const key = JSON.stringify(filter);
-    if (this.cache?.key !== key) {
-      this.cache = { key, rows: this.drainAll(filter).pipe(shareReplay({ bufferSize: 1, refCount: false })) };
-    }
-    const entry = this.cache;
-    return entry.rows.pipe(
-      map((rows) => pageOf(byBan(rows, banned), page)),
-      catchError((err) => {
-        if (this.cache === entry) this.cache = null; // never cache a failure
-        throw err;
-      }),
-    );
+    return this.pages.page(filter, page, (r) => r.banned === banned);
   }
 
   invalidate(): void {
-    this.cache = null;
+    this.pages.invalidate();
   }
 }

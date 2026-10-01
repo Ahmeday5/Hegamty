@@ -14,7 +14,7 @@ import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
 import { PeopleStore } from '../../../people/people.store';
 import { ServiceCatalogApi } from '../../../services/service-catalog.api';
 import { NO_FILTER } from '../../../services/service-catalog.models';
-import { BookingsStore } from '../../../bookings/bookings.store';
+import { DemoBookingsStore } from '../../../bookings/demo-bookings.store';
 import { PackagesStore } from '../../../packages/packages.store';
 import { CountryFormComponent } from '../../components/country-form/country-form.component';
 import { GovernoratesDialogComponent } from '../../components/governorates-dialog/governorates-dialog.component';
@@ -53,7 +53,7 @@ export class CountriesPageComponent {
   private readonly catalogApi = inject(ServiceCatalogApi);
   private readonly scope = inject(CountryScopeService);
   private readonly router = inject(Router);
-  private readonly bookings = inject(BookingsStore);
+  private readonly bookings = inject(DemoBookingsStore);
   private readonly packages = inject(PackagesStore);
   private readonly dialog = inject(DialogService);
   private readonly toast = inject(ToastService);

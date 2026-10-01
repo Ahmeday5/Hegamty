@@ -13,6 +13,29 @@
 .spaced { margin-top: 14px; }
 .kv__v--wrap { white-space: pre-line; text-align: start; line-height: 1.7; }
 
+/* Inline jump to another tab of the profile. */
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--pr);
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+
+/* GPS position → opens Google Maps in a new tab. */
+.geo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--pr);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
 /* ── State banners (review pending, banned…) ── */
 .banner {
   display: flex;

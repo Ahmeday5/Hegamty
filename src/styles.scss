@@ -835,6 +835,7 @@ body.app-modal-open { overflow: hidden; }
   &--purple { --c: var(--pu); --c-l: var(--pu-l); }
   &--teal   { --c: var(--te); --c-l: var(--te-l); }
   &--pink   { --c: var(--pi); --c-l: var(--pi-l); }
+  &--slate  { --c: var(--sl); --c-l: var(--sl-l); }
   &--brand  { --c: var(--white); background: var(--grad-pr); box-shadow: 0 8px 18px -8px rgba(6, 74, 80, 0.6); }
 }
 

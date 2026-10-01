@@ -7,6 +7,8 @@
   <button
     type="button"
     class="form-select ss__control"
+    [class.select-sm]="compact()"
+    [attr.aria-label]="ariaLabel()"
     [class.is-invalid]="isInvalid()"
     [disabled]="disabled()"
     (click)="toggle()"

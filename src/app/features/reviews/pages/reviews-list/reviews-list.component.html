@@ -1,0 +1,145 @@
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">التقييمات</span>
+      </nav>
+      <h1 class="page-head__title">التقييمات</h1>
+      <p class="page-head__sub">تقييمات العملاء وتعليقاتهم على الفنيين بعد الجلسات</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" (click)="exportCsv()" [disabled]="exporting() || !pageMeta().count">
+        @if (exporting()) { <span class="spinner-border spinner-border-sm btn-spin" aria-hidden="true"></span> جارٍ التصدير… }
+        @else { <app-icon name="download" [size]="16" /> تصدير Excel }
+      </button>
+    </div>
+  </header>
+
+  <div class="grid grid--4">
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي التقييمات" [value]="kpis().count" icon="star" tone="green" hint="ضمن الفلاتر المختارة" />
+    <app-kpi-card class="fx" style="--d: 2" label="متوسط التقييم" [value]="kpis().average" [decimals]="1" suffix="/ 5" icon="award" tone="amber"
+      hint="ضمن الفلاتر المختارة" />
+    <app-kpi-card class="fx" style="--d: 3" label="تقييمات ممتازة" [value]="kpis().excellent" icon="heart" tone="teal" [hint]="'5 نجوم · ' + kpis().excellentHint" />
+    <app-kpi-card class="fx" style="--d: 4" label="تقييمات سلبية" [value]="kpis().negative" icon="alert" tone="red" [hint]="'نجمة أو نجمتان · ' + kpis().negativeHint" />
+  </div>
+
+  <div class="panel fx rv-panel" style="--d: 5">
+    <div class="filters">
+      <div class="filters__head">
+        <span class="filters__title"><app-icon name="filter" [size]="15" /> الفلاتر</span>
+        @if (hasFilters()) {
+          <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
+        }
+      </div>
+      <app-party-filters [value]="parties.value()" (filtersChange)="setParties($event)" />
+    </div>
+
+    <div class="status-bar">
+      <div class="seg" role="tablist" aria-label="عدد النجوم">
+        @for (t of ratingTabs(); track t.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="list.status() === t.id" [attr.aria-selected]="list.status() === t.id"
+            (click)="list.setStatus(t.id)">
+            {{ t.label }} @if (t.count !== undefined) { <span class="seg__count">{{ t.count | num }}</span> }
+          </button>
+        }
+      </div>
+      <span class="result-count" aria-live="polite">
+        @if (firstLoad()) { جارٍ التحميل… } @else if (status() !== 'error') { {{ pageMeta().count | num }} تقييم }
+      </span>
+    </div>
+
+    <div class="dtable-wrap" [attr.aria-busy]="status() === 'loading'">
+      <table class="dtable" [class.is-stale]="status() === 'loading' && !firstLoad()">
+        <thead>
+          <tr>
+            <th>العميل</th>
+            <th>الفني</th>
+            <th>التقييم</th>
+            <th>التعليق</th>
+            <th>الحجز</th>
+            <th>التاريخ</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (firstLoad()) {
+            @for (r of skeletonRows; track r) {
+              <tr class="skel-row" aria-hidden="true">
+                @for (c of [1, 2, 3, 4, 5, 6]; track c) {
+                  <td><span class="skel" [style.width.px]="46 + ((r * 13 + c * 17) % 60)"></span></td>
+                }
+              </tr>
+            }
+          } @else if (status() === 'error') {
+            <tr>
+              <td colspan="6">
+                <div class="empty">
+                  <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+                  <p class="empty__title">تعذّر تحميل التقييمات</p>
+                  <p class="empty__text">{{ loadError() }}</p>
+                  <button type="button" class="btn btn-soft btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (r of items(); track r.id; let i = $index) {
+              <tr [style.--d]="i">
+                <td>
+                  <a class="party-link" [routerLink]="['/customers', r.client.id]" [attr.aria-label]="'ملف العميل ' + r.client.name">
+                    <app-booking-party [party]="r.client" />
+                  </a>
+                </td>
+                <td>
+                  <a class="party-link" [routerLink]="['/technicians', r.specialist.id]" [attr.aria-label]="'ملف الفني ' + r.specialist.name">
+                    <app-booking-party [party]="r.specialist" />
+                  </a>
+                </td>
+                <td>
+                  <div class="rate-cell">
+                    <app-rating-stars [value]="r.rating" />
+                    <span>{{ labels[r.rating] }}</span>
+                  </div>
+                </td>
+                <td class="comment-cell">
+                  @if (r.comment) { <span [attr.title]="r.comment">{{ r.comment }}</span> } @else { <span class="muted">بدون تعليق</span> }
+                </td>
+                <td>
+                  @if (r.bookingId) {
+                    <app-booking-ref [bookingId]="r.bookingId" [clientId]="r.client.id" [specialistId]="r.specialist.id" />
+                  } @else { <span class="muted">—</span> }
+                </td>
+                <td class="muted">{{ r.createdAt | arDate }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="empty">
+                    <span class="empty__icon"><app-icon name="star" [size]="26" /></span>
+                    <p class="empty__title">{{ hasFilters() ? 'لا توجد تقييمات مطابقة' : 'لا توجد تقييمات بعد' }}</p>
+                    <p class="empty__text">
+                      @if (hasFilters()) { جرّب تعديل الفلاتر أو إزالتها. } @else { تظهر هنا تقييمات العملاء فور إضافتها من التطبيق. }
+                    </p>
+                    @if (hasFilters()) { <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button> }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (status() !== 'error' && pageMeta().count) {
+      <div class="table-foot">
+        <app-pagination [pageIndex]="pageMeta().pageIndex" [pageSize]="pageMeta().pageSize" [count]="pageMeta().count"
+          [totalPages]="pageMeta().totalPages" [pageSizeOptions]="pageSizes" [disabled]="status() === 'loading'"
+          (pageChange)="goToPage($event)" (pageSizeChange)="list.changePageSize($event)" />
+      </div>
+    }
+  </div>
+</section>

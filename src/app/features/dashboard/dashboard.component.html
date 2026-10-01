@@ -239,7 +239,7 @@
         </thead>
         <tbody>
           @for (b of recent(); track b.id; let i = $index) {
-            <tr class="is-link" [style.--d]="i" [routerLink]="['/bookings', b.id]">
+            <tr class="is-link" [style.--d]="i" routerLink="/bookings">
               <td class="num">{{ b.id }}</td>
               @if (scope.isAll()) { <td><app-country-flag [countryId]="b.countryId" [size]="22" /></td> }
               <td>

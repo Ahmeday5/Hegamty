@@ -4,7 +4,10 @@ import { ApiService } from '../../core/services/api.service';
 import { withInlineHandling } from '../../core/http/http-context.tokens';
 import { asList, asPaged, fetchAllPages } from '../../core/utils/api-list.util';
 import { resolveAssetUrl } from '../../core/utils/asset-url.util';
+import { parseApiDate } from '../../core/utils/api-date.util';
 import { Page, PageRequest, toPageMeta } from '../../core/models/page.model';
+import { ANY_LOCATION, AccountLocationFilter } from '../accounts/account-profile';
+import { locationParams, toGender, toGeoPoint, toPlace } from '../accounts/account-wire';
 import {
   SPECIALIST_STATUSES,
   Specialist,
@@ -22,15 +25,34 @@ interface SpecialistDto {
   id: number;
   fullName: string | null;
   phone: string | null;
+  gender: string | null;
   age: number | null;
+  birthDate: string | null;
   yearsOfExperience: number | null;
   description: string | null;
+  latitude: number | null;
+  longitude: number | null;
   status: StatusDto;
+  isAvailable: boolean;
   isBanned: boolean;
+  /** English. */
+  governorateName: string | null;
+  governorateNameAr: string | null;
+  governorateId: number | null;
+  /** Arabic. */
+  workingCountryName: string | null;
+  workingCountryNameEn: string | null;
+  workingCountryId: number | null;
+  /** Arabic. */
+  nationalityCountryName: string | null;
+  nationalityCountryNameEn: string | null;
+  nationalityCountryId: number | null;
   nationalIdFrontUrl: string | null;
   nationalIdBackUrl: string | null;
   nationalIdWithPersonUrl: string | null;
   profileImageUrl: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 interface SpecialistServiceDto {
@@ -70,17 +92,28 @@ function toSpecialist(dto: SpecialistDto): Specialist {
     id: String(dto.id),
     fullName: dto.fullName?.trim() || '—',
     phone: dto.phone?.trim() ?? '',
+    gender: toGender(dto.gender),
     age: dto.age && dto.age > 0 ? dto.age : null,
+    birthDate: parseApiDate(dto.birthDate),
     experienceYears: Math.max(0, Number(dto.yearsOfExperience) || 0),
     description: dto.description?.trim() ?? '',
     status: STATUS_FROM_WIRE[dto.status] ?? 'pending',
     banned: !!dto.isBanned,
+    available: !!dto.isAvailable,
+    workPlace: {
+      country: toPlace(dto.workingCountryId, dto.workingCountryName, dto.workingCountryNameEn),
+      governorate: toPlace(dto.governorateId, dto.governorateNameAr, dto.governorateName),
+    },
+    nationality: toPlace(dto.nationalityCountryId, dto.nationalityCountryName, dto.nationalityCountryNameEn),
+    position: toGeoPoint(dto.latitude, dto.longitude),
     photoUrl: resolveAssetUrl(dto.profileImageUrl),
     documents: {
       idFront: resolveAssetUrl(dto.nationalIdFrontUrl),
       idBack: resolveAssetUrl(dto.nationalIdBackUrl),
       idWithPerson: resolveAssetUrl(dto.nationalIdWithPersonUrl),
     },
+    createdAt: parseApiDate(dto.createdAt),
+    updatedAt: parseApiDate(dto.updatedAt),
   };
 }
 
@@ -109,6 +142,7 @@ function toParams(filter: Omit<SpecialistFilter, 'banned'>, page: PageRequest): 
     name: filter.name,
     phone: filter.phone,
     status: filter.status ? STATUS_TO_WIRE[filter.status] : null,
+    ...locationParams(filter),
   };
 }
 
@@ -140,12 +174,12 @@ export class SpecialistsApi {
     ).pipe(map((list) => list.map(toSpecialist)));
   }
 
-  /** Totals per review status — one single-row page each, read from `count`. */
-  counts(): Observable<SpecialistCounts> {
+  /** Totals per review status within a work area — one single-row page each, read from `count`. */
+  counts(location: AccountLocationFilter = ANY_LOCATION): Observable<SpecialistCounts> {
     const countOf = (status: SpecialistStatus | null) =>
       this.api
         .get<unknown>(ENDPOINT, {
-          params: toParams({ name: null, phone: null, status }, { pageIndex: 1, pageSize: 1 }),
+          params: toParams({ name: null, phone: null, status, ...location }, { pageIndex: 1, pageSize: 1 }),
           context: withInlineHandling(),
         })
         .pipe(map((res) => asPaged<SpecialistDto>(res).count));

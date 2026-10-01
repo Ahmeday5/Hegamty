@@ -17,6 +17,7 @@ export const NAV_SECTIONS: MenuSection[] = [
     label: 'العمليات',
     items: [
       { id: 'bookings', label: 'الحجوزات', route: '/bookings', icon: 'calendar' },
+      { id: 'reviews', label: 'التقييمات', route: '/reviews', icon: 'star' },
       { id: 'services', label: 'الخدمات', route: '/services', icon: 'droplet' },
       { id: 'categories', label: 'اقسام الخدمات', route: '/service-categories', icon: 'filter' },
       { id: 'packages', label: 'باقات الفنيين', route: '/packages', icon: 'award' },

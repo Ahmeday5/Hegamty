@@ -13,8 +13,7 @@ import { APP_LOCALE, formatLongDate } from '../../shared/utils/format.util';
 import { PeopleStore } from '../people/people.store';
 import { BOOKING_META, isNewAccount } from '../people/people.config';
 import { BookingStatus } from '../people/people.models';
-import { BookingsStore } from '../bookings/bookings.store';
-import { BookingRecord } from '../bookings/bookings.models';
+import { DemoBooking, DemoBookingsStore } from '../bookings/demo-bookings.store';
 import { ServicesStore } from '../services/services.store';
 import { PackagesStore } from '../packages/packages.store';
 import { Subscription } from '../packages/packages.models';
@@ -65,7 +64,7 @@ const inRange = <T>(list: readonly T[], at: (x: T) => string, from: number, to: 
 export class DashboardComponent {
   private readonly auth = inject(AuthService);
   private readonly people = inject(PeopleStore);
-  private readonly bookingsStore = inject(BookingsStore);
+  private readonly bookingsStore = inject(DemoBookingsStore);
   private readonly servicesStore = inject(ServicesStore);
   private readonly packages = inject(PackagesStore);
   private readonly countries = inject(CountriesStore);
@@ -112,8 +111,8 @@ export class DashboardComponent {
     const subs = this.subs();
     const subsIn = (from: number, to: number) => inRange(subs, (s: Subscription) => s.startedAt, from, to);
     const subValue = (list: Subscription[]) => (this.scope.isAll() ? list.length : list.reduce((a, s) => a + s.price, 0));
-    const bk = (from: number, to: number) => inRange(all, (b: BookingRecord) => b.date, from, to);
-    const rated = (list: BookingRecord[]) => {
+    const bk = (from: number, to: number) => inRange(all, (b: DemoBooking) => b.date, from, to);
+    const rated = (list: DemoBooking[]) => {
       const r = list.filter((b) => b.rating);
       return r.length ? r.reduce((a, b) => a + (b.rating ?? 0), 0) / r.length : 0;
     };

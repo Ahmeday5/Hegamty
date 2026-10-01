@@ -67,6 +67,10 @@ export class SearchableSelectComponent implements ControlValueAccessor {
   readonly allowCreate = input<boolean>(false);
   /** Label for the create row. */
   readonly createLabel = input<string>('+ إضافة عنصر جديد');
+  /** Toolbar size, matching `.select-sm`. */
+  readonly compact = input<boolean>(false);
+  /** Accessible name of the closed control. */
+  readonly ariaLabel = input<string | null>(null);
 
   /**
    * Emits the current search term when the user clicks the create row.

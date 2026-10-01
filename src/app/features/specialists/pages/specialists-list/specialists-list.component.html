@@ -21,10 +21,10 @@
     </div>
   </header>
 
-  @if (scope.country(); as c) {
+  @if (list.country(); as c) {
     <div class="scope-bar fx" style="--d: 1" role="status">
-      <app-icon name="globe" [size]="18" />
-      <p>فلترة الفنيين حسب الدولة والمحافظة <strong>قيد التطوير</strong> — تُعرض حاليًا حسابات كل الدول وليس {{ c.name }} فقط.</p>
+      <app-country-flag [countryId]="c.id" [size]="26" />
+      <p>تعرض الفنيين العاملين في <strong>{{ c.name }}</strong> فقط — الأرقام والتبويبات محسوبة لهذه الدولة.</p>
       <button type="button" class="btn btn-sm scope-bar__btn" (click)="showAllCountries()"><app-icon name="globe" [size]="14" /> كل الدول</button>
     </div>
   }
@@ -44,9 +44,20 @@
         <input type="search" [value]="list.search()" (input)="list.search.set($any($event.target).value)"
           placeholder="ابحث باسم الفني أو رقم الجوال…" aria-label="بحث في الفنيين" />
       </label>
-      <span class="filter-soon" data-tip="فلترة الدولة والمحافظة قيد التطوير">
-        <app-icon name="map-pin" [size]="15" /> الدولة / المحافظة <app-dev-badge size="sm" />
-      </span>
+      @if (list.country()) {
+        <!-- Options render after the <select>, so selection is bound per option (a [value] on the select would be lost). -->
+        <select class="form-select select-sm gov-select" [attr.aria-label]="list.divisionPlural()" [disabled]="!list.governorates().length"
+          (change)="list.setGovernorate($any($event.target).value)">
+          <option value="" [selected]="!list.governorateId()">كل ال{{ list.divisionPlural() }}</option>
+          @for (g of list.governorates(); track g.id) {
+            <option [value]="g.id" [selected]="g.id === list.governorateId()">{{ g.name }}</option>
+          }
+        </select>
+      } @else {
+        <span class="filter-hint" data-tip="اختر دولة من أعلى الصفحة لفلترة الفنيين حسب المحافظة">
+          <app-icon name="map-pin" [size]="15" /> اختر دولة لفلترة المحافظات
+        </span>
+      }
       @if (list.hasFilters()) {
         <button type="button" class="btn btn-ghost btn-sm" (click)="list.reset()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
       }
@@ -78,12 +89,12 @@
           <tr>
             <th>الفني</th>
             <th>رقم الجوال</th>
-            <th>العمر</th>
+            <th>منطقة العمل</th>
             <th>الخبرة</th>
             <th><span class="th">التقييم <app-dev-badge size="sm" /></span></th>
-            <th><span class="th">الباقة <app-dev-badge size="sm" /></span></th>
             <th>حالة المراجعة</th>
             <th>الحظر</th>
+            <th>تاريخ التسجيل</th>
             <th class="th-actions">الإجراءات</th>
           </tr>
         </thead>
@@ -122,20 +133,20 @@
                     <app-avatar [name]="s.fullName" [src]="s.photoUrl" [size]="34" />
                     <div class="person__txt">
                       <strong>{{ s.fullName }}</strong>
-                      <span>#{{ s.id }}</span>
+                      <span>#{{ s.id }}@if (s.gender) { · {{ genderMeta[s.gender].label }} }@if (s.age) { · {{ s.age | years }} }</span>
                     </div>
                   </div>
                 </td>
                 <td><bdi class="ltr">{{ s.phone || '—' }}</bdi></td>
-                <td class="num">{{ s.age | years }}</td>
+                <td><app-account-place [place]="s.workPlace" /></td>
                 <td class="num">{{ s.experienceYears ? (s.experienceYears | years) : 'بدون خبرة' }}</td>
-                <td class="muted">—</td>
                 <td class="muted">—</td>
                 <td><span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span></td>
                 <td>
                   @if (s.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
                   @else { <span class="chip chip--slate">غير محظور</span> }
                 </td>
+                <td class="muted">{{ s.createdAt | arDate }}</td>
                 <td (click)="$event.stopPropagation()">
                   <div class="actions">
                     <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل" aria-label="التفاصيل" (click)="openDetails(s)">
@@ -167,7 +178,9 @@
                     <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
                     <p class="empty__title">لا توجد نتائج</p>
                     <p class="empty__text">
-                      @if (list.hasFilters()) { جرّب تعديل البحث أو إزالة الفلاتر. } @else { لم يسجّل أي فني من التطبيق بعد. }
+                      @if (list.hasFilters()) { جرّب تعديل البحث أو إزالة الفلاتر. }
+                      @else if (list.country()) { لا يوجد فنيون يعملون في {{ list.country()?.name }} حتى الآن. }
+                      @else { لم يسجّل أي فني من التطبيق بعد. }
                     </p>
                     @if (list.hasFilters()) { <button type="button" class="btn btn-soft btn-sm" (click)="list.reset()">مسح الفلاتر</button> }
                   </div>

@@ -15,6 +15,8 @@ import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
 import { ALL_COUNTRIES, CountryScopeService } from '../../../countries/country-scope.service';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { ACCOUNT_PAGE_SIZES, AccountListController, BanFilter } from '../../../accounts/account-list.controller';
+import { GENDER_META } from '../../../accounts/account-profile';
+import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
 import { CLIENT_ACTIVITY_META, Client, ClientActivity, activityOf, isNewClient } from '../../clients.models';
 import { ClientsStore } from '../../clients.store';
 import { ClientActionsService } from '../../client-actions.service';
@@ -22,9 +24,9 @@ import { ClientActionsService } from '../../client-actions.service';
 const ACTIVITIES: readonly ClientActivity[] = ['active', 'inactive'];
 
 /**
- * Customers list, fully server-driven: search (name or phone), activity and
- * paging go to the API and are mirrored in the URL. Country / governorate
- * filtering isn't supported by the backend yet.
+ * Customers list, fully server-driven: search (name or phone), activity,
+ * residence (the header's country + a governorate) and paging go to the API
+ * and are mirrored in the URL.
  */
 @Component({
   selector: 'app-clients-list',
@@ -38,6 +40,7 @@ const ACTIVITIES: readonly ClientActivity[] = ['active', 'inactive'];
     PaginationComponent,
     DevBadgeComponent,
     CountryFlagComponent,
+    AccountPlaceComponent,
     ...FORMAT_PIPES,
   ],
   templateUrl: './clients-list.component.html',
@@ -49,10 +52,11 @@ export class ClientsListComponent {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly scope = inject(CountryScopeService);
+  private readonly scope = inject(CountryScopeService);
 
   protected readonly list = new AccountListController<ClientActivity>(ACTIVITIES, { banFilter: true });
   protected readonly activityMeta = CLIENT_ACTIVITY_META;
+  protected readonly genderMeta = GENDER_META;
   protected readonly activityOf = activityOf;
   protected readonly isNew = isNewClient;
   protected readonly pageSizes = ACCOUNT_PAGE_SIZES;
@@ -93,12 +97,14 @@ export class ClientsListComponent {
   constructor() {
     effect(
       () => {
-        const { search, status, banned, page } = this.list.query();
-        untracked(() => this.store.query({ ...search, active: status === null ? null : status === 'active', banned }, page));
+        const { search, status, banned, location, page } = this.list.query();
+        untracked(() =>
+          this.store.query({ ...search, active: status === null ? null : status === 'active', banned, ...location }, page),
+        );
       },
       { allowSignalWrites: true },
     );
-    this.store.refreshCounts();
+    this.store.expireCounts();
   }
 
   protected reload(): void {
@@ -135,12 +141,16 @@ export class ClientsListComponent {
             this.toast.info('لا توجد بيانات للتصدير');
             return;
           }
-          const header = ['المعرف', 'الاسم', 'رقم الجوال', 'البريد', 'العمر', 'الدولة', 'المحافظة', 'الحالة', 'محظور', 'تاريخ التسجيل'];
+          const header = [
+            'المعرف', 'الاسم', 'رقم الجوال', 'البريد', 'النوع', 'العمر', 'الجنسية', 'دولة الإقامة', 'المحافظة', 'العنوان',
+            'الحالة', 'محظور', 'تاريخ التسجيل',
+          ];
           downloadCsv(
             'customers',
             header,
             rows.map((c) => [
-              c.id, c.fullName, c.phone, c.email, c.age ?? '', c.countryName, c.governorateName,
+              c.id, c.fullName, c.phone, c.email, c.gender ? GENDER_META[c.gender].label : '', c.age ?? '', c.nationality?.name ?? '',
+              c.residence.country?.name ?? '', c.residence.governorate?.name ?? '', c.address,
               CLIENT_ACTIVITY_META[activityOf(c)].label, c.banned ? 'نعم' : 'لا', c.createdAt ? formatDate(c.createdAt) : '',
             ]),
           );

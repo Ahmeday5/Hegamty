@@ -51,6 +51,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/bookings/bookings.routes').then((m) => m.bookingsRoutes),
       },
       {
+        path: 'reviews',
+        title: 'التقييمات · HiCan',
+        loadComponent: () => import('./features/reviews/pages/reviews-list/reviews-list.component').then((m) => m.ReviewsListComponent),
+      },
+      {
         path: 'services',
         resolve: { categories: categoriesResolver },
         title: 'الخدمات · HiCan',

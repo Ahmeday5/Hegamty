@@ -63,10 +63,16 @@
     <ng-container heroMeta>
       <span><app-icon name="phone" [size]="14" /> <bdi>{{ s.phone || '—' }}</bdi></span>
       <span><app-icon name="user" [size]="14" /> #{{ s.id }}</span>
+      @if (s.createdAt) { <span><app-icon name="calendar" [size]="14" /> انضم {{ s.createdAt | arDate }}</span> }
     </ng-container>
     <ng-container heroChips>
       <span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span>
+      <span class="chip chip--dot {{ availabilityMeta[availabilityOf(s)].chip }}">{{ availabilityMeta[availabilityOf(s)].label }}</span>
       @if (s.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
+      @if (s.workPlace.country; as wc) {
+        <span class="chip chip--slate chip--flag"><app-country-flag [countryId]="wc.id" [name]="wc.name" [size]="16" /> {{ wc.name }}</span>
+      }
+      @if (s.workPlace.governorate; as g) { <span class="chip chip--blue"><app-icon name="map-pin" [size]="12" /> {{ g.name }}</span> }
       @if (s.experienceYears) { <span class="chip chip--purple">خبرة {{ s.experienceYears | years }}</span> }
     </ng-container>
   </app-account-hero>
@@ -82,20 +88,18 @@
             <div class="panel__body">
               <div class="kv"><span class="kv__k">الاسم الكامل</span><span class="kv__v">{{ s.fullName }}</span></div>
               <div class="kv"><span class="kv__k">رقم الجوال</span><span class="kv__v"><bdi>{{ s.phone || '—' }}</bdi></span></div>
+              <div class="kv"><span class="kv__k">النوع</span><span class="kv__v">{{ s.gender ? genderMeta[s.gender].label : '—' }}</span></div>
+              <div class="kv"><span class="kv__k">تاريخ الميلاد</span><span class="kv__v">{{ s.birthDate | arDate }}</span></div>
               <div class="kv"><span class="kv__k">العمر</span><span class="kv__v">{{ s.age | years }}</span></div>
-              <div class="kv"><span class="kv__k">سنوات الخبرة</span><span class="kv__v">{{ s.experienceYears ? (s.experienceYears | years) : 'بدون خبرة' }}</span></div>
               <div class="kv">
-                <span class="kv__k">حالة المراجعة</span>
-                <span class="kv__v"><span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span></span>
-              </div>
-              <div class="kv">
-                <span class="kv__k">حالة الحساب</span>
+                <span class="kv__k">الجنسية</span>
                 <span class="kv__v">
-                  @if (s.banned) { <span class="chip chip--red">محظور</span> } @else { <span class="chip chip--green">مسموح</span> }
+                  @if (s.nationality; as n) {
+                    <span class="with-flag"><app-country-flag [countryId]="n.id" [name]="n.name" [size]="18" /> {{ n.name }}</span>
+                  } @else { — }
                 </span>
               </div>
-              <div class="kv"><span class="kv__k">الدولة / المحافظة</span><span class="kv__v"><app-dev-badge /></span></div>
-              <div class="kv"><span class="kv__k">تاريخ التسجيل</span><span class="kv__v"><app-dev-badge /></span></div>
+              <div class="kv"><span class="kv__k">سنوات الخبرة</span><span class="kv__v">{{ s.experienceYears ? (s.experienceYears | years) : 'بدون خبرة' }}</span></div>
               <div class="kv">
                 <span class="kv__k">نبذة</span>
                 <span class="kv__v kv__v--wrap">@if (s.description) { {{ s.description }} } @else { <span class="muted">لم يُضف نبذة</span> }</span>
@@ -104,9 +108,43 @@
           </div>
 
           <div class="col">
-            @if (activity(); as a) {
-              <app-activity-stats class="fx" style="--d: 1" [stats]="a" countLabel="الجلسات" [preview]="true" />
-            }
+            <div class="panel fx" style="--d: 1">
+              <div class="panel__head"><h3 class="panel__title">الحساب ومنطقة العمل</h3></div>
+              <div class="panel__body">
+                <div class="kv">
+                  <span class="kv__k">حالة المراجعة</span>
+                  <span class="kv__v"><span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span></span>
+                </div>
+                <div class="kv">
+                  <span class="kv__k">استقبال الطلبات</span>
+                  <span class="kv__v">
+                    <span class="chip chip--dot {{ availabilityMeta[availabilityOf(s)].chip }}">{{ availabilityMeta[availabilityOf(s)].label }}</span>
+                  </span>
+                </div>
+                <div class="kv">
+                  <span class="kv__k">حالة الحساب</span>
+                  <span class="kv__v">
+                    @if (s.banned) { <span class="chip chip--red">محظور</span> } @else { <span class="chip chip--green">مسموح</span> }
+                  </span>
+                </div>
+                <div class="kv"><span class="kv__k">منطقة العمل</span><span class="kv__v"><app-account-place [place]="s.workPlace" [size]="18" /></span></div>
+                <div class="kv">
+                  <span class="kv__k">آخر موقع مسجّل</span>
+                  <span class="kv__v">
+                    @if (s.position; as p) {
+                      <a class="geo-link" [href]="mapsUrl(p)" target="_blank" rel="noopener noreferrer" data-tip="فتح في خرائط Google">
+                        <app-icon name="map-pin" [size]="14" /> <bdi>{{ formatGeoPoint(p) }}</bdi>
+                      </a>
+                    } @else { <span class="muted">غير متوفر</span> }
+                  </span>
+                </div>
+                <div class="kv"><span class="kv__k">تاريخ التسجيل</span><span class="kv__v">{{ s.createdAt | arDate: true }}</span></div>
+                <div class="kv"><span class="kv__k">آخر تحديث</span><span class="kv__v">{{ s.updatedAt | arDate: true }}</span></div>
+              </div>
+            </div>
+
+            <app-activity-summary class="fx" style="--d: 2" [bookings]="bookings.value()" [reviews]="reviews.value()"
+              ratingLabel="متوسط تقييم الفني" (open)="selectTab($event)" />
 
             @if (subscription(); as sub) {
               <div class="panel sub-card fx" style="--d: 2" [class.is-off]="sub.state === 'expired' || sub.state === 'none'">
@@ -212,17 +250,17 @@
       </div>
     }
 
-    @case ('sessions') {
+    @case ('bookings') {
       <div class="tab-pane">
-        <app-preview-notice>سجل الجلسات قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
-        @if (activity(); as a) { <app-activity-bookings [bookings]="a.history.bookings" title="الجلسات" partyLabel="العميل" /> }
+        <app-account-bookings party="specialist" [ownerId]="s.id" [ownerCountryId]="s.workPlace.country?.id ?? null" [bookings]="bookings.value()" [state]="bookings.state()"
+          [error]="bookings.error()" (retry)="bookings.reload()" />
       </div>
     }
 
     @case ('reviews') {
       <div class="tab-pane">
-        <app-preview-notice>تقييمات العملاء قيد التطوير — البيانات المعروضة تجريبية للعرض فقط.</app-preview-notice>
-        @if (activity(); as a) { <app-activity-reviews [reviews]="a.history.reviews" [rating]="a.rating" [reviewsCount]="a.reviewsCount" /> }
+        <app-account-reviews party="specialist" [reviews]="reviews.value()" [state]="reviews.state()" [error]="reviews.error()"
+          (retry)="reviews.reload()" />
       </div>
     }
 

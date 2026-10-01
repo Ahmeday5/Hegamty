@@ -1,16 +1,19 @@
-import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subject, catchError, map, of, switchMap } from 'rxjs';
+import { DestroyRef, Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import { Page, PageRequest } from '../../core/models/page.model';
 import { PagedQuery } from '../../core/utils/paged-query';
+import { AccountLocationFilter } from '../accounts/account-profile';
 import { BanFilteredPages, byBan } from '../accounts/ban-filtered-pages';
+import { ScopedCounts } from '../accounts/scoped-counts';
 import { ClientsApi } from './clients.api';
 import { Client, ClientCounts, ClientFilter, NO_CLIENT_FILTER } from './clients.models';
 
+const locationOf = ({ countryId, governorateId }: ClientFilter): AccountLocationFilter => ({ countryId, governorateId });
+
 /**
  * Customers list state: one page for the current filters plus the activity
- * totals behind the KPIs and tabs. Ban / unban patch the listed row with
- * their known outcome and return the updated record.
+ * totals (for the listed residence area) behind the KPIs and tabs. Ban /
+ * unban patch the listed row with their known outcome and return the updated record.
  *
  * The API can't filter by ban state yet — with that filter on, pages come
  * from `BanFilteredPages` (browser-side filtering).
@@ -28,27 +31,19 @@ export class ClientsStore {
     destroyRef: this.destroyRef,
   });
 
+  private readonly totals = new ScopedCounts<ClientCounts>((loc) => this.api.counts(loc), this.destroyRef);
+
   readonly items = this.list.items;
   readonly page = this.list.page;
   readonly status = this.list.status;
   readonly error = this.list.error;
+  /** `null` while loading (or when the last refresh failed). */
+  readonly counts = this.totals.value;
 
-  private readonly totals = signal<ClientCounts | null>(null);
-  /** `null` until first loaded (or when the last refresh failed). */
-  readonly counts: Signal<ClientCounts | null> = this.totals.asReadonly();
-  private readonly countRequests = new Subject<void>();
-
-  constructor() {
-    this.countRequests
-      .pipe(
-        switchMap(() => this.api.counts().pipe(catchError(() => of(null)))),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((c) => this.totals.set(c));
-  }
-
+  /** Totals follow the listed residence area; they're fetched only when that changes (or after `expireCounts()`). */
   query(filter: ClientFilter, page: PageRequest): void {
     this.list.query(filter, page);
+    this.totals.ensure(locationOf(filter));
   }
 
   reload(): void {
@@ -58,7 +53,12 @@ export class ClientsStore {
   }
 
   refreshCounts(): void {
-    this.countRequests.next();
+    this.totals.refresh(locationOf(this.list.filter));
+  }
+
+  /** Call when the list page opens, so the next query brings fresh totals. */
+  expireCounts(): void {
+    this.totals.expire();
   }
 
   /** Every customer matching the listed filters (for export). */

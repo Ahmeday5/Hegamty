@@ -1,0 +1,112 @@
+<app-modal [open]="!!booking()" size="lg" [title]="booking() ? 'تفاصيل الحجز #' + booking()!.id : ''" (closed)="closed.emit()">
+  @if (booking(); as b) {
+    <div class="bd">
+      <!-- ── Summary ── -->
+      <div class="bd-summary">
+        <span class="chip chip--dot {{ statusMeta[b.status].chip }}">{{ statusMeta[b.status].label }}</span>
+        <span class="bd-summary__item"><app-icon name="calendar" [size]="14" /> {{ b.date | arDate }}</span>
+        <span class="bd-summary__item"><app-icon name="clock" [size]="14" /> الوقت <app-dev-badge size="sm" /></span>
+        <span class="bd-summary__item">
+          <app-icon name="wallet" [size]="14" />
+          {{ b.paymentMethod === 'cash' ? paymentMeta.cash.label : (b.paymentLabel || 'غير محدد') }}
+        </span>
+      </div>
+
+      <!-- ── Services ── -->
+      <section class="bd-section">
+        <h3 class="bd-section__title">الخدمات المطلوبة</h3>
+        <ul class="bd-items">
+          @for (item of b.items; track $index) {
+            <li class="bd-items__row">
+              <span class="tile tile--sm tile--green"><app-icon name="droplet" [size]="14" /></span>
+              <span class="bd-items__name">{{ item.name }}</span>
+              <strong class="num">{{ item.price | cmoney: currencyOf() }}</strong>
+            </li>
+          } @empty {
+            <li class="bd-items__none">لا توجد خدمات مسجّلة في هذا الحجز.</li>
+          }
+        </ul>
+        <div class="bd-total">
+          <span>الإجمالي</span>
+          <strong class="num">{{ b.totalPrice | cmoney: currencyOf() }}</strong>
+        </div>
+        <p class="bd-hint"><app-icon name="alert" [size]="13" /> يُدفع المبلغ للفني مباشرة خارج المنصة.</p>
+      </section>
+
+      @if (b.notes) {
+        <div class="bd-note">
+          <app-icon name="message" [size]="16" />
+          <div><strong>ملاحظات العميل</strong><p>{{ b.notes }}</p></div>
+        </div>
+      }
+
+      <!-- ── Parties ── -->
+      <section class="bd-section">
+        <h3 class="bd-section__title">أطراف الحجز</h3>
+        <div class="bd-parties">
+          <a class="party" [routerLink]="['/customers', b.client.id]" (click)="closed.emit()">
+            <app-avatar [name]="b.client.name" [size]="38" />
+            <div>
+              <small>العميل</small>
+              <strong>{{ b.client.name }}</strong>
+              <app-account-place [place]="b.client.place" [size]="16" />
+            </div>
+            <app-icon class="party__go" name="chevron-left" [size]="17" />
+          </a>
+          <a class="party" [routerLink]="['/technicians', b.specialist.id]" (click)="closed.emit()">
+            <app-avatar [name]="b.specialist.name" [size]="38" />
+            <div>
+              <small>الفني</small>
+              <strong>{{ b.specialist.name }}</strong>
+              <app-account-place [place]="b.specialist.place" [size]="16" />
+            </div>
+            <app-icon class="party__go" name="chevron-left" [size]="17" />
+          </a>
+          <div class="party party--soon">
+            <span class="tile tile--sm tile--slate"><app-icon name="car" [size]="16" /></span>
+            <div><small>السائق</small><strong>بيانات السائق</strong></div>
+            <app-dev-badge size="sm" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Address ── -->
+      <section class="bd-section">
+        <h3 class="bd-section__title">عنوان الجلسة (منزل العميل)</h3>
+        @if (!b.addressId) {
+          <p class="bd-muted">لم يُحدَّد عنوان لهذا الحجز.</p>
+        } @else {
+          @switch (addresses.state()) {
+            @case ('loading') { <span class="skel bd-addr-skel"></span> }
+            @case ('error') {
+              <div class="bd-muted bd-retry">
+                {{ addresses.error() }}
+                <button type="button" class="btn btn-soft btn-sm" (click)="addresses.reload()"><app-icon name="refresh" [size]="13" /> إعادة المحاولة</button>
+              </div>
+            }
+            @default {
+              @if (address(); as a) {
+                <div class="bd-addr">
+                  <span class="tile tile--brand"><app-icon name="map-pin" [size]="17" /></span>
+                  <div class="bd-addr__txt">
+                    <strong>{{ a.label || 'عنوان بدون اسم' }}</strong>
+                    <span>{{ a.text || '—' }}</span>
+                    @if (a.notes) { <span class="bd-muted">{{ a.notes }}</span> }
+                    @if (a.phone) { <span><app-icon name="phone" [size]="12" /> <bdi>{{ a.phone }}</bdi></span> }
+                  </div>
+                  @if (a.position; as p) {
+                    <a class="btn btn-soft btn-sm" [href]="mapsUrl(p)" target="_blank" rel="noopener noreferrer" [attr.data-tip]="formatGeoPoint(p)">
+                      <app-icon name="arrow-up-right" [size]="13" /> الخريطة
+                    </a>
+                  }
+                </div>
+              } @else {
+                <p class="bd-muted">العنوان #{{ b.addressId }} لم يعد ضمن عناوين العميل المحفوظة.</p>
+              }
+            }
+          }
+        }
+      </section>
+    </div>
+  }
+</app-modal>

@@ -1,4 +1,4 @@
-// Shared by the server-paged accounts list pages (customers, technicians).
+// Shared by the server-paged list pages (customers, technicians, bookings, reviews).
 
 :host { display: block; }
 
@@ -6,7 +6,7 @@
 .icon-btn.is-spinning app-icon { animation: acc-spin 0.9s linear infinite; }
 .icon-btn:disabled, .btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
 
-/* ── Global country scope notice (backend can't filter by country yet) ── */
+/* ── Global country scope notice (header switcher) ── */
 .scope-bar {
   display: flex;
   align-items: center;
@@ -14,15 +14,17 @@
   margin-bottom: 14px;
   padding: 10px 14px;
   border-radius: 14px;
-  background: #fffaf1;
-  border: 1px dashed #e9c58b;
+  background: var(--pr-l);
+  border: 1px solid #c9e2e4;
 
-  p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.6; color: #92400e; }
-  &__btn { flex-shrink: 0; background: var(--white); }
+  p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.6; color: var(--pr-d); }
+  strong { font-weight: 700; color: var(--pr-d); }
+  &__btn { flex-shrink: 0; background: var(--white); color: var(--pr-d); border-color: #c9e2e4; }
 }
 
 /* ── Toolbar ── */
-.filter-soon {
+.gov-select { min-width: 170px; max-width: 240px; }
+.filter-hint {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -32,8 +34,50 @@
   border: 1px dashed var(--brd);
   color: var(--txt3);
   font-size: 12.5px;
-  cursor: not-allowed;
   white-space: nowrap;
+}
+
+/* Client / technician filters block (bookings, reviews). */
+.filters {
+  display: grid;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--brd);
+
+  &__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; }
+  &__title { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--black); }
+  &__title app-icon { color: var(--pr); }
+}
+
+/* Active account filter (e.g. `?client=` from a profile link), removable. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  border-radius: 10px;
+  background: var(--pr-l);
+  border: 1px solid #c9e2e4;
+  color: var(--pr-d);
+  font-size: 12.5px;
+  white-space: nowrap;
+
+  strong { font-weight: 700; }
+
+  &__x {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    &:hover { background: rgba(6, 74, 80, 0.1); }
+  }
 }
 
 .status-bar {

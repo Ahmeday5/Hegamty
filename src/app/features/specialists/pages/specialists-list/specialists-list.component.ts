@@ -8,19 +8,23 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { downloadCsv } from '../../../../shared/utils/csv.util';
+import { formatDate } from '../../../../shared/utils/format.util';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
 import { ALL_COUNTRIES, CountryScopeService } from '../../../countries/country-scope.service';
+import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { ACCOUNT_PAGE_SIZES, AccountListController, BanFilter } from '../../../accounts/account-list.controller';
+import { GENDER_META } from '../../../accounts/account-profile';
+import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
 import { SPECIALIST_STATUSES, SPECIALIST_STATUS_META, Specialist, SpecialistStatus } from '../../specialists.models';
 import { SpecialistsStore } from '../../specialists.store';
 import { SpecialistActionsService } from '../../specialist-actions.service';
 
 /**
  * Technicians list, fully server-driven: search (name or phone), review
- * status and paging go to the API and are mirrored in the URL. Country /
- * governorate filtering isn't supported by the backend yet.
+ * status, work area (the header's country + a governorate) and paging go to
+ * the API and are mirrored in the URL.
  */
 @Component({
   selector: 'app-specialists-list',
@@ -33,6 +37,8 @@ import { SpecialistActionsService } from '../../specialist-actions.service';
     KpiCardComponent,
     PaginationComponent,
     DevBadgeComponent,
+    CountryFlagComponent,
+    AccountPlaceComponent,
     ...FORMAT_PIPES,
   ],
   templateUrl: './specialists-list.component.html',
@@ -44,10 +50,11 @@ export class SpecialistsListComponent {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly scope = inject(CountryScopeService);
+  private readonly scope = inject(CountryScopeService);
 
   protected readonly list = new AccountListController<SpecialistStatus>(SPECIALIST_STATUSES, { banFilter: true });
   protected readonly statusMeta = SPECIALIST_STATUS_META;
+  protected readonly genderMeta = GENDER_META;
   protected readonly pageSizes = ACCOUNT_PAGE_SIZES;
   protected readonly skeletonRows = Array.from({ length: 8 }, (_, i) => i);
 
@@ -91,12 +98,12 @@ export class SpecialistsListComponent {
   constructor() {
     effect(
       () => {
-        const { search, status, banned, page } = this.list.query();
-        untracked(() => this.store.query({ ...search, status, banned }, page));
+        const { search, status, banned, location, page } = this.list.query();
+        untracked(() => this.store.query({ ...search, status, banned, ...location }, page));
       },
       { allowSignalWrites: true },
     );
-    this.store.refreshCounts();
+    this.store.expireCounts();
   }
 
   protected reload(): void {
@@ -141,13 +148,18 @@ export class SpecialistsListComponent {
             this.toast.info('لا توجد بيانات للتصدير');
             return;
           }
-          const header = ['المعرف', 'الاسم', 'رقم الجوال', 'العمر', 'سنوات الخبرة', 'حالة المراجعة', 'محظور', 'النبذة'];
+          const header = [
+            'المعرف', 'الاسم', 'رقم الجوال', 'النوع', 'العمر', 'الجنسية', 'دولة العمل', 'المحافظة', 'سنوات الخبرة',
+            'حالة المراجعة', 'متاح للطلبات', 'محظور', 'تاريخ التسجيل', 'النبذة',
+          ];
           downloadCsv(
             'technicians',
             header,
             rows.map((s) => [
-              s.id, s.fullName, s.phone, s.age ?? '', s.experienceYears, SPECIALIST_STATUS_META[s.status].label,
-              s.banned ? 'نعم' : 'لا', s.description,
+              s.id, s.fullName, s.phone, s.gender ? GENDER_META[s.gender].label : '', s.age ?? '', s.nationality?.name ?? '',
+              s.workPlace.country?.name ?? '', s.workPlace.governorate?.name ?? '', s.experienceYears,
+              SPECIALIST_STATUS_META[s.status].label, s.available ? 'نعم' : 'لا', s.banned ? 'نعم' : 'لا',
+              s.createdAt ? formatDate(s.createdAt) : '', s.description,
             ]),
           );
           this.toast.success(`تم تصدير ${rows.length} فني`);

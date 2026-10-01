@@ -1,0 +1,24 @@
+@use '../../../accounts/styles/account-list';
+
+.party-link { display: block; color: inherit; text-decoration: none; border-radius: 10px; }
+.party-link:hover ::ng-deep strong { color: var(--pr); text-decoration: underline; }
+.party-link:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--pr-ring); }
+
+.rate-cell {
+  display: grid;
+  gap: 2px;
+  span { font-size: 11.5px; color: var(--txt3); }
+}
+
+.comment-cell {
+  max-width: 340px;
+  span:not(.muted) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.6;
+    color: var(--txt2);
+    white-space: normal;
+  }
+}

@@ -7,131 +7,77 @@
         <span class="crumbs__current">الحجوزات</span>
       </nav>
       <h1 class="page-head__title">الحجوزات</h1>
-      <p class="page-head__sub">متابعة الجلسات التي يطلبها العملاء من التطبيق وتتم في منازلهم</p>
+      <p class="page-head__sub">متابعة الجلسات التي يطلبها العملاء من التطبيق وتتم في منازلهم — للمتابعة فقط، القبول والإلغاء من التطبيق</p>
     </div>
     <div class="page-head__actions">
-      <button type="button" class="btn" (click)="exportCsv()" [disabled]="loading() || !filtered().length">
-        <app-icon name="download" [size]="16" /> تصدير Excel
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" (click)="exportCsv()" [disabled]="exporting() || !pageMeta().count">
+        @if (exporting()) { <span class="spinner-border spinner-border-sm btn-spin" aria-hidden="true"></span> جارٍ التصدير… }
+        @else { <app-icon name="download" [size]="16" /> تصدير Excel }
       </button>
     </div>
   </header>
 
   <div class="grid grid--4">
-    @for (k of kpis(); track k.label; let i = $index) {
-      <app-kpi-card class="fx" [style.--d]="i + 1" [label]="k.label" [value]="k.value" [icon]="k.icon" [tone]="k.tone" [suffix]="k.suffix ?? ''" [hint]="k.hint" />
-    }
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي الحجوزات" [value]="kpis().all" icon="calendar" tone="green" [hint]="kpis().allHint" />
+    <app-kpi-card class="fx" style="--d: 2" label="قيد التنفيذ" [value]="kpis().pending" icon="clock" tone="amber" [hint]="kpis().pendingHint" />
+    <app-kpi-card class="fx" style="--d: 3" label="مؤكدة" [value]="kpis().confirmed" icon="check-circle" tone="teal" [hint]="kpis().confirmedHint" />
+    <app-kpi-card class="fx" style="--d: 4" label="ملغاة" [value]="kpis().cancelled" icon="ban" tone="red" [hint]="kpis().cancelledHint" />
   </div>
 
-  <div class="panel fx" style="--d: 5">
-    <div class="toolbar">
-      <label class="search toolbar__grow">
-        <app-icon name="search" [size]="17" />
-        <input type="search" [value]="search()" (input)="update(search, $any($event.target).value)"
-          placeholder="ابحث برقم الحجز أو العميل أو الفني أو السائق أو الخدمة…" aria-label="بحث في الحجوزات" />
-      </label>
-      <select class="form-select select-sm" [value]="period()" (change)="update(period, $any($event.target).value)" aria-label="الفترة">
-        @for (p of periods; track p.id) { <option [value]="p.id">{{ p.label }}</option> }
-      </select>
-      @if (hasFilters()) {
-        <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
-      }
+  <div class="panel fx bk-panel" style="--d: 5">
+    <div class="filters">
+      <div class="filters__head">
+        <span class="filters__title"><app-icon name="filter" [size]="15" /> الفلاتر</span>
+        @if (hasFilters()) {
+          <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
+        }
+      </div>
+      <app-party-filters [value]="parties.value()" (filtersChange)="setParties($event)" />
     </div>
 
     <div class="status-bar">
-      <div class="seg" role="tablist" aria-label="الحالة">
+      <div class="seg" role="tablist" aria-label="حالة الحجز">
         @for (t of statusTabs(); track t.id) {
-          <button type="button" class="seg__btn" role="tab" [class.is-on]="status() === t.id" (click)="update(status, t.id)">
-            {{ t.label }} <span class="seg__count">{{ t.count }}</span>
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="list.status() === t.id" [attr.aria-selected]="list.status() === t.id"
+            (click)="list.setStatus(t.id)">
+            {{ t.label }} @if (t.count !== undefined) { <span class="seg__count">{{ t.count | num }}</span> }
           </button>
         }
       </div>
-      <span class="result-count">@if (!loading()) { {{ filtered().length | num }} حجز }</span>
+      <span class="result-count" aria-live="polite">
+        @if (firstLoad()) { جارٍ التحميل… } @else if (status() !== 'error') { {{ pageMeta().count | num }} حجز }
+      </span>
     </div>
 
-    <div class="dtable-wrap">
-      <table class="dtable">
-        <thead>
-          <tr>
-            <th>رقم الحجز</th>
-            @if (scope.isAll()) { <th>الدولة</th> }
-            <th>العميل</th>
-            <th>الخدمة</th>
-            <th>الفني</th>
-            <th>السائق</th>
-            <th class="is-sortable" [class.is-sorted]="sort().key === 'date'" (click)="toggleSort('date')">
-              <span class="th">التاريخ @if (sortIcon('date'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
-            </th>
-            <th class="is-sortable" [class.is-sorted]="sort().key === 'price'" (click)="toggleSort('price')">
-              <span class="th">السعر @if (sortIcon('price'); as ic) { <app-icon [name]="ic" [size]="13" /> }</span>
-            </th>
-            <th>الحالة</th>
-            <th class="th-actions">الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (loading()) {
-            @for (r of skeletonRows; track r) {
-              <tr class="skel-row">
-                @for (c of [1, 2, 3, 4, 5, 6, 7, 8]; track c) {
-                  <td><span class="skel" [style.width.px]="46 + ((r * 11 + c * 19) % 44)"></span></td>
-                }
-              </tr>
-            }
-          } @else {
-            @for (b of rows(); track b.id; let i = $index) {
-              <tr class="is-link" [style.--d]="i" (click)="openDetails(b)">
-                <td><span class="bk-id">{{ b.id }}</span></td>
-                @if (scope.isAll()) { <td><span class="who"><app-country-flag [countryId]="b.countryId" [size]="20" /> {{ b.countryId | countryName }}</span></td> }
-                <td>
-                  <div class="who">
-                    <app-avatar [name]="b.customerName" [size]="32" />
-                    <div class="who__txt"><strong>{{ b.customerName }}</strong><span>{{ b.city }}</span></div>
-                  </div>
-                </td>
-                <td>
-                  <div class="who__txt"><strong>{{ b.serviceName }}</strong><span>{{ b.durationMin ? b.durationMin + ' دقيقة' : 'بدون مدة محددة' }}</span></div>
-                </td>
-                <td>{{ b.technicianName }}</td>
-                <td>@if (b.driverName) { {{ b.driverName }} } @else { <span class="muted">—</span> }</td>
-                <td>
-                  <div class="when">
-                    <span>{{ b.date | arDate: true }}</span>
-                    @if (isToday(b.date)) { <span class="chip chip--green chip--xs">اليوم</span> }
-                  </div>
-                </td>
-                <td class="num">{{ b.price | cmoney: b.countryId }}</td>
-                <td><span class="chip chip--dot {{ bookingMeta[b.status].chip }}" [class.is-live]="b.status === 'in_progress'">{{ bookingMeta[b.status].label }}</span></td>
-                <td (click)="$event.stopPropagation()">
-                  <div class="actions">
-                    <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل" aria-label="التفاصيل" (click)="openDetails(b)"><app-icon name="eye" [size]="16" /></button>
-                    @if (actions.canCancel(b)) {
-                      <button type="button" class="icon-btn icon-btn--amber" data-tip="إلغاء الحجز" aria-label="إلغاء الحجز" (click)="actions.cancel(b)"><app-icon name="ban" [size]="16" /></button>
-                    }
-                    <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="actions.remove(b)"><app-icon name="trash" [size]="16" /></button>
-                  </div>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="11">
-                  <div class="empty">
-                    <span class="empty__icon"><app-icon name="calendar" [size]="26" /></span>
-                    <p class="empty__title">لا توجد حجوزات مطابقة</p>
-                    @if (hasFilters()) { <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button> }
-                  </div>
-                </td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-
-    @if (!loading() && filtered().length) {
-      <div class="table-foot">
-        <app-pagination [pageIndex]="page()" [pageSize]="pageSize()" [count]="filtered().length" [totalPages]="totalPages()"
-          [pageSizeOptions]="[10, 20, 50]" (pageChange)="page.set($event)" (pageSizeChange)="update(pageSize, $event)" />
+    @if (status() === 'error') {
+      <div class="empty">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+        <p class="empty__title">تعذّر تحميل الحجوزات</p>
+        <p class="empty__text">{{ loadError() }}</p>
+        <button type="button" class="btn btn-soft btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
       </div>
+    } @else {
+      <app-bookings-table [rows]="items()" [loading]="firstLoad()" [stale]="status() === 'loading' && !firstLoad()"
+        [emptyTitle]="hasFilters() ? 'لا توجد حجوزات مطابقة' : 'لا توجد حجوزات بعد'"
+        [emptyText]="hasFilters() ? 'جرّب تعديل الفلاتر أو إزالتها.' : 'تظهر هنا الحجوزات فور طلبها من التطبيق.'"
+        (open)="open($event)">
+        @if (hasFilters()) {
+          <button emptyActions type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button>
+        }
+      </app-bookings-table>
+
+      @if (pageMeta().count) {
+        <div class="table-foot">
+          <app-pagination [pageIndex]="pageMeta().pageIndex" [pageSize]="pageMeta().pageSize" [count]="pageMeta().count"
+            [totalPages]="pageMeta().totalPages" [pageSizeOptions]="pageSizes" [disabled]="status() === 'loading'"
+            (pageChange)="goToPage($event)" (pageSizeChange)="list.changePageSize($event)" />
+        </div>
+      }
     }
   </div>
 </section>
+

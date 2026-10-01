@@ -11,20 +11,29 @@ import { AccountPreviewService } from '../../../accounts/account-preview.service
 import { AccountHeroComponent, HeroStat } from '../../../accounts/components/account-hero/account-hero.component';
 import { AccountTab, AccountTabsComponent } from '../../../accounts/components/account-tabs/account-tabs.component';
 import { AccountDocument, AccountDocumentsComponent } from '../../../accounts/components/account-documents/account-documents.component';
-import { ActivityStatsComponent } from '../../../accounts/components/activity/activity-stats.component';
-import { ActivityBookingsComponent } from '../../../accounts/components/activity/activity-bookings.component';
-import { ActivityReviewsComponent } from '../../../accounts/components/activity/activity-reviews.component';
 import { ActivityNotificationsComponent } from '../../../accounts/components/activity/activity-notifications.component';
-import { CLIENT_ACTIVITY_META, Client, activityOf } from '../../clients.models';
+import { ActivitySummaryComponent } from '../../../accounts/components/activity-summary/activity-summary.component';
+import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
+import { GENDER_META, formatGeoPoint, mapsUrl } from '../../../accounts/account-profile';
+import { BookingsApi } from '../../../bookings/bookings.api';
+import { Booking } from '../../../bookings/bookings.models';
+import { AccountBookingsComponent } from '../../../bookings/components/account-bookings/account-bookings.component';
+import { ReviewsApi } from '../../../reviews/reviews.api';
+import { Review } from '../../../reviews/reviews.models';
+import { AccountReviewsComponent } from '../../../reviews/components/account-reviews.component';
+import { ClientAddressesComponent } from '../../components/client-addresses/client-addresses.component';
+import { CLIENT_ACTIVITY_META, Client, ClientAddress, activityOf } from '../../clients.models';
 import { ClientsApi } from '../../clients.api';
 import { ClientActionsService } from '../../client-actions.service';
 
-type Tab = 'overview' | 'bookings' | 'reviews' | 'notifications';
+type Tab = 'overview' | 'addresses' | 'bookings' | 'reviews' | 'notifications';
+
+const isNumericId = (id: string) => /^\d+$/.test(id);
 
 /**
- * Customer profile. Identity, location, activity and ban state come from the
- * API; bookings, reviews, notifications and stats render labelled demo data
- * until their endpoints exist.
+ * Customer profile. Identity, residence, saved addresses, bookings, reviews,
+ * activity and ban state come from the API; notifications render labelled
+ * demo data until their endpoint exists.
  */
 @Component({
   selector: 'app-client-detail',
@@ -39,10 +48,12 @@ type Tab = 'overview' | 'bookings' | 'reviews' | 'notifications';
     AccountHeroComponent,
     AccountTabsComponent,
     AccountDocumentsComponent,
-    ActivityStatsComponent,
-    ActivityBookingsComponent,
-    ActivityReviewsComponent,
     ActivityNotificationsComponent,
+    ActivitySummaryComponent,
+    AccountBookingsComponent,
+    AccountReviewsComponent,
+    AccountPlaceComponent,
+    ClientAddressesComponent,
     ...FORMAT_PIPES,
   ],
   templateUrl: './client-detail.component.html',
@@ -55,6 +66,8 @@ export class ClientDetailComponent {
   readonly tab = input<string>();
 
   private readonly api = inject(ClientsApi);
+  private readonly bookingsApi = inject(BookingsApi);
+  private readonly reviewsApi = inject(ReviewsApi);
   private readonly actions = inject(ClientActionsService);
   private readonly preview = inject(AccountPreviewService);
   private readonly router = inject(Router);
@@ -62,11 +75,29 @@ export class ClientDetailComponent {
 
   protected readonly activityMeta = CLIENT_ACTIVITY_META;
   protected readonly activityOf = activityOf;
+  protected readonly genderMeta = GENDER_META;
+  protected readonly mapsUrl = mapsUrl;
+  protected readonly formatGeoPoint = formatGeoPoint;
 
   protected readonly record = new RecordLoader<Client>((id) => this.api.byId(id), {
     destroyRef: this.destroyRef,
     errorMessage: 'تعذّر تحميل بيانات العميل',
-    isValidId: (id) => /^\d+$/.test(id),
+    isValidId: isNumericId,
+  });
+  protected readonly addresses = new RecordLoader<ClientAddress[]>((id) => this.api.addresses(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل عناوين العميل',
+    isValidId: isNumericId,
+  });
+  protected readonly bookings = new RecordLoader<Booking[]>((id) => this.bookingsApi.ofClient(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل حجوزات العميل',
+    isValidId: isNumericId,
+  });
+  protected readonly reviews = new RecordLoader<Review[]>((id) => this.reviewsApi.ofClient(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل تقييمات العميل',
+    isValidId: isNumericId,
   });
 
   protected readonly client = this.record.value;
@@ -75,28 +106,30 @@ export class ClientDetailComponent {
     return !!c && this.actions.busy().has(c.id);
   });
 
-  /** Demo bookings / reviews / notifications / stats. */
+  /** Demo notifications. */
   protected readonly activity = computed(() => {
     const c = this.client();
     return c ? this.preview.activity('customers', c.id) : null;
   });
 
-  protected readonly tabs: AccountTab<Tab>[] = [
+  protected readonly tabs = computed<AccountTab<Tab>[]>(() => [
     { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
-    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', dev: true },
-    { id: 'reviews', label: 'التقييمات', icon: 'star', dev: true },
+    { id: 'addresses', label: 'العناوين', icon: 'map-pin', count: this.addresses.value()?.length },
+    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookings.value()?.length },
+    { id: 'reviews', label: 'التقييمات', icon: 'star', count: this.reviews.value()?.length },
     { id: 'notifications', label: 'الإشعارات', icon: 'bell', dev: true },
-  ];
+  ]);
   protected readonly activeTab = computed<Tab>(() => {
     const t = this.tab();
-    return this.tabs.some((x) => x.id === t) ? (t as Tab) : 'overview';
+    return this.tabs().some((x) => x.id === t) ? (t as Tab) : 'overview';
   });
 
   protected readonly heroStats = computed<HeroStat[]>(() => {
     const c = this.client();
     if (!c) return [];
     return [
-      { label: 'الحجوزات', dev: true },
+      { label: 'الحجوزات', value: this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null },
+      { label: 'العناوين', value: this.addresses.state() === 'ready' ? (this.addresses.value()?.length ?? 0) : null },
       { label: 'العمر', value: c.age ? formatYears(c.age) : null },
       { label: 'تاريخ التسجيل', value: c.createdAt ? formatDate(c.createdAt) : null },
     ];
@@ -104,14 +137,23 @@ export class ClientDetailComponent {
 
   protected readonly documents = computed<AccountDocument[]>(() => {
     const c = this.client();
-    return c ? [{ key: 'photo', label: 'الصورة الشخصية', url: c.photoUrl, icon: 'user' }] : [];
+    if (!c) return [];
+    return [
+      { key: 'photo', label: 'الصورة الشخصية', url: c.photoUrl, icon: 'user' },
+      { key: 'nationalId', label: 'البطاقة الشخصية', url: c.nationalIdUrl, icon: 'shield' },
+    ];
   });
 
   constructor() {
     effect(
       () => {
         const id = this.id();
-        untracked(() => this.record.load(id));
+        untracked(() => {
+          this.record.load(id);
+          this.addresses.load(id);
+          this.bookings.load(id);
+          this.reviews.load(id);
+        });
       },
       { allowSignalWrites: true },
     );
@@ -123,6 +165,9 @@ export class ClientDetailComponent {
 
   protected reload(): void {
     this.record.reload();
+    this.addresses.reload();
+    this.bookings.reload();
+    this.reviews.reload();
   }
 
   protected async toggleBan(): Promise<void> {

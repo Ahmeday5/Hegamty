@@ -1,0 +1,31 @@
+:host { display: block; }
+
+.dtable { transition: opacity 0.2s; }
+.dtable.is-stale { opacity: 0.55; pointer-events: none; }
+.th { display: inline-flex; align-items: center; gap: 6px; }
+.th-actions { text-align: end !important; }
+.muted { color: var(--txt3); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.bk-id {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--bg3);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pr-d);
+  direction: ltr;
+}
+
+.who__txt {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  strong { font-weight: 600; color: var(--black); white-space: nowrap; }
+  span { font-size: 12px; color: var(--txt3); white-space: nowrap; }
+}
+
+.skel-row { animation: none !important; }
+.skel-row td { padding-block: 16px; }

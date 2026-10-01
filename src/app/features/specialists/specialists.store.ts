@@ -1,17 +1,20 @@
-import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subject, catchError, map, of, switchMap } from 'rxjs';
+import { DestroyRef, Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import { Page, PageRequest } from '../../core/models/page.model';
 import { PagedQuery } from '../../core/utils/paged-query';
+import { AccountLocationFilter } from '../accounts/account-profile';
 import { BanFilteredPages, byBan } from '../accounts/ban-filtered-pages';
+import { ScopedCounts } from '../accounts/scoped-counts';
 import { SpecialistsApi } from './specialists.api';
 import { NO_SPECIALIST_FILTER, Specialist, SpecialistCounts, SpecialistFilter, SpecialistStatus } from './specialists.models';
 
+const locationOf = ({ countryId, governorateId }: SpecialistFilter): AccountLocationFilter => ({ countryId, governorateId });
+
 /**
  * Technicians list state: one server page for the current filters plus the
- * per-status totals behind the KPIs and tabs. Actions patch the listed row
- * with their known outcome (the API answers `data: null`) and return the
- * updated record, so a detail page can apply it too.
+ * per-status totals (for the listed work area) behind the KPIs and tabs.
+ * Actions patch the listed row with their known outcome (the API answers
+ * `data: null`) and return the updated record, so a detail page can apply it too.
  *
  * The API can't filter by ban state yet — with that filter on, pages come
  * from `BanFilteredPages` (browser-side filtering).
@@ -29,27 +32,19 @@ export class SpecialistsStore {
     destroyRef: this.destroyRef,
   });
 
+  private readonly totals = new ScopedCounts<SpecialistCounts>((loc) => this.api.counts(loc), this.destroyRef);
+
   readonly items = this.list.items;
   readonly page = this.list.page;
   readonly status = this.list.status;
   readonly error = this.list.error;
+  /** `null` while loading (or when the last refresh failed). */
+  readonly counts = this.totals.value;
 
-  private readonly totals = signal<SpecialistCounts | null>(null);
-  /** `null` until first loaded (or when the last refresh failed). */
-  readonly counts: Signal<SpecialistCounts | null> = this.totals.asReadonly();
-  private readonly countRequests = new Subject<void>();
-
-  constructor() {
-    this.countRequests
-      .pipe(
-        switchMap(() => this.api.counts().pipe(catchError(() => of(null)))),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((c) => this.totals.set(c));
-  }
-
+  /** Totals follow the listed work area; they're fetched only when that changes (or after `expireCounts()`). */
   query(filter: SpecialistFilter, page: PageRequest): void {
     this.list.query(filter, page);
+    this.totals.ensure(locationOf(filter));
   }
 
   reload(): void {
@@ -59,7 +54,12 @@ export class SpecialistsStore {
   }
 
   refreshCounts(): void {
-    this.countRequests.next();
+    this.totals.refresh(locationOf(this.list.filter));
+  }
+
+  /** Call when the list page opens, so the next query brings fresh totals. */
+  expireCounts(): void {
+    this.totals.expire();
   }
 
   /** Every technician matching the listed filters (for export). */

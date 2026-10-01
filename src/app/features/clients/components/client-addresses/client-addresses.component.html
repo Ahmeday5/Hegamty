@@ -1,0 +1,62 @@
+<div class="panel">
+  <div class="panel__head">
+    <div>
+      <h3 class="panel__title">العناوين المحفوظة</h3>
+      <p class="panel__sub">العناوين التي أضافها العميل من التطبيق لاستقبال الفنيين</p>
+    </div>
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="panel__body addr-grid" aria-busy="true" aria-label="جارٍ التحميل">
+        @for (r of [0, 1, 2]; track r) { <span class="skel addr-skel"></span> }
+      </div>
+    }
+    @case ('error') {
+      <div class="empty">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="24" /></span>
+        <p class="empty__title">تعذّر تحميل العناوين</p>
+        <p class="empty__text">{{ error() }}</p>
+        <button type="button" class="btn btn-soft btn-sm" (click)="retry.emit()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+      </div>
+    }
+    @default {
+      @if (addresses()?.length) {
+        <div class="panel__body addr-grid">
+          @for (a of addresses(); track a.id; let i = $index) {
+            <article class="addr fx" [style.--d]="i">
+              <header class="addr__head">
+                <span class="tile tile--brand"><app-icon name="map-pin" [size]="17" /></span>
+                <strong class="addr__label">{{ a.label || 'عنوان بدون اسم' }}</strong>
+              </header>
+
+              <p class="addr__text">{{ a.text || 'لم يُكتب نص العنوان' }}</p>
+              @if (a.notes) {
+                <p class="addr__notes"><app-icon name="message" [size]="13" /> {{ a.notes }}</p>
+              }
+
+              <footer class="addr__foot">
+                @if (a.phone) {
+                  <span><app-icon name="phone" [size]="13" /> <bdi>{{ a.phone }}</bdi></span>
+                }
+                @if (a.position; as p) {
+                  <a class="addr__map" [href]="mapsUrl(p)" target="_blank" rel="noopener noreferrer" [attr.data-tip]="formatGeoPoint(p)">
+                    <app-icon name="arrow-up-right" [size]="13" /> عرض على الخريطة
+                  </a>
+                } @else {
+                  <span class="addr__nogeo">بدون موقع على الخريطة</span>
+                }
+              </footer>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="empty">
+          <span class="empty__icon"><app-icon name="map-pin" [size]="24" /></span>
+          <p class="empty__title">لا توجد عناوين محفوظة</p>
+          <p class="empty__text">تظهر هنا العناوين التي يضيفها العميل من التطبيق.</p>
+        </div>
+      }
+    }
+  }
+</div>

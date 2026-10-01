@@ -1,0 +1,74 @@
+<div class="dtable-wrap" [attr.aria-busy]="loading() || stale()">
+  <table class="dtable" [class.is-stale]="stale()">
+    <thead>
+      <tr>
+        <th>رقم الحجز</th>
+        @if (hide() !== 'client') { <th>العميل</th> }
+        @if (hide() !== 'specialist') { <th>الفني</th> }
+        <th>الخدمات</th>
+        <th><span class="th">الموعد <app-dev-badge size="sm" label="الوقت قيد التطوير" /></span></th>
+        <th>المبلغ</th>
+        <th>الحالة</th>
+        <th class="th-actions"><span class="sr-only">التفاصيل</span></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      @if (loading() && !rows().length) {
+        @for (r of skeletonRows; track r) {
+          <tr class="skel-row" aria-hidden="true">
+            @for (c of skeletonCells(); track c) {
+              <td><span class="skel" [style.width.px]="46 + ((r * 11 + c * 19) % 44)"></span></td>
+            }
+            <td></td>
+          </tr>
+        }
+      } @else {
+        @for (b of rows(); track b.id; let i = $index) {
+          <tr class="is-link" [style.--d]="i" (click)="open.emit(b)">
+            <td><span class="bk-id">#{{ b.id }}</span></td>
+            @if (hide() !== 'client') {
+              <td><app-booking-party [party]="b.client" /></td>
+            }
+            @if (hide() !== 'specialist') {
+              <td><app-booking-party [party]="b.specialist" /></td>
+            }
+            <td>
+              <div class="who__txt">
+                <strong>{{ itemsSummary(b) }}</strong>
+                <span>{{ b.items.length | num }} {{ b.items.length === 1 ? 'خدمة' : 'خدمات' }}</span>
+              </div>
+            </td>
+            <td class="muted">{{ b.date | arDate }}</td>
+            <td>
+              <div class="who__txt">
+                <strong class="num">{{ b.totalPrice | cmoney: (b.client.place.country?.id ?? '') }}</strong>
+                <span>{{ b.paymentMethod === 'cash' ? paymentMeta.cash.label : (b.paymentLabel || '—') }}</span>
+              </div>
+            </td>
+            <td><span class="chip chip--dot {{ statusMeta[b.status].chip }}">{{ statusMeta[b.status].label }}</span></td>
+            <td (click)="$event.stopPropagation()">
+              <div class="actions">
+                <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل" [attr.aria-label]="'تفاصيل الحجز ' + b.id"
+                  (click)="open.emit(b)">
+                  <app-icon name="eye" [size]="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="columns()">
+              <div class="empty">
+                <span class="empty__icon"><app-icon name="calendar" [size]="26" /></span>
+                <p class="empty__title">{{ emptyTitle() }}</p>
+                @if (emptyText()) { <p class="empty__text">{{ emptyText() }}</p> }
+                <ng-content select="[emptyActions]" />
+              </div>
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

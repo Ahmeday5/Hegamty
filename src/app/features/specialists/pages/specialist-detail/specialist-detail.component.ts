@@ -4,7 +4,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
 import { PreviewNoticeComponent } from '../../../../shared/components/dev-status/preview-notice.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
-import { formatYears } from '../../../../shared/utils/format.util';
+import { formatNumber, formatYears } from '../../../../shared/utils/format.util';
 import { RecordLoader } from '../../../../core/utils/record-loader';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
@@ -14,23 +14,29 @@ import { AccountPreviewService } from '../../../accounts/account-preview.service
 import { AccountHeroComponent, HeroStat } from '../../../accounts/components/account-hero/account-hero.component';
 import { AccountTab, AccountTabsComponent } from '../../../accounts/components/account-tabs/account-tabs.component';
 import { AccountDocument, AccountDocumentsComponent } from '../../../accounts/components/account-documents/account-documents.component';
-import { ActivityStatsComponent } from '../../../accounts/components/activity/activity-stats.component';
-import { ActivityBookingsComponent } from '../../../accounts/components/activity/activity-bookings.component';
-import { ActivityReviewsComponent } from '../../../accounts/components/activity/activity-reviews.component';
 import { ActivityNotificationsComponent } from '../../../accounts/components/activity/activity-notifications.component';
-import { SPECIALIST_STATUS_META, Specialist, SpecialistService } from '../../specialists.models';
+import { ActivitySummaryComponent } from '../../../accounts/components/activity-summary/activity-summary.component';
+import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
+import { GENDER_META, formatGeoPoint, mapsUrl } from '../../../accounts/account-profile';
+import { BookingsApi } from '../../../bookings/bookings.api';
+import { Booking } from '../../../bookings/bookings.models';
+import { AccountBookingsComponent } from '../../../bookings/components/account-bookings/account-bookings.component';
+import { ReviewsApi } from '../../../reviews/reviews.api';
+import { Review, summarizeRatings } from '../../../reviews/reviews.models';
+import { AccountReviewsComponent } from '../../../reviews/components/account-reviews.component';
+import { AVAILABILITY_META, SPECIALIST_STATUS_META, Specialist, SpecialistService, availabilityOf } from '../../specialists.models';
 import { SpecialistsApi } from '../../specialists.api';
 import { SpecialistActionsService } from '../../specialist-actions.service';
 
-type Tab = 'overview' | 'services' | 'sessions' | 'reviews' | 'notifications';
+type Tab = 'overview' | 'services' | 'bookings' | 'reviews' | 'notifications';
 
 const isNumericId = (id: string) => /^\d+$/.test(id);
 const collator = new Intl.Collator('ar');
 
 /**
- * Technician profile. Identity, documents, review status and offered
- * services come from the API; sessions, reviews, notifications, stats and
- * subscription render labelled demo data until their endpoints exist.
+ * Technician profile. Identity, work area, documents, review status,
+ * offered services, bookings and reviews come from the API; notifications
+ * and subscription render labelled demo data until their endpoints exist.
  */
 @Component({
   selector: 'app-specialist-detail',
@@ -44,11 +50,12 @@ const collator = new Intl.Collator('ar');
     AccountHeroComponent,
     AccountTabsComponent,
     AccountDocumentsComponent,
-    ActivityStatsComponent,
-    ActivityBookingsComponent,
-    ActivityReviewsComponent,
     ActivityNotificationsComponent,
+    ActivitySummaryComponent,
+    AccountBookingsComponent,
+    AccountReviewsComponent,
     CountryFlagComponent,
+    AccountPlaceComponent,
     ...FORMAT_PIPES,
     ...COUNTRY_PIPES,
     ...CATALOG_PIPES,
@@ -63,12 +70,19 @@ export class SpecialistDetailComponent {
   readonly tab = input<string>();
 
   private readonly api = inject(SpecialistsApi);
+  private readonly bookingsApi = inject(BookingsApi);
+  private readonly reviewsApi = inject(ReviewsApi);
   private readonly actions = inject(SpecialistActionsService);
   private readonly preview = inject(AccountPreviewService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly statusMeta = SPECIALIST_STATUS_META;
+  protected readonly availabilityMeta = AVAILABILITY_META;
+  protected readonly availabilityOf = availabilityOf;
+  protected readonly genderMeta = GENDER_META;
+  protected readonly mapsUrl = mapsUrl;
+  protected readonly formatGeoPoint = formatGeoPoint;
   protected readonly subMeta = SUB_STATE_META;
   protected readonly periodMeta = PERIOD_META;
 
@@ -82,8 +96,19 @@ export class SpecialistDetailComponent {
     errorMessage: 'تعذّر تحميل خدمات الفني',
     isValidId: isNumericId,
   });
+  protected readonly bookings = new RecordLoader<Booking[]>((id) => this.bookingsApi.ofSpecialist(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل حجوزات الفني',
+    isValidId: isNumericId,
+  });
+  protected readonly reviews = new RecordLoader<Review[]>((id) => this.reviewsApi.ofSpecialist(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل تقييمات الفني',
+    isValidId: isNumericId,
+  });
 
   protected readonly specialist = this.record.value;
+  protected readonly rating = computed(() => summarizeRatings(this.reviews.value() ?? []));
   protected readonly busy = computed(() => {
     const s = this.specialist();
     return !!s && this.actions.busy().has(s.id);
@@ -94,7 +119,7 @@ export class SpecialistDetailComponent {
     [...(this.offered.value() ?? [])].sort((a, b) => collator.compare(a.countryName, b.countryName) || collator.compare(a.name, b.name)),
   );
 
-  // ── Demo sections ──
+  // ── Demo sections (notifications, subscription) ──
   protected readonly activity = computed(() => {
     const s = this.specialist();
     return s ? this.preview.activity('technicians', s.id) : null;
@@ -107,8 +132,8 @@ export class SpecialistDetailComponent {
   protected readonly tabs = computed<AccountTab<Tab>[]>(() => [
     { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
     { id: 'services', label: 'الخدمات', icon: 'droplet', count: this.offered.value()?.length },
-    { id: 'sessions', label: 'الجلسات', icon: 'calendar', dev: true },
-    { id: 'reviews', label: 'التقييمات', icon: 'star', dev: true },
+    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookings.value()?.length },
+    { id: 'reviews', label: 'التقييمات', icon: 'star', count: this.reviews.value()?.length },
     { id: 'notifications', label: 'الإشعارات', icon: 'bell', dev: true },
   ]);
   protected readonly activeTab = computed<Tab>(() => {
@@ -119,11 +144,16 @@ export class SpecialistDetailComponent {
   protected readonly heroStats = computed<HeroStat[]>(() => {
     const s = this.specialist();
     if (!s) return [];
+    const rating = this.rating();
     return [
-      { label: 'العمر', value: s.age ? formatYears(s.age) : null },
       { label: 'الخبرة', value: s.experienceYears ? formatYears(s.experienceYears) : 'بدون خبرة' },
       { label: 'الخدمات', value: this.offered.state() === 'ready' ? this.services().length : null },
-      { label: 'التقييم', dev: true },
+      { label: 'الحجوزات', value: this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null },
+      {
+        label: 'التقييم',
+        value: this.reviews.state() === 'ready' && rating.count ? formatNumber(rating.average, 1) : null,
+        unit: '/ 5',
+      },
     ];
   });
 
@@ -145,6 +175,8 @@ export class SpecialistDetailComponent {
         untracked(() => {
           this.record.load(id);
           this.offered.load(id);
+          this.bookings.load(id);
+          this.reviews.load(id);
         });
       },
       { allowSignalWrites: true },
@@ -158,6 +190,8 @@ export class SpecialistDetailComponent {
   protected reload(): void {
     this.record.reload();
     this.offered.reload();
+    this.bookings.reload();
+    this.reviews.reload();
   }
 
   protected approve(): void {
