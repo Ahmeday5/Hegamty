@@ -143,8 +143,8 @@
               </div>
             </div>
 
-            <app-activity-summary class="fx" style="--d: 2" [bookings]="bookings.value()" [reviews]="reviews.value()"
-              ratingLabel="متوسط تقييم الفني" (open)="selectTab($event)" />
+            <app-activity-summary class="fx" style="--d: 2" [stats]="bookingStats.value()" [statsError]="bookingStats.state() === 'error'" [reviews]="reviews.value()"
+              ratingLabel="متوسط تقييم الفني" (open)="selectTab($event)" (retry)="bookingStats.reload()" />
 
             @if (subscription(); as sub) {
               <div class="panel sub-card fx" style="--d: 2" [class.is-off]="sub.state === 'expired' || sub.state === 'none'">
@@ -158,7 +158,7 @@
                       <span class="tile tile--brand"><app-icon name="award" [size]="20" /></span>
                       <div>
                         <strong>{{ sub.pkg.name }} <span class="chip {{ subMeta[sub.state].chip }}">{{ subMeta[sub.state].label }}</span></strong>
-                        <span>{{ sub.sub.price | cmoney: sub.sub.countryId }} · {{ periodMeta[sub.pkg.period].label }}</span>
+                        <span>{{ sub.sub.price | cmoney: sub.sub.countryId }} · {{ sub.pkg.durationDays | packageDuration }}</span>
                       </div>
                     </div>
                     <div class="rate">

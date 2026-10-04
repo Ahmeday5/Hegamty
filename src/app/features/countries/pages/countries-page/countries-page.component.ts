@@ -15,7 +15,7 @@ import { PeopleStore } from '../../../people/people.store';
 import { ServiceCatalogApi } from '../../../services/service-catalog.api';
 import { NO_FILTER } from '../../../services/service-catalog.models';
 import { DemoBookingsStore } from '../../../bookings/demo-bookings.store';
-import { PackagesStore } from '../../../packages/packages.store';
+import { DemoSubscriptionsStore } from '../../../packages/demo-subscriptions.store';
 import { CountryFormComponent } from '../../components/country-form/country-form.component';
 import { GovernoratesDialogComponent } from '../../components/governorates-dialog/governorates-dialog.component';
 import { CountryFlagComponent } from '../../country-flag.component';
@@ -54,7 +54,7 @@ export class CountriesPageComponent {
   private readonly scope = inject(CountryScopeService);
   private readonly router = inject(Router);
   private readonly bookings = inject(DemoBookingsStore);
-  private readonly packages = inject(PackagesStore);
+  private readonly packages = inject(DemoSubscriptionsStore);
   private readonly dialog = inject(DialogService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);

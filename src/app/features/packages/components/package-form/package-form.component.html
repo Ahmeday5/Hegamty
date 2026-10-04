@@ -1,70 +1,100 @@
-<app-modal [open]="open()" [title]="title()" size="md" (closed)="closed.emit()">
+<app-modal [open]="open()" [title]="title()" size="md" (closed)="close()">
+  @if (serverError(); as err) {
+    <div class="pf-alert" role="alert"><app-icon name="alert" [size]="16" /> <span>{{ err }}</span></div>
+  }
+
   <form id="package-form" class="form-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <div>
       <label class="form-label" for="pk-country">الدولة</label>
       <select id="pk-country" class="form-select" formControlName="countryId" [class.is-invalid]="invalid('countryId')">
+        <option value="" disabled>اختر الدولة</option>
         @for (c of countries(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
       </select>
+      <app-form-error [control]="form.controls.countryId" label="الدولة" />
     </div>
 
     <div>
       <label class="form-label" for="pk-price">السعر ({{ currency() }})</label>
-      <input id="pk-price" type="number" min="1" class="form-control" formControlName="price" [class.is-invalid]="invalid('price')" />
+      <input id="pk-price" type="number" min="1" inputmode="decimal" class="form-control" formControlName="price" [class.is-invalid]="invalid('price')" />
       <app-form-error [control]="form.controls.price" label="السعر" />
     </div>
 
     <div class="span-2">
       <label class="form-label" for="pk-name">اسم الباقة</label>
-      <input id="pk-name" class="form-control" formControlName="name" placeholder="مثال: الباقة الشهرية" [class.is-invalid]="invalid('name')" />
+      <input id="pk-name" class="form-control" formControlName="name" [maxlength]="nameMax" placeholder="مثال: الباقة النصف سنوية"
+        [class.is-invalid]="invalid('name')" />
       <app-form-error [control]="form.controls.name" label="اسم الباقة" />
     </div>
 
     <div class="span-2">
-      <span class="form-label">مدة الاشتراك</span>
-      <div class="seg seg--full">
-        @for (p of periods; track p.id) {
-          <button type="button" class="seg__btn" [class.is-on]="form.controls.period.value === p.id" (click)="setPeriod(p.id)">
-            {{ p.label }} <span class="seg__count">{{ p.days }} يوم</span>
+      <span class="form-label" id="pk-period">مدة الاشتراك</span>
+      <div class="pf-periods" role="radiogroup" aria-labelledby="pk-period">
+        @for (d of durations(); track d.days) {
+          <button type="button" class="pf-period" role="radio" [class.is-on]="durationDays() === d.days" [class.is-custom]="d.custom"
+            [attr.aria-checked]="durationDays() === d.days" (click)="setDuration(d.days)">
+            @if (d.custom) {
+              <span class="pf-period__num"><strong>{{ d.days }}</strong> يوم</span>
+              <span class="pf-period__label">مدة مخصصة</span>
+            } @else {
+              <span class="pf-period__num"><strong>{{ d.months }}</strong> {{ d.unit }}</span>
+              <span class="pf-period__label">{{ d.label }}</span>
+            }
+            <span class="pf-period__q" aria-hidden="true">
+              @for (q of quarters; track q) { <i [class.is-on]="q * 3 <= d.months"></i> }
+            </span>
           </button>
         }
       </div>
+      @if (monthly(); as m) {
+        <p class="pf-hint">يعادل <strong>{{ m }} {{ currency() }}</strong> شهريًا · يتجدد {{ renewal() }} ({{ durationDays() }} يوم)</p>
+      }
     </div>
 
     <div class="span-2">
-      <label class="form-label" for="pk-desc">وصف مختصر</label>
-      <input id="pk-desc" class="form-control" formControlName="description" maxlength="160" placeholder="يظهر للفني في شاشة الباقات" />
+      <label class="form-label" for="pk-desc">
+        وصف مختصر <span class="pf-count" [class.is-over]="descLength() > descMax">{{ descLength() }}/{{ descMax }}</span>
+      </label>
+      <input id="pk-desc" class="form-control" formControlName="description" [maxlength]="descMax" placeholder="يظهر للفني في شاشة الباقات"
+        [class.is-invalid]="invalid('description')" />
     </div>
 
     <div class="span-2">
-      <label class="form-label" for="pk-feature">مميزات الباقة</label>
-      <ul class="pf-features">
-        @for (f of features(); track f) {
-          <li><app-icon name="check" [size]="14" [stroke]="2.4" /> {{ f }}
-            <button type="button" [attr.aria-label]="'حذف ' + f" (click)="removeFeature(f)"><app-icon name="x" [size]="13" /></button>
-          </li>
-        }
-      </ul>
+      <label class="form-label" for="pk-feature">
+        مميزات الباقة <span class="pf-count">{{ features().length }}/{{ featuresMax }}</span>
+      </label>
+      @if (features().length) {
+        <ul class="pf-features">
+          @for (f of features(); track f) {
+            <li><app-icon name="check" [size]="14" [stroke]="2.4" /> <span>{{ f }}</span>
+              <button type="button" [attr.aria-label]="'حذف ' + f" (click)="removeFeature(f)"><app-icon name="x" [size]="13" /></button>
+            </li>
+          }
+        </ul>
+      }
       <div class="pf-add">
-        <input id="pk-feature" class="form-control" [value]="featureDraft()" (input)="featureDraft.set($any($event.target).value)"
-          (keydown.enter)="addFeature($event)" placeholder="أضف ميزة واضغط Enter" />
-        <button type="button" class="btn btn-soft" (click)="addFeature()"><app-icon name="plus" [size]="15" /></button>
+        <input id="pk-feature" class="form-control" [value]="featureDraft()" [attr.maxlength]="featureMax" [disabled]="featuresFull()"
+          (input)="featureDraft.set($any($event.target).value)" (keydown.enter)="addFeature($event)"
+          [placeholder]="featuresFull() ? 'وصلت للحد الأقصى من المميزات' : 'أضف ميزة واضغط Enter'" />
+        <button type="button" class="btn btn-soft" aria-label="إضافة الميزة" [disabled]="featuresFull() || !featureDraft().trim()" (click)="addFeature()">
+          <app-icon name="plus" [size]="15" />
+        </button>
       </div>
     </div>
 
     <div class="pf-toggle">
       <div><strong>الأكثر اختيارًا</strong><span>تمييز الباقة في التطبيق</span></div>
-      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.featured.value" [attr.aria-checked]="form.controls.featured.value"
+      <button type="button" class="switch" role="switch" [class.is-on]="value().featured" [attr.aria-checked]="value().featured"
         aria-label="الأكثر اختيارًا" (click)="toggle('featured')"></button>
     </div>
     <div class="pf-toggle">
       <div><strong>الباقة مفعّلة</strong><span>متاحة للشراء من التطبيق</span></div>
-      <button type="button" class="switch" role="switch" [class.is-on]="form.controls.active.value" [attr.aria-checked]="form.controls.active.value"
+      <button type="button" class="switch" role="switch" [class.is-on]="value().active" [attr.aria-checked]="value().active"
         aria-label="تفعيل الباقة" (click)="toggle('active')"></button>
     </div>
   </form>
 
   <ng-container modal-footer>
-    <button type="button" class="btn btn-ghost" (click)="closed.emit()">إلغاء</button>
+    <button type="button" class="btn btn-ghost" [disabled]="saving()" (click)="close()">إلغاء</button>
     <button type="submit" form="package-form" class="btn btn-pr" [disabled]="saving()">
       @if (saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ الحفظ… }
       @else { {{ pkg() ? 'حفظ التغييرات' : 'إضافة الباقة' }} }

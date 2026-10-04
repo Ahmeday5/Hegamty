@@ -1,5 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { formatNumber } from '../../shared/utils/format.util';
+import { formatMinutes, formatNumber } from '../../shared/utils/format.util';
+import { OPEN_DURATION_LABEL } from './service-catalog.models';
 
 /** "100 – 300 جنيه مصري", or "150 ريال سعودي" when min = max. */
 export function formatPriceRange(min: number, max: number, currency: string): string {
@@ -7,12 +8,9 @@ export function formatPriceRange(min: number, max: number, currency: string): st
   return `${range} ${currency}`.trim();
 }
 
-/** Arabic count agreement: "دقيقة واحدة" · "دقيقتان" · "5 دقائق" · "30 دقيقة". */
-export function formatMinutes(value: number): string {
-  if (value === 1) return 'دقيقة واحدة';
-  if (value === 2) return 'دقيقتان';
-  const mod = value % 100;
-  return `${formatNumber(value)} ${mod >= 3 && mod <= 10 ? 'دقائق' : 'دقيقة'}`;
+/** "30 دقيقة", or "مدة مفتوحة" for an open-ended session. */
+export function formatDuration(minutes: number | null | undefined): string {
+  return minutes ? formatMinutes(minutes) : OPEN_DURATION_LABEL;
 }
 
 /** "دولة واحدة" · "دولتان" · "5 دول" · "12 دولة". */
@@ -35,7 +33,7 @@ export class PriceRangePipe implements PipeTransform {
 @Pipe({ name: 'minutes', standalone: true })
 export class MinutesPipe implements PipeTransform {
   transform(value: number | null | undefined): string {
-    return value ? formatMinutes(value) : 'مدة مفتوحة';
+    return formatDuration(value);
   }
 }
 

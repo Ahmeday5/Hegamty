@@ -7,13 +7,15 @@ import { parseApiDate } from '../../core/utils/api-date.util';
 import { Page, PageRequest, toPageMeta } from '../../core/models/page.model';
 import { PartiesDto, toParties } from '../accounts/account-wire';
 import { PlaceResolver } from '../accounts/place-resolver.service';
-import { Booking, BookingItem, BookingQuery, BookingStatus } from './bookings.models';
+import { Booking, BookingItem, BookingQuery, BookingStats, BookingStatus, bookingDuration } from './bookings.models';
 
 // ─────────── wire format ───────────
 
 interface BookingItemDto {
   serviceId: number;
   name: string | null;
+  /** `null` = open-ended service. */
+  durationMinutes: number | null;
   price: number | null;
 }
 
@@ -28,11 +30,23 @@ interface BookingDto extends PartiesDto {
   items: BookingItemDto[] | null;
 }
 
+interface BookingStatsDto {
+  total: number | null;
+  pending: number | null;
+  confirmed: number | null;
+  completed: number | null;
+  cancelled: number | null;
+}
+
+/** Whose bookings — the path segment of `/admin/{owner}/{id}/bookings`. */
+export type BookingOwner = 'clients' | 'specialists';
+
 const ENDPOINT = 'admin/bookings';
 
 const STATUS_FROM_WIRE: Record<string, BookingStatus> = {
   pending: 'pending',
   confirmed: 'confirmed',
+  completed: 'completed',
   cancelled: 'cancelled',
   canceled: 'cancelled',
 };
@@ -40,7 +54,26 @@ const STATUS_FROM_WIRE: Record<string, BookingStatus> = {
 // ─────────── mapping ───────────
 
 function toItem(dto: BookingItemDto): BookingItem {
-  return { serviceId: String(dto.serviceId), name: dto.name?.trim() || '—', price: Number(dto.price) || 0 };
+  const minutes = Number(dto.durationMinutes) || 0;
+  return {
+    serviceId: String(dto.serviceId),
+    name: dto.name?.trim() || '—',
+    price: Number(dto.price) || 0,
+    durationMin: minutes > 0 ? minutes : null,
+  };
+}
+
+function toStats(dto: BookingStatsDto | null): BookingStats {
+  const n = (v: number | null | undefined) => Math.max(0, Math.round(Number(v) || 0));
+  const stats = {
+    pending: n(dto?.pending),
+    confirmed: n(dto?.confirmed),
+    completed: n(dto?.completed),
+    cancelled: n(dto?.cancelled),
+  };
+  // `total` is authoritative; fall back to the sum if the server leaves it out.
+  const sum = stats.pending + stats.confirmed + stats.completed + stats.cancelled;
+  return { all: dto?.total == null ? sum : n(dto.total), ...stats };
 }
 
 function toParams(q: BookingQuery, page: PageRequest): Record<string, unknown> {
@@ -90,12 +123,23 @@ export class BookingsApi {
 
   /** All bookings of one technician. */
   ofSpecialist(id: string): Observable<Booking[]> {
-    return this.drain(`admin/specialists/${id}/bookings`, (page) => ({ PageIndex: page.pageIndex, PageSize: page.pageSize }));
+    return this.ofOwner('specialists', id);
   }
 
   /** All bookings of one customer. */
   ofClient(id: string): Observable<Booking[]> {
-    return this.drain(`admin/clients/${id}/bookings`, (page) => ({ PageIndex: page.pageIndex, PageSize: page.pageSize }));
+    return this.ofOwner('clients', id);
+  }
+
+  /** Totals per status for one account, counted by the server. */
+  statsOf(owner: BookingOwner, id: string): Observable<BookingStats> {
+    return this.api
+      .get<BookingStatsDto | null>(`admin/${owner}/${id}/bookings/stats`, { context: withInlineHandling() })
+      .pipe(map(toStats));
+  }
+
+  private ofOwner(owner: BookingOwner, id: string): Observable<Booking[]> {
+    return this.drain(`admin/${owner}/${id}/bookings`, (page) => ({ PageIndex: page.pageIndex, PageSize: page.pageSize }));
   }
 
   private getPage(url: string, params: Record<string, unknown>) {
@@ -119,6 +163,7 @@ export class BookingsApi {
       date: parseApiDate(dto.bookingDate),
       status: STATUS_FROM_WIRE[dto.status?.trim().toLowerCase() ?? ''] ?? 'pending',
       items,
+      duration: bookingDuration(items),
       totalPrice: Number.isFinite(total) ? total : items.reduce((sum, i) => sum + i.price, 0),
       paymentMethod: method.toLowerCase() === 'cash' ? 'cash' : 'other',
       paymentLabel: method,

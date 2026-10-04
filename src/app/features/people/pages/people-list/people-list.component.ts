@@ -16,7 +16,7 @@ import { CountryScopeService } from '../../../countries/country-scope.service';
 import { CountriesStore } from '../../../countries/countries.store';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
-import { PackagesStore } from '../../../packages/packages.store';
+import { DemoSubscriptionsStore } from '../../../packages/demo-subscriptions.store';
 import { SUB_STATE_META } from '../../../packages/packages.models';
 
 type SortKey = 'name' | 'bookings' | 'rating' | 'joinedAt';
@@ -59,7 +59,7 @@ export class PeopleListComponent {
   private readonly actions = inject(PeopleActionsService);
   private readonly router = inject(Router);
   private readonly countries = inject(CountriesStore);
-  protected readonly packages = inject(PackagesStore);
+  protected readonly packages = inject(DemoSubscriptionsStore);
   protected readonly scope = inject(CountryScopeService);
 
   protected readonly statusMeta = STATUS_META;

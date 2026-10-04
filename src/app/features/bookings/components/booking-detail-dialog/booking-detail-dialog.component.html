@@ -6,6 +6,9 @@
         <span class="chip chip--dot {{ statusMeta[b.status].chip }}">{{ statusMeta[b.status].label }}</span>
         <span class="bd-summary__item"><app-icon name="calendar" [size]="14" /> {{ b.date | arDate }}</span>
         <span class="bd-summary__item"><app-icon name="clock" [size]="14" /> الوقت <app-dev-badge size="sm" /></span>
+        @if (b.items.length) {
+          <span class="bd-summary__item"><app-icon name="timer" [size]="14" /> {{ b.duration | bookingDuration }}</span>
+        }
         <span class="bd-summary__item">
           <app-icon name="wallet" [size]="14" />
           {{ b.paymentMethod === 'cash' ? paymentMeta.cash.label : (b.paymentLabel || 'غير محدد') }}
@@ -20,17 +23,32 @@
             <li class="bd-items__row">
               <span class="tile tile--sm tile--green"><app-icon name="droplet" [size]="14" /></span>
               <span class="bd-items__name">{{ item.name }}</span>
-              <strong class="num">{{ item.price | cmoney: currencyOf() }}</strong>
+              <span class="bd-dur" [class.is-open]="item.durationMin === null">
+                <app-icon [name]="item.durationMin === null ? 'clock' : 'timer'" [size]="12" /> {{ item.durationMin | minutes }}
+              </span>
+              <strong class="num bd-items__price">{{ item.price | cmoney: currencyOf() }}</strong>
             </li>
           } @empty {
             <li class="bd-items__none">لا توجد خدمات مسجّلة في هذا الحجز.</li>
           }
         </ul>
         <div class="bd-total">
-          <span>الإجمالي</span>
-          <strong class="num">{{ b.totalPrice | cmoney: currencyOf() }}</strong>
+          <div class="bd-total__cell">
+            <span>المدة الإجمالية</span>
+            <strong>{{ b.duration | bookingDuration }}</strong>
+          </div>
+          <div class="bd-total__cell bd-total__cell--end">
+            <span>الإجمالي</span>
+            <strong class="num">{{ b.totalPrice | cmoney: currencyOf() }}</strong>
+          </div>
         </div>
         <p class="bd-hint"><app-icon name="alert" [size]="13" /> يُدفع المبلغ للفني مباشرة خارج المنصة.</p>
+        @if (b.duration.openItems) {
+          <p class="bd-hint">
+            <app-icon name="clock" [size]="13" />
+            {{ b.duration.openItems === 1 ? 'خدمة واحدة' : b.duration.openItems + ' خدمات' }} بمدة مفتوحة — يتحدد وقت انتهاء الجلسة أثناء التنفيذ.
+          </p>
+        }
       </section>
 
       @if (b.notes) {

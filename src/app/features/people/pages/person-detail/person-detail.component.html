@@ -131,7 +131,7 @@
                     @if (s.sub && s.pkg) {
                       <div class="sub-card__main">
                         <span class="tile tile--brand"><app-icon name="award" [size]="20" /></span>
-                        <div><strong>{{ s.pkg.name }}</strong><span>{{ s.sub.price | cmoney: s.sub.countryId }} · {{ periodMeta[s.pkg.period].label }}</span></div>
+                        <div><strong>{{ s.pkg.name }}</strong><span>{{ s.sub.price | cmoney: s.sub.countryId }} · {{ s.pkg.durationDays | packageDuration }}</span></div>
                       </div>
                       <div class="rate">
                         <div class="rate__head">

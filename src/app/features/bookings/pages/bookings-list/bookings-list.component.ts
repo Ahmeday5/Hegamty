@@ -75,12 +75,12 @@ export class BookingsListComponent {
     return {
       all,
       pending: c?.pending ?? 0,
-      confirmed: c?.confirmed ?? 0,
+      completed: c?.completed ?? 0,
       cancelled: c?.cancelled ?? 0,
       // Amounts only within one country — never summed across currencies.
       allHint: country && c ? `قيمة غير الملغاة ${formatNumber(c.value)} ${country.currency}`.trim() : 'لكل الفترات',
       pendingHint: share(c?.pending ?? 0),
-      confirmedHint: share(c?.confirmed ?? 0),
+      completedHint: `${share(c?.completed ?? 0)} · ${formatNumber(c?.confirmed ?? 0)} مؤكدة لم تُنفَّذ`,
       cancelledHint: share(c?.cancelled ?? 0),
     };
   });
@@ -143,7 +143,7 @@ export class BookingsListComponent {
           }
           const header = [
             'رقم الحجز', 'العميل', 'دولة العميل', 'محافظة العميل', 'الفني', 'دولة الفني', 'محافظة الفني', 'الخدمات',
-            'التاريخ', 'المبلغ', 'العملة', 'طريقة الدفع', 'الحالة', 'ملاحظات',
+            'المدة المحددة (دقيقة)', 'خدمات بمدة مفتوحة', 'التاريخ', 'المبلغ', 'العملة', 'طريقة الدفع', 'الحالة', 'ملاحظات',
           ];
           downloadCsv(
             'bookings',
@@ -151,7 +151,8 @@ export class BookingsListComponent {
             rows.map((b) => [
               b.id, b.client.name, b.client.place.country?.name ?? '', b.client.place.governorate?.name ?? '',
               b.specialist.name, b.specialist.place.country?.name ?? '', b.specialist.place.governorate?.name ?? '',
-              b.items.map((i) => i.name).join('، '), b.date ? formatDate(b.date) : '', b.totalPrice,
+              b.items.map((i) => i.name).join('، '), b.duration.minutes, b.duration.openItems,
+              b.date ? formatDate(b.date) : '', b.totalPrice,
               this.countries.currency(b.client.place.country?.id ?? ''),
               b.paymentMethod === 'cash' ? PAYMENT_META.cash.label : b.paymentLabel, BOOKING_STATUS_META[b.status].label, b.notes,
             ]),

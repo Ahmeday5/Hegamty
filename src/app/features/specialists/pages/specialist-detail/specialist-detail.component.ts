@@ -9,7 +9,8 @@ import { RecordLoader } from '../../../../core/utils/record-loader';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { CATALOG_PIPES } from '../../../services/service-catalog.pipes';
-import { PERIOD_META, SUB_STATE_META } from '../../../packages/packages.models';
+import { SUB_STATE_META } from '../../../packages/packages.models';
+import { PACKAGE_PIPES } from '../../../packages/packages.pipes';
 import { AccountPreviewService } from '../../../accounts/account-preview.service';
 import { AccountHeroComponent, HeroStat } from '../../../accounts/components/account-hero/account-hero.component';
 import { AccountTab, AccountTabsComponent } from '../../../accounts/components/account-tabs/account-tabs.component';
@@ -19,7 +20,7 @@ import { ActivitySummaryComponent } from '../../../accounts/components/activity-
 import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
 import { GENDER_META, formatGeoPoint, mapsUrl } from '../../../accounts/account-profile';
 import { BookingsApi } from '../../../bookings/bookings.api';
-import { Booking } from '../../../bookings/bookings.models';
+import { Booking, BookingStats } from '../../../bookings/bookings.models';
 import { AccountBookingsComponent } from '../../../bookings/components/account-bookings/account-bookings.component';
 import { ReviewsApi } from '../../../reviews/reviews.api';
 import { Review, summarizeRatings } from '../../../reviews/reviews.models';
@@ -58,6 +59,7 @@ const collator = new Intl.Collator('ar');
     AccountPlaceComponent,
     ...FORMAT_PIPES,
     ...COUNTRY_PIPES,
+    ...PACKAGE_PIPES,
     ...CATALOG_PIPES,
   ],
   templateUrl: './specialist-detail.component.html',
@@ -84,7 +86,6 @@ export class SpecialistDetailComponent {
   protected readonly mapsUrl = mapsUrl;
   protected readonly formatGeoPoint = formatGeoPoint;
   protected readonly subMeta = SUB_STATE_META;
-  protected readonly periodMeta = PERIOD_META;
 
   protected readonly record = new RecordLoader<Specialist>((id) => this.api.byId(id), {
     destroyRef: this.destroyRef,
@@ -101,6 +102,11 @@ export class SpecialistDetailComponent {
     errorMessage: 'تعذّر تحميل حجوزات الفني',
     isValidId: isNumericId,
   });
+  protected readonly bookingStats = new RecordLoader<BookingStats>((id) => this.bookingsApi.statsOf('specialists', id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل إحصائيات الحجوزات',
+    isValidId: isNumericId,
+  });
   protected readonly reviews = new RecordLoader<Review[]>((id) => this.reviewsApi.ofSpecialist(id), {
     destroyRef: this.destroyRef,
     errorMessage: 'تعذّر تحميل تقييمات الفني',
@@ -108,6 +114,10 @@ export class SpecialistDetailComponent {
   });
 
   protected readonly specialist = this.record.value;
+  /** Server total first; the loaded list's length if the stats call fails. `null` = not known yet. */
+  private readonly bookingsTotal = computed(
+    () => this.bookingStats.value()?.all ?? (this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null),
+  );
   protected readonly rating = computed(() => summarizeRatings(this.reviews.value() ?? []));
   protected readonly busy = computed(() => {
     const s = this.specialist();
@@ -132,7 +142,7 @@ export class SpecialistDetailComponent {
   protected readonly tabs = computed<AccountTab<Tab>[]>(() => [
     { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
     { id: 'services', label: 'الخدمات', icon: 'droplet', count: this.offered.value()?.length },
-    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookings.value()?.length },
+    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookingsTotal() ?? undefined },
     { id: 'reviews', label: 'التقييمات', icon: 'star', count: this.reviews.value()?.length },
     { id: 'notifications', label: 'الإشعارات', icon: 'bell', dev: true },
   ]);
@@ -144,14 +154,15 @@ export class SpecialistDetailComponent {
   protected readonly heroStats = computed<HeroStat[]>(() => {
     const s = this.specialist();
     if (!s) return [];
-    const rating = this.rating();
+    // The profile's served aggregate shows at once; the loaded reviews take over when ready.
+    const rating = this.reviews.state() === 'ready' ? this.rating() : s.rating;
     return [
       { label: 'الخبرة', value: s.experienceYears ? formatYears(s.experienceYears) : 'بدون خبرة' },
       { label: 'الخدمات', value: this.offered.state() === 'ready' ? this.services().length : null },
-      { label: 'الحجوزات', value: this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null },
+      { label: 'الحجوزات', value: this.bookingsTotal() },
       {
         label: 'التقييم',
-        value: this.reviews.state() === 'ready' && rating.count ? formatNumber(rating.average, 1) : null,
+        value: rating?.count ? formatNumber(rating.average, 1) : null,
         unit: '/ 5',
       },
     ];
@@ -176,6 +187,7 @@ export class SpecialistDetailComponent {
           this.record.load(id);
           this.offered.load(id);
           this.bookings.load(id);
+          this.bookingStats.load(id);
           this.reviews.load(id);
         });
       },
@@ -191,6 +203,7 @@ export class SpecialistDetailComponent {
     this.record.reload();
     this.offered.reload();
     this.bookings.reload();
+    this.bookingStats.reload();
     this.reviews.reload();
   }
 

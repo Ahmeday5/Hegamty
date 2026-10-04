@@ -5,7 +5,6 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 import { KpiCardComponent } from '../../../../shared/components/kpi-card/kpi-card.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
-import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { downloadCsv } from '../../../../shared/utils/csv.util';
 import { formatDate } from '../../../../shared/utils/format.util';
@@ -17,6 +16,7 @@ import { CountryFlagComponent } from '../../../countries/country-flag.component'
 import { ACCOUNT_PAGE_SIZES, AccountListController, BanFilter } from '../../../accounts/account-list.controller';
 import { GENDER_META } from '../../../accounts/account-profile';
 import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
+import { RatingBadgeComponent } from '../../../reviews/components/rating-badge.component';
 import { SPECIALIST_STATUSES, SPECIALIST_STATUS_META, Specialist, SpecialistStatus } from '../../specialists.models';
 import { SpecialistsStore } from '../../specialists.store';
 import { SpecialistActionsService } from '../../specialist-actions.service';
@@ -36,7 +36,7 @@ import { SpecialistActionsService } from '../../specialist-actions.service';
     AvatarComponent,
     KpiCardComponent,
     PaginationComponent,
-    DevBadgeComponent,
+    RatingBadgeComponent,
     CountryFlagComponent,
     AccountPlaceComponent,
     ...FORMAT_PIPES,
@@ -150,7 +150,7 @@ export class SpecialistsListComponent {
           }
           const header = [
             'المعرف', 'الاسم', 'رقم الجوال', 'النوع', 'العمر', 'الجنسية', 'دولة العمل', 'المحافظة', 'سنوات الخبرة',
-            'حالة المراجعة', 'متاح للطلبات', 'محظور', 'تاريخ التسجيل', 'النبذة',
+            'متوسط التقييم', 'عدد التقييمات', 'حالة المراجعة', 'متاح للطلبات', 'محظور', 'تاريخ التسجيل', 'النبذة',
           ];
           downloadCsv(
             'technicians',
@@ -158,6 +158,7 @@ export class SpecialistsListComponent {
             rows.map((s) => [
               s.id, s.fullName, s.phone, s.gender ? GENDER_META[s.gender].label : '', s.age ?? '', s.nationality?.name ?? '',
               s.workPlace.country?.name ?? '', s.workPlace.governorate?.name ?? '', s.experienceYears,
+              s.rating?.count ? s.rating.average : '', s.rating?.count ?? '',
               SPECIALIST_STATUS_META[s.status].label, s.available ? 'نعم' : 'لا', s.banned ? 'نعم' : 'لا',
               s.createdAt ? formatDate(s.createdAt) : '', s.description,
             ]),

@@ -39,19 +39,45 @@
     border: 1px solid var(--brd);
   }
   &__name { flex: 1; min-width: 0; font-weight: 600; color: var(--black); }
+  &__price { min-width: 84px; text-align: end; }
   &__none { color: var(--txt3); }
+}
+
+/* Item length: timed sessions in brand teal, open-ended ones in purple (as in the catalog). */
+.bd-dur {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg3);
+  color: var(--txt2);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.is-open { background: var(--pu-l); color: var(--pu); }
 }
 
 .bd-total {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--pr-l);
   color: var(--pr-d);
   font-weight: 600;
-  strong { font-size: 15px; font-weight: 800; }
+
+  &__cell {
+    display: grid;
+    gap: 2px;
+    span { font-size: 11.5px; opacity: 0.85; }
+    strong { font-size: 14px; font-weight: 800; }
+  }
+  &__cell--end { text-align: end; strong { font-size: 15px; } }
 }
 .bd-hint { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: var(--txt3); }
 

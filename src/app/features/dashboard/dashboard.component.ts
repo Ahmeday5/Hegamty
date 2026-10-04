@@ -15,7 +15,7 @@ import { BOOKING_META, isNewAccount } from '../people/people.config';
 import { BookingStatus } from '../people/people.models';
 import { DemoBooking, DemoBookingsStore } from '../bookings/demo-bookings.store';
 import { ServicesStore } from '../services/services.store';
-import { PackagesStore } from '../packages/packages.store';
+import { DemoSubscriptionsStore } from '../packages/demo-subscriptions.store';
 import { Subscription } from '../packages/packages.models';
 import { CountriesStore } from '../countries/countries.store';
 import { CountryScopeService } from '../countries/country-scope.service';
@@ -66,7 +66,7 @@ export class DashboardComponent {
   private readonly people = inject(PeopleStore);
   private readonly bookingsStore = inject(DemoBookingsStore);
   private readonly servicesStore = inject(ServicesStore);
-  private readonly packages = inject(PackagesStore);
+  private readonly packages = inject(DemoSubscriptionsStore);
   private readonly countries = inject(CountriesStore);
   protected readonly scope = inject(CountryScopeService);
 

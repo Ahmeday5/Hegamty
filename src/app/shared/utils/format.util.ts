@@ -39,6 +39,31 @@ export function formatYears(value: number): string {
   return `${formatNumber(value)} ${mod >= 3 && mod <= 10 ? 'سنوات' : 'سنة'}`;
 }
 
+/** Arabic count agreement: "دقيقة واحدة" · "دقيقتان" · "5 دقائق" · "30 دقيقة". */
+export function formatMinutes(value: number): string {
+  if (value === 1) return 'دقيقة واحدة';
+  if (value === 2) return 'دقيقتان';
+  const mod = value % 100;
+  return `${formatNumber(value)} ${mod >= 3 && mod <= 10 ? 'دقائق' : 'دقيقة'}`;
+}
+
+/** Arabic count agreement: "ساعة واحدة" · "ساعتان" · "5 ساعات" · "12 ساعة". */
+export function formatHours(value: number): string {
+  if (value === 1) return 'ساعة واحدة';
+  if (value === 2) return 'ساعتان';
+  const mod = value % 100;
+  return `${formatNumber(value)} ${mod >= 3 && mod <= 10 ? 'ساعات' : 'ساعة'}`;
+}
+
+/** A span of minutes in hours where it reads better: "45 دقيقة" · "ساعتان" · "ساعة واحدة و30 دقيقة". */
+export function formatSpan(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes));
+  if (total < 60) return formatMinutes(total);
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest ? `${formatHours(hours)} و${formatMinutes(rest)}` : formatHours(hours);
+}
+
 export function formatDate(value: string | number | Date): string {
   return dateFmt.format(new Date(value));
 }

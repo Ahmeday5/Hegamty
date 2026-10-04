@@ -1,8 +1,30 @@
 :host { display: block; }
 
 .muted { color: var(--txt3); }
+.icon-btn.is-spinning app-icon { animation: pk-spin 0.9s linear infinite; }
+.icon-btn:disabled, .btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+.empty__icon--red { background: var(--re-l); color: var(--re); }
+.grid--3 { margin-bottom: 14px; }
+
+/* ── Catalog panel ── */
+.pk-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--brd);
+  .seg { max-width: 100%; overflow-x: auto; }
+}
+.pk-search { flex: 1 1 240px; max-width: 360px; input { height: 36px; } }
+.pk-count { margin-inline-start: auto; font-size: 12px; color: var(--txt3); white-space: nowrap; }
+.pk-body { padding: 18px 16px 4px; }
+.pkgs.is-stale { opacity: 0.55; pointer-events: none; transition: opacity 0.2s; }
+.pkgs__empty { grid-column: 1 / -1; }
+
 .status-bar { padding: 12px 16px; border-bottom: 1px solid var(--brd); .seg { max-width: 100%; overflow-x: auto; } }
 .sub-search { flex: 0 1 280px; input { height: 36px; } }
+.sub-notice { padding: 0 16px 12px; }
 .who { display: flex; align-items: center; gap: 10px; }
 .who__txt { display: grid; gap: 1px; strong { font-weight: 600; } span { font-size: 11.5px; color: var(--txt3); } }
 .left { display: grid; gap: 4px; min-width: 110px; span { font-size: 12px; font-weight: 600; } .bar { height: 5px; } }
@@ -31,6 +53,9 @@
 
   &:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
   &.is-off { opacity: 0.6; }
+  &.is-busy { pointer-events: none; opacity: 0.7; }
+  &--skel { animation: none; box-shadow: none; &:hover { transform: none; box-shadow: none; } .skel { display: block; } }
+  &__dur-skel { width: 52px; height: 52px; border-radius: 14px; flex: none; }
   &.is-featured {
     border-color: transparent;
     /* Featured plan framed in the logo's gold ring */
@@ -54,12 +79,47 @@
   }
   &__head {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
     h3 { margin: 2px 0 0; font-size: 15px; font-weight: 700; }
+    .switch { margin-inline-start: auto; align-self: flex-start; }
   }
+  /* Duration tile — the month count is the card's headline */
+  &__dur {
+    flex: none;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--grad-pr);
+    color: var(--white);
+    box-shadow: 0 8px 16px -10px var(--pr);
+    strong { font-size: 20px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+    span { font-size: 10px; font-weight: 600; opacity: 0.9; }
+  }
+  &.is-featured &__dur { background: var(--grad-gold); box-shadow: 0 8px 16px -10px rgba(179, 125, 14, 0.8); }
+  &__title { min-width: 0; display: grid; gap: 4px; h3 { overflow-wrap: anywhere; } }
   &__period { font-size: 11px; font-weight: 700; color: var(--ac); }
+
+  /* 4 quarters of the year, filled up to the package length */
+  &__quarters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    span { height: 6px; border-radius: 999px; background: #e8f0f1; transition: background 0.3s; }
+    span.is-on { background: var(--pr); }
+  }
+  &.is-featured &__quarters span.is-on { background: var(--grad-gold); }
+
+  &__pricing {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f7fafa;
+  }
   &__price {
     margin: 0;
     display: flex;
@@ -67,6 +127,23 @@
     gap: 6px;
     strong { font-size: 28px; font-weight: 700; color: var(--black); font-variant-numeric: tabular-nums; line-height: 1.1; }
     span { font-size: 12px; color: var(--txt3); }
+  }
+  &__monthly {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--txt2);
+  }
+  &__save {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #e7f7ee;
+    color: #15803d;
+    font-size: 11px;
+    font-weight: 700;
   }
   &__desc { margin: 0; font-size: 12.5px; color: var(--txt2); line-height: 1.7; }
   &__features {
@@ -108,7 +185,12 @@
   animation-delay: calc(var(--d, 0) * 60ms + 150ms);
   > span { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--grad-pr); color: var(--white); transition: rotate 0.4s var(--ease); }
   strong { font-size: 14px; }
+  small { font-size: 12px; color: var(--txt3); }
   &:hover { border-color: var(--pr); background: var(--pr-l); transform: translateY(-3px); > span { rotate: 90deg; } }
 }
 
-@media (prefers-reduced-motion: reduce) { .pkg, .pkg-add { animation: none; } }
+@keyframes pk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .pkg, .pkg-add { animation: none; }
+  .icon-btn.is-spinning app-icon { animation-duration: 3s; }
+}

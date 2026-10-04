@@ -91,7 +91,7 @@
             <th>رقم الجوال</th>
             <th>منطقة العمل</th>
             <th>الخبرة</th>
-            <th><span class="th">التقييم <app-dev-badge size="sm" /></span></th>
+            <th>التقييم</th>
             <th>حالة المراجعة</th>
             <th>الحظر</th>
             <th>تاريخ التسجيل</th>
@@ -140,7 +140,10 @@
                 <td><bdi class="ltr">{{ s.phone || '—' }}</bdi></td>
                 <td><app-account-place [place]="s.workPlace" /></td>
                 <td class="num">{{ s.experienceYears ? (s.experienceYears | years) : 'بدون خبرة' }}</td>
-                <td class="muted">—</td>
+                <td>
+                  @if (s.rating; as r) { <app-rating-badge [value]="r.average" [count]="r.count" /> }
+                  @else { <span class="muted">—</span> }
+                </td>
                 <td><span class="chip chip--dot {{ statusMeta[s.status].chip }}">{{ statusMeta[s.status].label }}</span></td>
                 <td>
                   @if (s.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }

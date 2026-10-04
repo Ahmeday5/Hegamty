@@ -2,7 +2,6 @@
 
 .dtable { transition: opacity 0.2s; }
 .dtable.is-stale { opacity: 0.55; pointer-events: none; }
-.th { display: inline-flex; align-items: center; gap: 6px; }
 .th-actions { text-align: end !important; }
 .muted { color: var(--txt3); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -25,6 +24,15 @@
   min-width: 0;
   strong { font-weight: 600; color: var(--black); white-space: nowrap; }
   span { font-size: 12px; color: var(--txt3); white-space: nowrap; }
+}
+
+.bk-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  &__dur { display: inline-flex; align-items: center; gap: 3px; }
+  /* Some of the session has no fixed length. */
+  &__dur.is-open { color: var(--pu); }
 }
 
 .skel-row { animation: none !important; }

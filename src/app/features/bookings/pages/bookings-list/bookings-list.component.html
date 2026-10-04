@@ -23,8 +23,8 @@
 
   <div class="grid grid--4">
     <app-kpi-card class="fx" style="--d: 1" label="إجمالي الحجوزات" [value]="kpis().all" icon="calendar" tone="green" [hint]="kpis().allHint" />
-    <app-kpi-card class="fx" style="--d: 2" label="قيد التنفيذ" [value]="kpis().pending" icon="clock" tone="amber" [hint]="kpis().pendingHint" />
-    <app-kpi-card class="fx" style="--d: 3" label="مؤكدة" [value]="kpis().confirmed" icon="check-circle" tone="teal" [hint]="kpis().confirmedHint" />
+    <app-kpi-card class="fx" style="--d: 2" label="بانتظار التأكيد" [value]="kpis().pending" icon="clock" tone="amber" [hint]="kpis().pendingHint" />
+    <app-kpi-card class="fx" style="--d: 3" label="مكتملة" [value]="kpis().completed" icon="check-circle" tone="teal" [hint]="kpis().completedHint" />
     <app-kpi-card class="fx" style="--d: 4" label="ملغاة" [value]="kpis().cancelled" icon="ban" tone="red" [hint]="kpis().cancelledHint" />
   </div>
 

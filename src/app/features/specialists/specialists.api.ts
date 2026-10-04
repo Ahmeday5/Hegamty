@@ -13,6 +13,7 @@ import {
   Specialist,
   SpecialistCounts,
   SpecialistFilter,
+  SpecialistRating,
   SpecialistService,
   SpecialistStatus,
 } from './specialists.models';
@@ -35,6 +36,9 @@ interface SpecialistDto {
   status: StatusDto;
   isAvailable: boolean;
   isBanned: boolean;
+  /** Served by the list; may be absent elsewhere. */
+  averageRating?: number | null;
+  reviewsCount?: number | null;
   /** English. */
   governorateName: string | null;
   governorateNameAr: string | null;
@@ -87,6 +91,13 @@ const STATUS_FROM_WIRE: Record<StatusDto, SpecialistStatus> = {
 
 // ─────────── mapping ───────────
 
+function toRating(average: number | null | undefined, count: number | null | undefined): SpecialistRating | null {
+  if (average == null && count == null) return null;
+  const reviews = Math.max(0, Math.round(Number(count) || 0));
+  const avg = Math.min(5, Math.max(0, Number(average) || 0));
+  return { count: reviews, average: reviews ? Math.round(avg * 10) / 10 : 0 };
+}
+
 function toSpecialist(dto: SpecialistDto): Specialist {
   return {
     id: String(dto.id),
@@ -100,6 +111,7 @@ function toSpecialist(dto: SpecialistDto): Specialist {
     status: STATUS_FROM_WIRE[dto.status] ?? 'pending',
     banned: !!dto.isBanned,
     available: !!dto.isAvailable,
+    rating: toRating(dto.averageRating, dto.reviewsCount),
     workPlace: {
       country: toPlace(dto.workingCountryId, dto.workingCountryName, dto.workingCountryNameEn),
       governorate: toPlace(dto.governorateId, dto.governorateNameAr, dto.governorateName),

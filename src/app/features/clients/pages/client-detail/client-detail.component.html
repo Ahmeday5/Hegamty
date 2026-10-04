@@ -131,8 +131,8 @@
                 <div class="kv"><span class="kv__k">آخر نشاط</span><span class="kv__v"><app-dev-badge /></span></div>
               </div>
             </div>
-            <app-activity-summary class="fx" style="--d: 2" [bookings]="bookings.value()" [reviews]="reviews.value()"
-              ratingLabel="متوسط تقييمات العميل للفنيين" (open)="selectTab($event)" />
+            <app-activity-summary class="fx" style="--d: 2" [stats]="bookingStats.value()" [statsError]="bookingStats.state() === 'error'" [reviews]="reviews.value()"
+              ratingLabel="متوسط تقييمات العميل للفنيين" (open)="selectTab($event)" (retry)="bookingStats.reload()" />
           </div>
         </div>
 

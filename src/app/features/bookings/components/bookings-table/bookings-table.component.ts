@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { BookingPartyComponent } from '../booking-party/booking-party.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
-import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
 import { BOOKING_STATUS_META, Booking, PAYMENT_META, itemsSummary } from '../../bookings.models';
+import { BOOKING_PIPES } from '../../bookings.pipes';
 
 /** Which party column to leave out — on a profile, the owner is implied. */
 export type BookingsTableParty = 'client' | 'specialist';
@@ -17,7 +17,7 @@ export type BookingsTableParty = 'client' | 'specialist';
   selector: 'app-bookings-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, DevBadgeComponent, BookingPartyComponent, ...FORMAT_PIPES, ...COUNTRY_PIPES],
+  imports: [IconComponent, BookingPartyComponent, ...FORMAT_PIPES, ...COUNTRY_PIPES, ...BOOKING_PIPES],
   templateUrl: './bookings-table.component.html',
   styleUrl: './bookings-table.component.scss',
 })

@@ -1,175 +1,115 @@
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { PeopleStore } from '../people/people.store';
-import { CountriesStore } from '../countries/countries.store';
-import { PRICE_FACTOR } from '../people/people.mock';
-import { hash, int, pick, rng } from '../../shared/utils/random.util';
-import {
-  EXPIRING_DAYS,
-  PERIOD_META,
-  PackageDraft,
-  PackagePeriod,
-  Subscription,
-  SubscriptionState,
-  SubscriptionSummary,
-  TechPackage,
-} from './packages.models';
+import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, Subject, catchError, of, switchMap, tap, throwError } from 'rxjs';
+import { PageRequest } from '../../core/models/page.model';
+import { BusySet } from '../../core/utils/busy-set';
+import { PagedQuery } from '../../core/utils/paged-query';
+import { PackagesApi } from './packages.api';
+import { PackageCounts, PackageDraft, PackageFilter, TechPackage, toDraft } from './packages.models';
 
-const DAY = 86400000;
+type CountsScope = Omit<PackageFilter, 'active'>;
 
-const TEMPLATES: { name: string; period: PackagePeriod; price: number; featured: boolean; description: string; features: string[] }[] = [
-  {
-    name: 'الباقة الشهرية', period: 'monthly', price: 199, featured: false,
-    description: 'ابدأ باستقبال الطلبات مع مرونة كاملة للتجديد شهريًا.',
-    features: ['استقبال طلبات غير محدودة', 'الظهور في نتائج البحث', 'دعم فني عبر التطبيق'],
-  },
-  {
-    name: 'الباقة الربع سنوية', period: 'quarterly', price: 499, featured: true,
-    description: 'الخيار الأوفر للفنيين النشطين مع أولوية في الظهور.',
-    features: ['استقبال طلبات غير محدودة', 'أولوية الظهور للعملاء', 'شارة فني موثّق', 'دعم فني مميز'],
-  },
-  {
-    name: 'الباقة السنوية', period: 'yearly', price: 1699, featured: false,
-    description: 'أفضل قيمة على مدار العام لمن يعمل بشكل دائم.',
-    features: ['استقبال طلبات غير محدودة', 'أعلى أولوية في الظهور', 'شارة فني موثّق', 'تقارير أداء شهرية', 'دعم فني مميز'],
-  },
-];
-
-const roundTo = (v: number, step: number) => Math.max(step, Math.round(v / step) * step);
+const NO_FILTER: PackageFilter = { name: null, countryId: null, active: null };
+const scopeOf = ({ name, countryId }: PackageFilter): CountsScope => ({ name, countryId });
+const scopeKey = (s: CountsScope) => `${s.countryId ?? '*'}|${s.name ?? ''}`;
 
 /**
- * Packages catalog + technician subscriptions. Fixtures give every seeded
- * market three packages and a realistic purchase history for technicians.
+ * Packages list state: one server page for the current filters, plus the
+ * per-status totals (for the same search and country) behind the tabs.
+ * Mutations sync the listed page from each response; anything that can move
+ * a package between pages or tabs refetches.
  */
 @Injectable({ providedIn: 'root' })
 export class PackagesStore {
-  private readonly people = inject(PeopleStore);
-  private readonly countries = inject(CountriesStore);
+  private readonly api = inject(PackagesApi);
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly items = signal<TechPackage[]>(this.seedPackages());
-  private readonly subs = signal<Subscription[]>(this.seedSubscriptions());
-
-  readonly all: Signal<TechPackage[]> = this.items.asReadonly();
-  readonly subscriptions: Signal<Subscription[]> = this.subs.asReadonly();
-
-  /** Latest subscription per technician. */
-  private readonly latestByTech = computed(() => {
-    const map = new Map<string, Subscription>();
-    for (const s of this.subs()) {
-      const cur = map.get(s.technicianId);
-      if (!cur || +new Date(s.endsAt) > +new Date(cur.endsAt)) map.set(s.technicianId, s);
-    }
-    return map;
+  private readonly list = new PagedQuery<TechPackage, PackageFilter>((f, p) => this.api.list(f, p), {
+    initialFilter: NO_FILTER,
+    errorMessage: 'تعذّر تحميل الباقات',
+    destroyRef: this.destroyRef,
   });
 
-  byId(id: string): TechPackage | undefined {
-    return this.items().find((p) => p.id === id);
+  private readonly totals = signal<PackageCounts | null>(null);
+  private readonly countRequests = new Subject<CountsScope>();
+  private countsFor: string | null = null;
+
+  /** Ids with a request in flight (toggle / delete). */
+  readonly busy = new BusySet();
+
+  readonly items = this.list.items;
+  readonly page = this.list.page;
+  readonly status = this.list.status;
+  readonly error = this.list.error;
+  /** `null` while loading, or when the last refresh failed. */
+  readonly counts: Signal<PackageCounts | null> = this.totals.asReadonly();
+
+  constructor() {
+    this.countRequests
+      .pipe(
+        switchMap((scope) => this.api.counts(scope).pipe(catchError(() => of(null)))),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((c) => this.totals.set(c));
   }
 
-  countIn(countryId: string): number {
-    return this.items().filter((p) => p.countryId === countryId).length;
+  /** Totals follow the search and country; they're refetched only when those change. */
+  query(filter: PackageFilter, page: PageRequest): void {
+    this.list.query(filter, page);
+    const scope = scopeOf(filter);
+    if (scopeKey(scope) !== this.countsFor) this.refreshCounts(scope);
   }
 
-  latestFor(technicianId: string): Subscription | undefined {
-    return this.latestByTech().get(technicianId);
+  reload(): void {
+    this.list.reload();
+    this.refreshCounts();
   }
 
-  historyFor(technicianId: string): Subscription[] {
-    return this.subs()
-      .filter((s) => s.technicianId === technicianId)
-      .sort((a, b) => +new Date(b.startedAt) - +new Date(a.startedAt));
+  /** Call when the page opens, so the next query brings fresh totals. */
+  expireCounts(): void {
+    this.countsFor = null;
   }
 
-  stateOf(s: Subscription | undefined): SubscriptionState | 'none' {
-    if (!s) return 'none';
-    const left = this.daysLeft(s);
-    return left <= 0 ? 'expired' : left <= EXPIRING_DAYS ? 'expiring' : 'active';
+  create(draft: PackageDraft): Observable<TechPackage> {
+    return this.api.create(draft).pipe(tap(() => this.reload()));
   }
 
-  daysLeft(s: Subscription): number {
-    return Math.ceil((+new Date(s.endsAt) - Date.now()) / DAY);
+  update(id: string, draft: PackageDraft): Observable<TechPackage> {
+    return this.api.update(id, draft).pipe(
+      tap((p) => {
+        this.list.patch(id, () => p);
+        this.refreshCounts();
+      }),
+    );
   }
 
-  summaryFor(technicianId: string): SubscriptionSummary {
-    const sub = this.latestFor(technicianId);
-    const total = sub ? Math.max(1, (+new Date(sub.endsAt) - +new Date(sub.startedAt)) / DAY) : 1;
-    const left = sub ? Math.max(0, this.daysLeft(sub)) : 0;
-    return {
-      sub,
-      pkg: sub ? this.byId(sub.packageId) : undefined,
-      state: this.stateOf(sub),
-      left,
-      pct: Math.round((left / total) * 100),
-      history: this.historyFor(technicianId),
-    };
+  /**
+   * Optimistic on/off: the switch flips at once and rolls back if the server
+   * rejects it. The API has no PATCH, so the full package is re-sent.
+   */
+  setActive(pkg: TechPackage, active: boolean): Observable<TechPackage> {
+    this.list.patch(pkg.id, (p) => ({ ...p, active }));
+    const request$ = this.api.update(pkg.id, { ...toDraft(pkg), active }).pipe(
+      tap((p) => {
+        this.list.patch(pkg.id, () => p);
+        this.refreshCounts();
+      }),
+      catchError((err) => {
+        this.list.patch(pkg.id, () => pkg);
+        return throwError(() => err);
+      }),
+    );
+    return this.busy.track(pkg.id, request$);
   }
 
-  subscribersOf(packageId: string): number {
-    return [...this.latestByTech().values()].filter((s) => s.packageId === packageId && this.stateOf(s) !== 'expired').length;
+  remove(id: string): Observable<void> {
+    return this.busy.track(id, this.api.remove(id).pipe(tap(() => this.reload())));
   }
 
-  create(draft: PackageDraft): TechPackage {
-    const pkg: TechPackage = { ...draft, id: `PK-${Date.now().toString(36).toUpperCase()}`, createdAt: new Date().toISOString() };
-    this.items.update((list) => [pkg, ...list]);
-    return pkg;
-  }
-
-  update(id: string, draft: Partial<PackageDraft>): void {
-    this.items.update((list) => list.map((p) => (p.id === id ? { ...p, ...draft } : p)));
-  }
-
-  hasSubscriptions(id: string): boolean {
-    return this.subs().some((s) => s.packageId === id);
-  }
-
-  remove(id: string): void {
-    this.items.update((list) => list.filter((p) => p.id !== id));
-  }
-
-  // ─────────── fixtures ───────────
-
-  private seedPackages(): TechPackage[] {
-    return this.countries.all().flatMap((c) => {
-      const factor = c.iso ? PRICE_FACTOR[c.iso] : undefined;
-      if (!factor) return [];
-      const step = factor < 0.2 ? 1 : factor > 3 ? 50 : 10;
-      return TEMPLATES.map((t, i) => ({
-        ...t,
-        id: `PK-${c.id}-${i + 1}`,
-        countryId: c.id,
-        price: roundTo(t.price * factor, step),
-        active: true,
-        createdAt: new Date(Date.now() - (500 - i * 20) * DAY).toISOString(),
-      }));
-    });
-  }
-
-  private seedSubscriptions(): Subscription[] {
-    const packages = this.items();
-    const now = Date.now();
-    const out: Subscription[] = [];
-    for (const tech of this.people.list('technicians')()) {
-      if (!tech.bookings) continue; // freshly registered, never subscribed
-      const pool = packages.filter((p) => p.countryId === tech.countryId);
-      if (!pool.length) continue;
-      const r = rng(hash(tech.id + ':subs'));
-      // Walk backwards from "now-ish" through 1–4 consecutive subscriptions.
-      let end = now + (tech.status === 'active' ? int(r, -3, 80) : -int(r, 5, 120)) * DAY;
-      for (let i = 0, n = int(r, 1, 4); i < n; i++) {
-        const pkg = pick(r, pool);
-        const start = end - PERIOD_META[pkg.period].days * DAY;
-        if (start < +new Date(tech.joinedAt)) break;
-        out.push({
-          id: `SB-${tech.id}-${i}`,
-          technicianId: tech.id,
-          packageId: pkg.id,
-          countryId: tech.countryId,
-          price: pkg.price,
-          startedAt: new Date(start).toISOString(),
-          endsAt: new Date(end).toISOString(),
-        });
-        end = start - int(r, 0, 20) * DAY;
-      }
-    }
-    return out;
+  private refreshCounts(scope: CountsScope = scopeOf(this.list.filter)): void {
+    const key = scopeKey(scope);
+    if (key !== this.countsFor) this.totals.set(null);
+    this.countsFor = key;
+    this.countRequests.next(scope);
   }
 }

@@ -16,6 +16,13 @@ export interface SpecialistDocuments {
   idWithPerson: string | null;
 }
 
+/** Aggregate of the technician's reviews, as served with the profile. */
+export interface SpecialistRating {
+  /** 0–5, one decimal; `0` when there are no reviews. */
+  average: number;
+  count: number;
+}
+
 export interface Specialist {
   id: string;
   fullName: string;
@@ -30,6 +37,8 @@ export interface Specialist {
   banned: boolean;
   /** Toggled by the technician in the app: currently accepting requests. */
   available: boolean;
+  /** `null` when the endpoint didn't include it. */
+  rating: SpecialistRating | null;
   /** Country and governorate the technician works in. */
   workPlace: AccountPlace;
   nationality: PlaceRef | null;

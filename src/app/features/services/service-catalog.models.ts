@@ -8,6 +8,9 @@
  * row per (country, duration), each carrying its governorates.
  */
 
+/** Label of a session with no fixed length (`durationMin: null`). */
+export const OPEN_DURATION_LABEL = 'مدة مفتوحة';
+
 export interface PricingGovernorate {
   id: string;
   name: string;

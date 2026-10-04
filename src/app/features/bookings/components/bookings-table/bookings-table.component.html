@@ -6,7 +6,7 @@
         @if (hide() !== 'client') { <th>العميل</th> }
         @if (hide() !== 'specialist') { <th>الفني</th> }
         <th>الخدمات</th>
-        <th><span class="th">الموعد <app-dev-badge size="sm" label="الوقت قيد التطوير" /></span></th>
+        <th>الموعد</th>
         <th>المبلغ</th>
         <th>الحالة</th>
         <th class="th-actions"><span class="sr-only">التفاصيل</span></th>
@@ -36,7 +36,13 @@
             <td>
               <div class="who__txt">
                 <strong>{{ itemsSummary(b) }}</strong>
-                <span>{{ b.items.length | num }} {{ b.items.length === 1 ? 'خدمة' : 'خدمات' }}</span>
+                <span class="bk-meta">
+                  {{ b.items.length | num }} {{ b.items.length === 1 ? 'خدمة' : 'خدمات' }}
+                  @if (b.items.length) {
+                    <span class="bk-meta__sep" aria-hidden="true">·</span>
+                    <span class="bk-meta__dur" [class.is-open]="b.duration.openItems > 0"><app-icon name="timer" [size]="12" /> {{ b.duration | bookingDuration }}</span>
+                  }
+                </span>
               </div>
             </td>
             <td class="muted">{{ b.date | arDate }}</td>

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { PersonHistory } from '../people/people.models';
 import { generateHistory } from '../people/people.mock';
 import { PeopleStore } from '../people/people.store';
-import { PackagesStore } from '../packages/packages.store';
+import { DemoSubscriptionsStore } from '../packages/demo-subscriptions.store';
 import { SubscriptionSummary } from '../packages/packages.models';
 import { hash, int, rng } from '../../shared/utils/random.util';
 
@@ -30,7 +30,7 @@ export interface ActivityPreview {
 @Injectable({ providedIn: 'root' })
 export class AccountPreviewService {
   private readonly people = inject(PeopleStore);
-  private readonly packages = inject(PackagesStore);
+  private readonly packages = inject(DemoSubscriptionsStore);
   private readonly cache = new Map<string, ActivityPreview>();
 
   activity(kind: PreviewKind, accountId: string): ActivityPreview {

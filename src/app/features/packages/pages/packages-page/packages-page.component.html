@@ -7,77 +7,168 @@
         <span class="crumbs__current">الباقات</span>
       </nav>
       <h1 class="page-head__title">باقات الفنيين</h1>
-      <p class="page-head__sub">يشترك الفني في باقة من التطبيق ليتمكن من استقبال طلبات العملاء طوال مدة الاشتراك</p>
+      <p class="page-head__sub">
+        يشترك الفني في باقة من التطبيق ليتمكن من استقبال طلبات العملاء طوال مدة الاشتراك
+        @if (scope.country(); as c) { — تعرض باقات <strong>{{ c.name }}</strong> }
+      </p>
     </div>
     <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث الباقات"
+        [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
       <button type="button" class="btn btn-pr" (click)="openCreate()"><app-icon name="plus" [size]="16" [stroke]="2.2" /> باقة جديدة</button>
     </div>
   </header>
 
-  <div class="grid grid--4">
-    <app-kpi-card class="fx" style="--d: 1" label="اشتراكات سارية" [value]="kpis().active" icon="award" tone="green" hint="فنيون يستقبلون الطلبات" />
-    <app-kpi-card class="fx" style="--d: 2" label="تنتهي خلال 7 أيام" [value]="kpis().expiring" icon="clock" tone="amber" hint="فرصة للتذكير بالتجديد" />
-    @if (scope.isAll()) {
-      <app-kpi-card class="fx" style="--d: 3" label="اشتراكات جديدة (30 يومًا)" [value]="kpis().newSubs" icon="trending-up" tone="blue" />
-    } @else {
-      <app-kpi-card class="fx" style="--d: 3" label="إيرادات الباقات (30 يومًا)" [value]="kpis().revenue" [suffix]="scope.currency()" icon="wallet" tone="blue"
-        [hint]="kpis().newSubs + ' اشتراك جديد'" />
-    }
-    <app-kpi-card class="fx" style="--d: 4" label="فنيون نشطون بدون باقة" [value]="kpis().unsubscribed" icon="user" tone="red" hint="لا يستقبلون طلبات حاليًا" />
+  <div class="grid grid--3">
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي الباقات" [value]="kpis().all" icon="award" tone="green"
+      [hint]="scope.country() ? 'في ' + scope.label() : 'في كل الدول'" />
+    <app-kpi-card class="fx" style="--d: 2" label="مفعّلة" [value]="kpis().active" icon="check-circle" tone="blue" hint="متاحة للشراء من التطبيق" />
+    <app-kpi-card class="fx" style="--d: 3" label="موقوفة" [value]="kpis().inactive" icon="ban" tone="red" hint="مخفية عن الفنيين" />
   </div>
 
-  <!-- ── Packages ── -->
-  <div class="pkgs">
-    @for (r of packages(); track r.pkg.id; let i = $index) {
-      <article class="pkg" [class.is-featured]="r.pkg.featured" [class.is-off]="!r.pkg.active" [style.--d]="i">
-        @if (r.pkg.featured) { <span class="pkg__badge">الأكثر اختيارًا</span> }
-        <header class="pkg__head">
-          <div>
-            <span class="pkg__period">{{ periodMeta[r.pkg.period].label }}</span>
-            <h3>{{ r.pkg.name }}</h3>
-          </div>
-          <button type="button" class="switch" role="switch" [class.is-on]="r.pkg.active" [attr.aria-checked]="r.pkg.active"
-            [attr.aria-label]="(r.pkg.active ? 'إيقاف ' : 'تفعيل ') + r.pkg.name" (click)="toggleActive(r.pkg)"></button>
-        </header>
-        <p class="pkg__price"><strong>{{ r.pkg.price | num }}</strong> <span>{{ r.pkg.countryId | ccy }} / {{ periodMeta[r.pkg.period].per }}</span></p>
-        @if (r.pkg.description) { <p class="pkg__desc">{{ r.pkg.description }}</p> }
-        <ul class="pkg__features">
-          @for (f of r.pkg.features; track f) { <li><app-icon name="check" [size]="13" [stroke]="2.6" /> {{ f }}</li> }
-        </ul>
-        <footer class="pkg__foot">
-          <span class="pkg__meta">
-            @if (scope.isAll()) { <app-country-flag [countryId]="r.pkg.countryId" [size]="16" /> }
-            <app-icon name="users" [size]="13" /> {{ r.subscribers }} مشترك
-          </span>
-          <div class="actions">
-            <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" (click)="openEdit(r.pkg)"><app-icon name="edit" [size]="16" /></button>
-            <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" (click)="remove(r.pkg)"><app-icon name="trash" [size]="16" /></button>
-          </div>
-        </footer>
-      </article>
+  <!-- ── Catalog ── -->
+  <div class="panel fx pk-panel" style="--d: 4">
+    <div class="pk-toolbar">
+      <label class="search pk-search">
+        <app-icon name="search" [size]="16" />
+        <input type="search" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="ابحث باسم الباقة…" aria-label="بحث في الباقات" />
+      </label>
+      <div class="seg" role="tablist" aria-label="حالة الباقة">
+        @for (t of statusTabs(); track t.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="statusFilter() === t.id" [attr.aria-selected]="statusFilter() === t.id"
+            (click)="setStatus(t.id)">
+            {{ t.label }} @if (t.count !== undefined) { <span class="seg__count">{{ t.count | num }}</span> }
+          </button>
+        }
+      </div>
+      @if (hasFilters()) {
+        <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
+      }
+      <span class="pk-count" aria-live="polite">
+        @if (firstLoad()) { جارٍ التحميل… } @else if (status() !== 'error') { {{ pageMeta().count | num }} باقة }
+      </span>
+    </div>
+
+    <div class="pk-body" [attr.aria-busy]="status() === 'loading'">
+      @if (firstLoad()) {
+        <div class="pkgs">
+          @for (s of skeletons; track s) {
+            <div class="pkg pkg--skel" aria-hidden="true">
+              <div class="pkg__head"><span class="skel pkg__dur-skel"></span><div class="pkg__title"><span class="skel" style="width: 70px"></span><span class="skel" style="width: 130px; height: 14px"></span></div></div>
+              <span class="skel" style="height: 6px"></span>
+              <span class="skel" style="height: 62px; border-radius: 12px"></span>
+              <span class="skel" style="width: 80%"></span>
+              <span class="skel" style="width: 60%"></span>
+            </div>
+          }
+        </div>
+      } @else if (status() === 'error') {
+        <div class="empty">
+          <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+          <p class="empty__title">تعذّر تحميل الباقات</p>
+          <p class="empty__text">{{ loadError() }}</p>
+          <button type="button" class="btn btn-soft btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+        </div>
+      } @else {
+        <div class="pkgs" [class.is-stale]="status() === 'loading'">
+          @for (r of packages(); track r.pkg.id; let i = $index) {
+            <article class="pkg" [class.is-featured]="r.pkg.featured" [class.is-off]="!r.pkg.active" [class.is-busy]="busy().has(r.pkg.id)" [style.--d]="i">
+              @if (r.pkg.featured) { <span class="pkg__badge">الأكثر اختيارًا</span> }
+              <header class="pkg__head">
+                <div class="pkg__dur" [attr.aria-label]="r.meta.months + ' ' + r.meta.unit">
+                  <strong>{{ r.meta.months }}</strong><span>{{ r.meta.unit }}</span>
+                </div>
+                <div class="pkg__title">
+                  <span class="pkg__period">اشتراك {{ r.meta.label }}</span>
+                  <h3>{{ r.pkg.name }}</h3>
+                </div>
+                <button type="button" class="switch" role="switch" [class.is-on]="r.pkg.active" [attr.aria-checked]="r.pkg.active"
+                  [disabled]="busy().has(r.pkg.id)" [attr.aria-label]="(r.pkg.active ? 'إيقاف ' : 'تفعيل ') + r.pkg.name" (click)="toggleActive(r.pkg)"></button>
+              </header>
+              <div class="pkg__quarters" aria-hidden="true">
+                @for (q of quarters; track q) { <span [class.is-on]="q * 3 <= r.meta.months"></span> }
+              </div>
+              <div class="pkg__pricing">
+                <p class="pkg__price"><strong>{{ r.pkg.price | num }}</strong> <span>{{ r.pkg.currency }} / {{ r.meta.per }}</span></p>
+                <p class="pkg__monthly">
+                  ≈ {{ r.monthly | num }} {{ r.pkg.currency }} شهريًا
+                  @if (r.saving > 0) { <span class="pkg__save">وفّر {{ r.saving }}%</span> }
+                </p>
+              </div>
+              @if (r.pkg.description) { <p class="pkg__desc">{{ r.pkg.description }}</p> }
+              @if (r.pkg.features.length) {
+                <ul class="pkg__features">
+                  @for (f of r.pkg.features; track $index) { <li><app-icon name="check" [size]="13" [stroke]="2.6" /> {{ f }}</li> }
+                </ul>
+              }
+              <footer class="pkg__foot">
+                <span class="pkg__meta">
+                  @if (scope.isAll()) { <app-country-flag [countryId]="r.pkg.countryId" [size]="16" /> {{ r.pkg.countryName }} · }
+                  {{ r.meta.days | num }} يوم
+                </span>
+                <div class="actions">
+                  <button type="button" class="icon-btn icon-btn--green" data-tip="تعديل" aria-label="تعديل" [disabled]="busy().has(r.pkg.id)" (click)="openEdit(r.pkg)">
+                    <app-icon name="edit" [size]="16" />
+                  </button>
+                  <button type="button" class="icon-btn icon-btn--red" data-tip="حذف" aria-label="حذف" [disabled]="busy().has(r.pkg.id)" (click)="remove(r.pkg)">
+                    <app-icon name="trash" [size]="16" />
+                  </button>
+                </div>
+              </footer>
+            </article>
+          } @empty {
+            @if (hasFilters()) {
+              <div class="empty pkgs__empty">
+                <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+                <p class="empty__title">لا توجد نتائج</p>
+                <p class="empty__text">جرّب تعديل البحث أو إزالة الفلاتر.</p>
+                <button type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button>
+              </div>
+            }
+          }
+          @if (!hasFilters() || packages().length) {
+            <button type="button" class="pkg-add" (click)="openCreate()">
+              <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
+              <strong>باقة جديدة</strong>
+              @if (!packages().length) {
+                <small>@if (scope.country(); as c) { لا توجد باقات في {{ c.name }} بعد } @else { لم تُضف أي باقة بعد }</small>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (status() !== 'error' && pageMeta().count > pageSizes[0]) {
+      <div class="table-foot">
+        <app-pagination [pageIndex]="pageMeta().pageIndex" [pageSize]="pageMeta().pageSize" [count]="pageMeta().count"
+          [totalPages]="pageMeta().totalPages" [pageSizeOptions]="pageSizes" [disabled]="status() === 'loading'"
+          (pageChange)="goToPage($event)" (pageSizeChange)="changePageSize($event)" />
+      </div>
     }
-    <button type="button" class="pkg-add" [style.--d]="packages().length" (click)="openCreate()">
-      <span><app-icon name="plus" [size]="22" [stroke]="2" /></span>
-      <strong>باقة جديدة</strong>
-    </button>
   </div>
 
-  <!-- ── Subscriptions ── -->
-  <div class="panel fx" style="--d: 6">
+  <!-- ── Subscriptions (demo) ── -->
+  <div class="panel fx mt-3" style="--d: 6">
     <div class="panel__head">
       <div>
-        <h2 class="panel__title">اشتراكات الفنيين</h2>
+        <h2 class="panel__title">اشتراكات الفنيين <app-dev-badge size="sm" /></h2>
         <p class="panel__sub">آخر اشتراك لكل فني مرتبًا حسب الأقرب انتهاءً</p>
       </div>
       <label class="search sub-search">
         <app-icon name="search" [size]="16" />
-        <input type="search" [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="ابحث باسم الفني أو الباقة…" aria-label="بحث" />
+        <input type="search" [value]="subSearch()" (input)="onSubSearch($any($event.target).value)" placeholder="ابحث باسم الفني أو الباقة…" aria-label="بحث في الاشتراكات" />
       </label>
+    </div>
+    <div class="sub-notice">
+      <app-preview-notice>الاشتراكات قيد التطوير — البيانات المعروضة تجريبية للعرض فقط ولا ترتبط بالباقات أعلاه.</app-preview-notice>
     </div>
     <div class="status-bar">
       <div class="seg">
-        @for (t of filterTabs(); track t.id) {
-          <button type="button" class="seg__btn" [class.is-on]="subFilter() === t.id" (click)="setFilter(t.id)">{{ t.label }} <span class="seg__count">{{ t.count }}</span></button>
+        @for (t of subTabs(); track t.id) {
+          <button type="button" class="seg__btn" [class.is-on]="subFilter() === t.id" (click)="setSubFilter(t.id)">{{ t.label }} <span class="seg__count">{{ t.count }}</span></button>
         }
       </div>
     </div>
@@ -87,7 +178,7 @@
           <tr><th>الفني</th>@if (scope.isAll()) { <th>الدولة</th> }<th>الباقة</th><th>المبلغ</th><th>البداية</th><th>النهاية</th><th>المتبقي</th><th>الحالة</th></tr>
         </thead>
         <tbody>
-          @for (r of pageRows(); track r.sub.id; let i = $index) {
+          @for (r of subPageRows(); track r.sub.id; let i = $index) {
             <tr class="is-link" [style.--d]="i" (click)="openTech(r.tech.id)">
               <td>
                 <div class="who">
@@ -104,7 +195,7 @@
                 @if (r.left > 0) {
                   <div class="left">
                     <span>{{ r.left }} يوم</span>
-                    <div class="bar" [class.bar--brand]="r.state === 'active'"><span class="bar__fill" [style.width.%]="barPct(r.left, r.pkg?.period)"
+                    <div class="bar" [class.bar--brand]="r.state === 'active'"><span class="bar__fill" [style.width.%]="r.pct"
                       [style.background]="r.state === 'expiring' ? '#f59e0b' : null"></span></div>
                   </div>
                 } @else { <span class="muted">انتهت {{ r.sub.endsAt | relTime }}</span> }
@@ -112,17 +203,17 @@
               <td><span class="chip chip--dot {{ subMeta[r.state].chip }}">{{ subMeta[r.state].label }}</span></td>
             </tr>
           } @empty {
-            <tr><td colspan="8"><div class="empty"><span class="empty__icon"><app-icon name="award" [size]="24" /></span><p class="empty__title">لا توجد اشتراكات</p></div></td></tr>
+            <tr><td [attr.colspan]="scope.isAll() ? 8 : 7"><div class="empty"><span class="empty__icon"><app-icon name="award" [size]="24" /></span><p class="empty__title">لا توجد اشتراكات</p></div></td></tr>
           }
         </tbody>
       </table>
     </div>
-    @if (filtered().length) {
+    @if (subFiltered().length > subPageSize) {
       <div class="table-foot">
-        <app-pagination [pageIndex]="page()" [pageSize]="pageSize" [count]="filtered().length" [totalPages]="totalPages()" [showPageSize]="false" (pageChange)="page.set($event)" />
+        <app-pagination [pageIndex]="subPage()" [pageSize]="subPageSize" [count]="subFiltered().length" [totalPages]="subTotalPages()" [showPageSize]="false" (pageChange)="subPage.set($event)" />
       </div>
     }
   </div>
 
-  <app-package-form [open]="formOpen()" [pkg]="editing()" (closed)="formOpen.set(false)" />
+  <app-package-form [open]="formOpen()" [pkg]="editing()" [countryId]="scope.country()?.id ?? null" (closed)="formOpen.set(false)" />
 </section>

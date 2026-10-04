@@ -16,7 +16,7 @@ import { ActivitySummaryComponent } from '../../../accounts/components/activity-
 import { AccountPlaceComponent } from '../../../accounts/components/account-place/account-place.component';
 import { GENDER_META, formatGeoPoint, mapsUrl } from '../../../accounts/account-profile';
 import { BookingsApi } from '../../../bookings/bookings.api';
-import { Booking } from '../../../bookings/bookings.models';
+import { Booking, BookingStats } from '../../../bookings/bookings.models';
 import { AccountBookingsComponent } from '../../../bookings/components/account-bookings/account-bookings.component';
 import { ReviewsApi } from '../../../reviews/reviews.api';
 import { Review } from '../../../reviews/reviews.models';
@@ -94,6 +94,11 @@ export class ClientDetailComponent {
     errorMessage: 'تعذّر تحميل حجوزات العميل',
     isValidId: isNumericId,
   });
+  protected readonly bookingStats = new RecordLoader<BookingStats>((id) => this.bookingsApi.statsOf('clients', id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل إحصائيات الحجوزات',
+    isValidId: isNumericId,
+  });
   protected readonly reviews = new RecordLoader<Review[]>((id) => this.reviewsApi.ofClient(id), {
     destroyRef: this.destroyRef,
     errorMessage: 'تعذّر تحميل تقييمات العميل',
@@ -101,6 +106,10 @@ export class ClientDetailComponent {
   });
 
   protected readonly client = this.record.value;
+  /** Server total first; the loaded list's length if the stats call fails. `null` = not known yet. */
+  private readonly bookingsTotal = computed(
+    () => this.bookingStats.value()?.all ?? (this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null),
+  );
   protected readonly busy = computed(() => {
     const c = this.client();
     return !!c && this.actions.busy().has(c.id);
@@ -115,7 +124,7 @@ export class ClientDetailComponent {
   protected readonly tabs = computed<AccountTab<Tab>[]>(() => [
     { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
     { id: 'addresses', label: 'العناوين', icon: 'map-pin', count: this.addresses.value()?.length },
-    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookings.value()?.length },
+    { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookingsTotal() ?? undefined },
     { id: 'reviews', label: 'التقييمات', icon: 'star', count: this.reviews.value()?.length },
     { id: 'notifications', label: 'الإشعارات', icon: 'bell', dev: true },
   ]);
@@ -128,7 +137,7 @@ export class ClientDetailComponent {
     const c = this.client();
     if (!c) return [];
     return [
-      { label: 'الحجوزات', value: this.bookings.state() === 'ready' ? (this.bookings.value()?.length ?? 0) : null },
+      { label: 'الحجوزات', value: this.bookingsTotal() },
       { label: 'العناوين', value: this.addresses.state() === 'ready' ? (this.addresses.value()?.length ?? 0) : null },
       { label: 'العمر', value: c.age ? formatYears(c.age) : null },
       { label: 'تاريخ التسجيل', value: c.createdAt ? formatDate(c.createdAt) : null },
@@ -152,6 +161,7 @@ export class ClientDetailComponent {
           this.record.load(id);
           this.addresses.load(id);
           this.bookings.load(id);
+          this.bookingStats.load(id);
           this.reviews.load(id);
         });
       },
@@ -167,6 +177,7 @@ export class ClientDetailComponent {
     this.record.reload();
     this.addresses.reload();
     this.bookings.reload();
+    this.bookingStats.reload();
     this.reviews.reload();
   }
 

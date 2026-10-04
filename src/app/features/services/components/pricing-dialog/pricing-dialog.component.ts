@@ -24,7 +24,7 @@ import { CountriesStore } from '../../../countries/countries.store';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { ServiceCatalogStore } from '../../service-catalog.store';
 import { CatalogService, ServicePricing, durationKey } from '../../service-catalog.models';
-import { CATALOG_PIPES, formatMinutes } from '../../service-catalog.pipes';
+import { CATALOG_PIPES, formatDuration } from '../../service-catalog.pipes';
 import { CountryPricingEditorComponent } from '../pricing-editor/country-pricing-editor.component';
 import { DurationPriceRowComponent } from '../pricing-editor/duration-price-row.component';
 import { GovernoratePickerComponent } from '../pricing-editor/governorate-picker.component';
@@ -58,8 +58,6 @@ interface CountryGroup {
 type AddMode = { kind: 'country' } | { kind: 'durations'; countryId: string };
 
 const DUPLICATE_MESSAGE = 'هذه المدة مسجّلة بالفعل لنفس الدولة. عدّل السعر الموجود أو اختر مدة مختلفة.';
-
-const durationLabel = (minutes: number | null) => (minutes ? formatMinutes(minutes) : 'مدة مفتوحة');
 
 /**
  * A service's offer per country: which governorates, which durations, at
@@ -276,7 +274,7 @@ export class PricingDialogComponent {
     }
     this.run(this.store.updatePricing(s.id, p.id, update), this.editError, 'تعذّر حفظ السعر', () => {
       this.cancelEdit();
-      this.toast.success(`تم تحديث سعر ${p.countryName} (${durationLabel(update.durationMin)})`);
+      this.toast.success(`تم تحديث سعر ${p.countryName} (${formatDuration(update.durationMin)})`);
     });
   }
 
@@ -285,7 +283,7 @@ export class PricingDialogComponent {
   protected async remove(p: ServicePricing): Promise<void> {
     const s = this.service();
     if (!s || this.removing().has(p.id)) return;
-    const label = `${p.countryName} (${durationLabel(p.durationMin)})`;
+    const label = `${p.countryName} (${formatDuration(p.durationMin)})`;
     const onlyOne = s.pricings.length === 1;
     const ok = await this.dialog.confirm({
       title: 'حذف السعر',

@@ -11,10 +11,12 @@ import { AccountPlaceComponent } from '../../../accounts/components/account-plac
 import { formatGeoPoint, mapsUrl } from '../../../accounts/account-profile';
 import { ClientsApi } from '../../../clients/clients.api';
 import { ClientAddress } from '../../../clients/clients.models';
+import { MinutesPipe } from '../../../services/service-catalog.pipes';
 import { BOOKING_STATUS_META, Booking, PAYMENT_META } from '../../bookings.models';
+import { BOOKING_PIPES } from '../../bookings.pipes';
 
 /**
- * Read-only booking sheet: services and prices, payment, notes, the parties
+ * Read-only booking sheet: services with their prices and lengths, payment, notes, the parties
  * and the session address. There's no single-booking endpoint, so the
  * booking comes from the list that opened it; the address is resolved from
  * the client's saved addresses (`addressId`).
@@ -23,7 +25,18 @@ import { BOOKING_STATUS_META, Booking, PAYMENT_META } from '../../bookings.model
   selector: 'app-booking-detail-dialog',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, AvatarComponent, ModalComponent, DevBadgeComponent, AccountPlaceComponent, ...FORMAT_PIPES, ...COUNTRY_PIPES],
+  imports: [
+    RouterLink,
+    IconComponent,
+    AvatarComponent,
+    ModalComponent,
+    DevBadgeComponent,
+    AccountPlaceComponent,
+    MinutesPipe,
+    ...FORMAT_PIPES,
+    ...COUNTRY_PIPES,
+    ...BOOKING_PIPES,
+  ],
   templateUrl: './booking-detail-dialog.component.html',
   styleUrl: './booking-detail-dialog.component.scss',
 })

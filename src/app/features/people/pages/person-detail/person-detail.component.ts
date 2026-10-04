@@ -16,8 +16,9 @@ import { PeopleStore } from '../../people.store';
 import { PeopleActionsService } from '../../people-actions.service';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
-import { PackagesStore } from '../../../packages/packages.store';
-import { PERIOD_META, SUB_STATE_META } from '../../../packages/packages.models';
+import { DemoSubscriptionsStore } from '../../../packages/demo-subscriptions.store';
+import { SUB_STATE_META } from '../../../packages/packages.models';
+import { PACKAGE_PIPES } from '../../../packages/packages.pipes';
 
 const DOC_ICON: Record<PersonDocument['key'], IconName> = {
   photo: 'user',
@@ -42,6 +43,7 @@ const DOC_ICON: Record<PersonDocument['key'], IconName> = {
     CountryFlagComponent,
     ...FORMAT_PIPES,
     ...COUNTRY_PIPES,
+    ...PACKAGE_PIPES,
   ],
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
@@ -56,12 +58,11 @@ export class PersonDetailComponent {
   private readonly actions = inject(PeopleActionsService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
-  protected readonly packages = inject(PackagesStore);
+  protected readonly packages = inject(DemoSubscriptionsStore);
 
   protected readonly statusMeta = STATUS_META;
   protected readonly bookingMeta = BOOKING_META;
   protected readonly subMeta = SUB_STATE_META;
-  protected readonly periodMeta = PERIOD_META;
   protected readonly docIcon = DOC_ICON;
 
   protected readonly cfg = computed(() => PEOPLE_CONFIG[this.kind()]);
