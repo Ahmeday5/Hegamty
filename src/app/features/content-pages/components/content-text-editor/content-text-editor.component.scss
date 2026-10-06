@@ -1,0 +1,72 @@
+:host { display: block; }
+
+.te {
+  border: 1px solid var(--brd2);
+  border-radius: var(--rl);
+  background: var(--white);
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+
+  &:focus-within { border-color: var(--pr); box-shadow: 0 0 0 4px var(--pr-ring); }
+  &.is-invalid { border-color: var(--re); box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1); }
+  &.is-disabled { opacity: 0.7; }
+}
+
+.te__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--brd);
+  background: linear-gradient(180deg, #fbfdfd, #f5f9f9);
+}
+.te__label { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: 12.5px; font-weight: 700; color: var(--txt2); app-icon { color: var(--pr); } }
+.te__tools { display: flex; gap: 4px; }
+.te__tool {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--txt2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  svg { fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  circle { stroke: none; }
+  &:hover:not(:disabled) { background: var(--pr-l); color: var(--pr); border-color: #c9e2e4; }
+  &:focus-visible { outline: 3px solid var(--pr-ring); outline-offset: 1px; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.te__area {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  padding: 18px 20px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 2;
+  color: var(--txt);
+  &::placeholder { color: var(--txt3); }
+}
+
+.te__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 9px 14px;
+  border-top: 1px dashed var(--brd);
+  font-size: 12px;
+  color: var(--txt3);
+  strong { font-weight: 700; color: var(--txt2); font-variant-numeric: tabular-nums; }
+}
+.te__read { display: inline-flex; align-items: center; gap: 5px; margin-inline-start: auto; }

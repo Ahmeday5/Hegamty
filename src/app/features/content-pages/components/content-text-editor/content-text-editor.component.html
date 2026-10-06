@@ -1,0 +1,27 @@
+<div class="te" [class.is-invalid]="invalid()" [class.is-disabled]="disabled()">
+  <div class="te__bar">
+    <label class="te__label" [for]="inputId()"><app-icon name="file" [size]="15" /> {{ label() }}</label>
+    <div class="te__tools" role="toolbar" aria-label="أدوات التنسيق">
+      <button type="button" class="te__tool" data-tip="قائمة نقطية" aria-label="قائمة نقطية" [disabled]="disabled()"
+        (mousedown)="$event.preventDefault()" (click)="toggleBullets()">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <circle cx="5" cy="7" r="1.6" /><circle cx="5" cy="12" r="1.6" /><circle cx="5" cy="17" r="1.6" />
+          <path d="M10 7h10M10 12h10M10 17h10" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <textarea #area class="te__area" [id]="inputId()" [value]="value()" [placeholder]="placeholder()" [disabled]="disabled()"
+    [attr.aria-invalid]="invalid()" dir="auto" rows="12" spellcheck="true"
+    (input)="onInput($event)" (keydown)="onKeydown($event)"></textarea>
+
+  <div class="te__foot" aria-live="polite">
+    <span><strong>{{ stats().words | num }}</strong> كلمة</span>
+    <span><strong>{{ stats().characters | num }}</strong> حرف</span>
+    <span><strong>{{ stats().paragraphs | num }}</strong> فقرة</span>
+    @if (stats().readingMinutes) {
+      <span class="te__read"><app-icon name="clock" [size]="13" /> قراءة في {{ stats().readingMinutes | num }} {{ stats().readingMinutes === 1 ? 'دقيقة' : 'دقائق' }}</span>
+    }
+  </div>
+</div>

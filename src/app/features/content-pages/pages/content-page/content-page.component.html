@@ -1,0 +1,126 @@
+<section class="page" [class.has-savebar]="editor.dirty()">
+  <header class="page-head fx">
+    <div class="cp-head">
+      <span class="cp-head__icon"><app-icon [name]="meta().icon" [size]="22" /></span>
+      <div>
+        <nav class="crumbs" aria-label="مسار التنقل">
+          <a routerLink="/dashboard">الرئيسية</a>
+          <span class="crumbs__sep">/</span>
+          <span>محتوى التطبيق</span>
+          <span class="crumbs__sep">/</span>
+          <span class="crumbs__current">{{ meta().title }}</span>
+        </nav>
+        <h1 class="page-head__title">{{ meta().title }}</h1>
+        <p class="page-head__sub">{{ meta().subtitle }}</p>
+      </div>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث المحتوى"
+        [disabled]="status() === 'loading' || editor.saving()" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn btn-pr" data-tip="Ctrl + S" [disabled]="!editor.dirty() || editor.saving() || status() !== 'ready'" (click)="save()">
+        @if (editor.saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ النشر… }
+        @else { <app-icon name="send" [size]="15" /> حفظ ونشر }
+      </button>
+    </div>
+  </header>
+
+  @switch (status()) {
+    @case ('error') {
+      <div class="panel empty fx">
+        <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+        <p class="empty__title">تعذّر تحميل «{{ meta().title }}»</p>
+        <p class="empty__text">{{ editor.error() }}</p>
+        <button type="button" class="btn btn-soft btn-sm" (click)="editor.reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+      </div>
+    }
+
+    @case ('ready') {
+      @if (saved(); as page) {
+        <!-- ── Publishing status ── -->
+        <div class="cp-status fx" style="--d: 1" role="status">
+          @if (page.updatedAt) {
+            <span class="cp-status__pill cp-status__pill--live"><i></i> منشورة في التطبيق</span>
+            <span class="cp-status__meta"><app-icon name="clock" [size]="14" /> آخر تحديث {{ page.updatedAt | relTime }} · {{ page.updatedAt | arDate: true }}</span>
+          } @else {
+            <span class="cp-status__pill cp-status__pill--none"><i></i> لم تُنشر بعد</span>
+            <span class="cp-status__meta">اكتب المحتوى ثم اضغط «حفظ ونشر» ليظهر للمستخدمين في التطبيق.</span>
+          }
+          @if (editor.dirty()) { <span class="cp-status__pill cp-status__pill--draft">تغييرات غير محفوظة</span> }
+        </div>
+
+        <div class="cp-layout">
+          <div class="cp-main">
+            <div class="panel fx" style="--d: 2">
+              <div class="panel__head">
+                <div>
+                  <h2 class="panel__title">نص الصفحة</h2>
+                  <p class="panel__sub">نص عادي يظهر كما هو — اترك سطرًا فارغًا بين الفقرات، واستخدم القائمة النقطية للبنود.</p>
+                </div>
+              </div>
+              <div class="panel__body">
+                <app-content-text-editor [(value)]="editor.draft" [inputId]="'content-' + kind()" [placeholder]="meta().placeholder"
+                  [disabled]="editor.saving()" [invalid]="triedSave() && editor.blank()" />
+                @if (triedSave() && editor.blank()) {
+                  <p class="cp-error" role="alert"><app-icon name="alert" [size]="14" /> المحتوى مطلوب — لا يمكن نشر صفحة فارغة.</p>
+                }
+              </div>
+            </div>
+
+            @if (meta().images) {
+              <div class="panel fx" style="--d: 3">
+                <div class="panel__head">
+                  <div>
+                    <h2 class="panel__title">صور الصفحة @if (imageCount()) { <span class="cp-count">{{ imageCount() | num }}</span> }</h2>
+                    <p class="panel__sub">تظهر أعلى الصفحة في التطبيق كشرائح متتالية. الصور الجديدة تُرفع عند الحفظ، والحذف يتم فورًا.</p>
+                  </div>
+                </div>
+                <div class="panel__body">
+                  <app-content-images [images]="page.images" [pending]="editor.pending()" [deletingIds]="editor.deletingIds()"
+                    [disabled]="editor.saving()" (add)="queueImages($event)" (unqueue)="editor.unqueueImage($event)" (remove)="deleteImage($event)" />
+                </div>
+              </div>
+            }
+          </div>
+
+          <aside class="cp-aside fx" style="--d: 3">
+            <app-app-preview [title]="meta().appTitle" [content]="editor.draft()" [images]="previewImages()"
+              [updatedAt]="page.updatedAt" [draft]="editor.dirty()" />
+          </aside>
+        </div>
+      }
+    }
+
+    @default {
+      <div class="cp-layout" aria-busy="true" aria-label="جارٍ التحميل">
+        <div class="cp-main">
+          <div class="panel">
+            <div class="panel__body">
+              <span class="skel" style="width: 140px; height: 16px"></span>
+              <span class="skel cp-skel-area"></span>
+            </div>
+          </div>
+        </div>
+        <div class="cp-aside"><span class="skel cp-skel-phone"></span></div>
+      </div>
+    }
+  }
+
+  <!-- ── Save bar ── -->
+  @if (editor.dirty() && status() === 'ready') {
+    <div class="savebar" role="region" aria-label="حفظ التغييرات">
+      <div class="savebar__inner">
+        <span class="savebar__dot" aria-hidden="true"></span>
+        <p><strong>لديك تغييرات غير محفوظة</strong> <span>{{ changeSummary() }}</span></p>
+        <div class="savebar__actions">
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="editor.saving()" (click)="discard()">تجاهل</button>
+          <button type="button" class="btn btn-pr btn-sm" [disabled]="editor.saving()" (click)="save()">
+            @if (editor.saving()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ النشر… }
+            @else { <app-icon name="send" [size]="14" /> حفظ ونشر }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

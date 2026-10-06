@@ -1,0 +1,54 @@
+<div class="pv">
+  <div class="pv__label">
+    <span><app-icon name="smartphone" [size]="14" /> معاينة داخل التطبيق</span>
+    @if (draft()) { <span class="pv__draft">مسودة غير منشورة</span> } @else { <span class="pv__live"><i></i> المنشور حاليًا</span> }
+  </div>
+
+  <div class="phone" aria-label="معاينة الصفحة كما تظهر في التطبيق">
+    <div class="phone__screen">
+      <div class="phone__status" aria-hidden="true">
+        <span>9:41</span>
+        <span class="phone__notch"></span>
+        <span class="phone__sys"><i></i><i></i><i></i></span>
+      </div>
+
+      <header class="phone__bar">
+        <span class="phone__back" aria-hidden="true"><app-icon name="chevron-right" [size]="18" /></span>
+        <strong>{{ title() }}</strong>
+        <span class="phone__back phone__back--ghost" aria-hidden="true"></span>
+      </header>
+
+      <div class="phone__body">
+        @if (images().length) {
+          <div class="phone__carousel">
+            <div class="phone__slides" (scroll)="onScroll($event)">
+              @for (src of images(); track src) { <img [src]="src" alt="" loading="lazy" /> }
+            </div>
+            @if (images().length > 1) {
+              <div class="phone__dots" aria-hidden="true">
+                @for (src of images(); track src; let i = $index) { <span [class.is-on]="i === activeSlide()"></span> }
+              </div>
+            }
+          </div>
+        }
+
+        @if (hasText()) {
+          <p class="phone__text" dir="auto">{{ content() }}</p>
+        } @else {
+          <div class="phone__empty">
+            <span class="skel-line" style="width: 92%"></span>
+            <span class="skel-line" style="width: 78%"></span>
+            <span class="skel-line" style="width: 85%"></span>
+            <span class="skel-line" style="width: 40%"></span>
+            <p>ابدأ الكتابة لترى المعاينة هنا</p>
+          </div>
+        }
+
+        @if (updatedAt(); as at) {
+          <p class="phone__updated">آخر تحديث: {{ at | arDate }}</p>
+        }
+      </div>
+      <span class="phone__home" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>

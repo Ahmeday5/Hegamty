@@ -1,0 +1,56 @@
+<div class="ci">
+  <div class="ci__grid" role="list">
+    @for (t of tiles(); track t.key; let i = $index) {
+      <figure class="ci__tile" role="listitem" [class.is-pending]="!!t.pending" [class.is-busy]="!!t.image && deletingIds().has(t.image.id)"
+        [style.--d]="i">
+        @if (isBroken(t.url)) {
+          <div class="ci__broken"><app-icon name="alert" [size]="20" /><span>تعذّر عرض الصورة</span></div>
+        } @else {
+          <button type="button" class="ci__img" [attr.aria-label]="'عرض الصورة ' + (i + 1)" (click)="viewing.set(t)">
+            <img [src]="t.url" [alt]="'صورة ' + (i + 1)" loading="lazy" (error)="markBroken(t.url)" />
+          </button>
+        }
+
+        @if (t.pending; as p) {
+          <span class="ci__badge ci__badge--new">جديدة · تُرفع عند الحفظ</span>
+          <figcaption class="ci__cap" [attr.title]="p.file.name">{{ p.file.name }}</figcaption>
+          <button type="button" class="ci__del" data-tip="إلغاء" [attr.aria-label]="'إلغاء رفع ' + p.file.name" [disabled]="disabled()"
+            (click)="unqueue.emit(p.id)">
+            <app-icon name="x" [size]="14" />
+          </button>
+        }
+        @if (t.image; as img) {
+          <span class="ci__badge">#{{ i + 1 }}</span>
+          <button type="button" class="ci__del" data-tip="حذف الصورة" aria-label="حذف الصورة" [disabled]="disabled() || deletingIds().has(img.id)"
+            (click)="remove.emit(img)">
+            @if (deletingIds().has(img.id)) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+            @else { <app-icon name="trash" [size]="14" /> }
+          </button>
+        }
+      </figure>
+    }
+
+    <div class="ci__drop" [class.is-drag]="dragging()" [class.is-disabled]="disabled()" [class.is-alone]="!tiles().length"
+      role="button" tabindex="0" [attr.aria-disabled]="disabled()" aria-label="إضافة صور"
+      (click)="browse()" (keydown.enter)="browse()" (keydown.space)="$event.preventDefault(); browse()"
+      (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+      <span class="ci__drop-icon"><app-icon name="plus" [size]="22" [stroke]="2" /></span>
+      <strong>{{ dragging() ? 'أفلت الصور هنا' : 'إضافة صور' }}</strong>
+      <small>اسحب الصور أو اخترها · PNG · JPG · WEBP حتى {{ maxMb }} ميجابايت</small>
+    </div>
+  </div>
+
+  <input #picker class="ci__input" type="file" multiple [accept]="accept" [disabled]="disabled()" (change)="onPick($event)" />
+
+  @if (rejected().length) {
+    <div class="ci__errors" role="alert">
+      <app-icon name="alert" [size]="16" />
+      <ul>@for (r of rejected(); track $index) { <li>{{ r }}</li> }</ul>
+      <button type="button" class="ci__errors-x" aria-label="إغلاق" (click)="dismissRejected()"><app-icon name="x" [size]="14" /></button>
+    </div>
+  }
+</div>
+
+<app-modal [open]="!!viewing()" [title]="viewing()?.pending ? 'صورة جديدة (لم تُحفظ بعد)' : 'معاينة الصورة'" size="lg" (closed)="viewing.set(null)">
+  @if (viewing(); as v) { <img class="ci__full" [src]="v.url" alt="" /> }
+</app-modal>

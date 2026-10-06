@@ -96,6 +96,10 @@ export const routes: Routes = [
         title: 'السائقون · HiCan',
         loadChildren: () => import('./features/drivers/drivers.routes').then((m) => m.driversRoutes),
       },
+      {
+        path: 'content',
+        loadChildren: () => import('./features/content-pages/content-pages.routes').then((m) => m.contentPagesRoutes),
+      },
       // Guard a feature with permissions like:
       //   canActivate: [permissionGuard('Users.Manage')]
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

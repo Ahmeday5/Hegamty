@@ -32,6 +32,13 @@ export const NAV_SECTIONS: MenuSection[] = [
     ],
   },
   {
+    label: 'محتوى التطبيق',
+    items: [
+      { id: 'about-us', label: 'من نحن', route: '/content/about-us', icon: 'heart' },
+      { id: 'privacy-policy', label: 'سياسة الخصوصية', route: '/content/privacy-policy', icon: 'shield' },
+    ],
+  },
+  {
     label: 'الإعدادات',
     items: [{ id: 'countries', label: 'الدول', route: '/countries', icon: 'globe' }],
   },
