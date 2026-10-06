@@ -1,0 +1,25 @@
+@use '../../../accounts/styles/account-list';
+
+.scope-bar > app-icon { flex-shrink: 0; color: var(--pr-d); }
+
+.vehicle { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+/* Licence plate, set like the physical one. */
+.plate {
+  justify-self: start;
+  padding: 0 7px;
+  border-radius: 6px;
+  border: 1px solid var(--brd);
+  background: var(--bg3);
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--txt2) !important;
+}
+
+.state {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  small { font-size: 11px; color: var(--txt3); }
+  small.is-on { color: var(--pr); font-weight: 600; }
+}

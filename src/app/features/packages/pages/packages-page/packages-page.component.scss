@@ -1,6 +1,5 @@
 :host { display: block; }
 
-.muted { color: var(--txt3); }
 .icon-btn.is-spinning app-icon { animation: pk-spin 0.9s linear infinite; }
 .icon-btn:disabled, .btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
 .empty__icon--red { background: var(--re-l); color: var(--re); }
@@ -21,13 +20,6 @@
 .pk-body { padding: 18px 16px 4px; }
 .pkgs.is-stale { opacity: 0.55; pointer-events: none; transition: opacity 0.2s; }
 .pkgs__empty { grid-column: 1 / -1; }
-
-.status-bar { padding: 12px 16px; border-bottom: 1px solid var(--brd); .seg { max-width: 100%; overflow-x: auto; } }
-.sub-search { flex: 0 1 280px; input { height: 36px; } }
-.sub-notice { padding: 0 16px 12px; }
-.who { display: flex; align-items: center; gap: 10px; }
-.who__txt { display: grid; gap: 1px; strong { font-weight: 600; } span { font-size: 11.5px; color: var(--txt3); } }
-.left { display: grid; gap: 4px; min-width: 110px; span { font-size: 12px; font-weight: 600; } .bar { height: 5px; } }
 
 /* ── Pricing cards ── */
 .pkgs {

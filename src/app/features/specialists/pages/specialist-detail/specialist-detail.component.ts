@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
-import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
 import { PreviewNoticeComponent } from '../../../../shared/components/dev-status/preview-notice.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { formatNumber, formatYears } from '../../../../shared/utils/format.util';
@@ -11,6 +10,9 @@ import { CountryFlagComponent } from '../../../countries/country-flag.component'
 import { CATALOG_PIPES } from '../../../services/service-catalog.pipes';
 import { SUB_STATE_META } from '../../../packages/packages.models';
 import { PACKAGE_PIPES } from '../../../packages/packages.pipes';
+import { SubscriptionsApi } from '../../../packages/subscriptions.api';
+import { SpecialistSubscription, currentSubscription, subscriptionTimeline } from '../../../packages/subscriptions.models';
+import { SubscriptionsTableComponent } from '../../../packages/components/subscriptions-table/subscriptions-table.component';
 import { AccountPreviewService } from '../../../accounts/account-preview.service';
 import { AccountHeroComponent, HeroStat } from '../../../accounts/components/account-hero/account-hero.component';
 import { AccountTab, AccountTabsComponent } from '../../../accounts/components/account-tabs/account-tabs.component';
@@ -29,15 +31,15 @@ import { AVAILABILITY_META, SPECIALIST_STATUS_META, Specialist, SpecialistServic
 import { SpecialistsApi } from '../../specialists.api';
 import { SpecialistActionsService } from '../../specialist-actions.service';
 
-type Tab = 'overview' | 'services' | 'bookings' | 'reviews' | 'notifications';
+type Tab = 'overview' | 'services' | 'bookings' | 'subscriptions' | 'reviews' | 'notifications';
 
 const isNumericId = (id: string) => /^\d+$/.test(id);
 const collator = new Intl.Collator('ar');
 
 /**
  * Technician profile. Identity, work area, documents, review status,
- * offered services, bookings and reviews come from the API; notifications
- * and subscription render labelled demo data until their endpoints exist.
+ * offered services, bookings, package subscriptions and reviews come from
+ * the API; notifications render labelled demo data until their endpoint exists.
  */
 @Component({
   selector: 'app-specialist-detail',
@@ -46,7 +48,6 @@ const collator = new Intl.Collator('ar');
   imports: [
     RouterLink,
     IconComponent,
-    DevBadgeComponent,
     PreviewNoticeComponent,
     AccountHeroComponent,
     AccountTabsComponent,
@@ -55,6 +56,7 @@ const collator = new Intl.Collator('ar');
     ActivitySummaryComponent,
     AccountBookingsComponent,
     AccountReviewsComponent,
+    SubscriptionsTableComponent,
     CountryFlagComponent,
     AccountPlaceComponent,
     ...FORMAT_PIPES,
@@ -74,6 +76,7 @@ export class SpecialistDetailComponent {
   private readonly api = inject(SpecialistsApi);
   private readonly bookingsApi = inject(BookingsApi);
   private readonly reviewsApi = inject(ReviewsApi);
+  private readonly subscriptionsApi = inject(SubscriptionsApi);
   private readonly actions = inject(SpecialistActionsService);
   private readonly preview = inject(AccountPreviewService);
   private readonly router = inject(Router);
@@ -107,6 +110,11 @@ export class SpecialistDetailComponent {
     errorMessage: 'تعذّر تحميل إحصائيات الحجوزات',
     isValidId: isNumericId,
   });
+  protected readonly subscriptions = new RecordLoader<SpecialistSubscription[]>((id) => this.subscriptionsApi.ofSpecialist(id), {
+    destroyRef: this.destroyRef,
+    errorMessage: 'تعذّر تحميل اشتراكات الفني',
+    isValidId: isNumericId,
+  });
   protected readonly reviews = new RecordLoader<Review[]>((id) => this.reviewsApi.ofSpecialist(id), {
     destroyRef: this.destroyRef,
     errorMessage: 'تعذّر تحميل تقييمات الفني',
@@ -129,20 +137,29 @@ export class SpecialistDetailComponent {
     [...(this.offered.value() ?? [])].sort((a, b) => collator.compare(a.countryName, b.countryName) || collator.compare(a.name, b.name)),
   );
 
-  // ── Demo sections (notifications, subscription) ──
+  /** Newest purchase first. */
+  protected readonly subscriptionHistory = computed(() =>
+    [...(this.subscriptions.value() ?? [])].sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? '') || +b.id - +a.id),
+  );
+  /** The "الباقة الحالية" card; `null` until loaded. */
+  protected readonly currentPackage = computed(() => {
+    const list = this.subscriptions.value();
+    if (!list) return null;
+    const sub = currentSubscription(list);
+    return { sub, time: sub ? subscriptionTimeline(sub) : null };
+  });
+
+  // ── Demo section (notifications) ──
   protected readonly activity = computed(() => {
     const s = this.specialist();
     return s ? this.preview.activity('technicians', s.id) : null;
-  });
-  protected readonly subscription = computed(() => {
-    const s = this.specialist();
-    return s ? this.preview.subscription(s.id) : null;
   });
 
   protected readonly tabs = computed<AccountTab<Tab>[]>(() => [
     { id: 'overview', label: 'نظرة عامة', icon: 'grid' },
     { id: 'services', label: 'الخدمات', icon: 'droplet', count: this.offered.value()?.length },
     { id: 'bookings', label: 'الحجوزات', icon: 'calendar', count: this.bookingsTotal() ?? undefined },
+    { id: 'subscriptions', label: 'الاشتراكات', icon: 'award', count: this.subscriptions.value()?.length },
     { id: 'reviews', label: 'التقييمات', icon: 'star', count: this.reviews.value()?.length },
     { id: 'notifications', label: 'الإشعارات', icon: 'bell', dev: true },
   ]);
@@ -188,6 +205,7 @@ export class SpecialistDetailComponent {
           this.offered.load(id);
           this.bookings.load(id);
           this.bookingStats.load(id);
+          this.subscriptions.load(id);
           this.reviews.load(id);
         });
       },
@@ -204,6 +222,7 @@ export class SpecialistDetailComponent {
     this.offered.reload();
     this.bookings.reload();
     this.bookingStats.reload();
+    this.subscriptions.reload();
     this.reviews.reload();
   }
 

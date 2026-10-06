@@ -1,9 +1,9 @@
-import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subject, catchError, of, switchMap, tap, throwError } from 'rxjs';
+import { DestroyRef, Injectable, inject } from '@angular/core';
+import { Observable, catchError, tap, throwError } from 'rxjs';
 import { PageRequest } from '../../core/models/page.model';
 import { BusySet } from '../../core/utils/busy-set';
 import { PagedQuery } from '../../core/utils/paged-query';
+import { ScopedCounts } from '../../core/utils/scoped-counts';
 import { PackagesApi } from './packages.api';
 import { PackageCounts, PackageDraft, PackageFilter, TechPackage, toDraft } from './packages.models';
 
@@ -30,9 +30,7 @@ export class PackagesStore {
     destroyRef: this.destroyRef,
   });
 
-  private readonly totals = signal<PackageCounts | null>(null);
-  private readonly countRequests = new Subject<CountsScope>();
-  private countsFor: string | null = null;
+  private readonly totals = new ScopedCounts<PackageCounts, CountsScope>((s) => this.api.counts(s), scopeKey, this.destroyRef);
 
   /** Ids with a request in flight (toggle / delete). */
   readonly busy = new BusySet();
@@ -42,22 +40,12 @@ export class PackagesStore {
   readonly status = this.list.status;
   readonly error = this.list.error;
   /** `null` while loading, or when the last refresh failed. */
-  readonly counts: Signal<PackageCounts | null> = this.totals.asReadonly();
-
-  constructor() {
-    this.countRequests
-      .pipe(
-        switchMap((scope) => this.api.counts(scope).pipe(catchError(() => of(null)))),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((c) => this.totals.set(c));
-  }
+  readonly counts = this.totals.value;
 
   /** Totals follow the search and country; they're refetched only when those change. */
   query(filter: PackageFilter, page: PageRequest): void {
     this.list.query(filter, page);
-    const scope = scopeOf(filter);
-    if (scopeKey(scope) !== this.countsFor) this.refreshCounts(scope);
+    this.totals.ensure(scopeOf(filter));
   }
 
   reload(): void {
@@ -67,7 +55,7 @@ export class PackagesStore {
 
   /** Call when the page opens, so the next query brings fresh totals. */
   expireCounts(): void {
-    this.countsFor = null;
+    this.totals.expire();
   }
 
   create(draft: PackageDraft): Observable<TechPackage> {
@@ -106,10 +94,7 @@ export class PackagesStore {
     return this.busy.track(id, this.api.remove(id).pipe(tap(() => this.reload())));
   }
 
-  private refreshCounts(scope: CountsScope = scopeOf(this.list.filter)): void {
-    const key = scopeKey(scope);
-    if (key !== this.countsFor) this.totals.set(null);
-    this.countsFor = key;
-    this.countRequests.next(scope);
+  private refreshCounts(): void {
+    this.totals.refresh(scopeOf(this.list.filter));
   }
 }

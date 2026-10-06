@@ -16,9 +16,6 @@ import { IconComponent, IconName } from '../../../shared/components/icon/icon.co
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { RelTimePipe } from '../../../shared/pipes/format.pipes';
 import { formatLongDate } from '../../../shared/utils/format.util';
-import { PeopleStore } from '../../../features/people/people.store';
-import { PEOPLE_CONFIG } from '../../../features/people/people.config';
-import { Person } from '../../../features/people/people.models';
 import { CountriesStore } from '../../../features/countries/countries.store';
 import { ALL_COUNTRIES, CountryScopeService } from '../../../features/countries/country-scope.service';
 import { CountryFlagComponent } from '../../../features/countries/country-flag.component';
@@ -46,11 +43,10 @@ const MIN = 60000;
 const LIVE_SEARCHES = [
   { route: '/customers', label: 'البحث في العملاء', icon: 'users' },
   { route: '/technicians', label: 'البحث في الفنيين', icon: 'stethoscope' },
+  { route: '/drivers', label: 'البحث في السائقين', icon: 'car' },
 ] as const satisfies readonly { route: string; label: string; icon: IconName }[];
 
-type SearchHit =
-  | { type: 'search'; id: string; route: string; label: string; icon: IconName }
-  | { type: 'person'; id: string; person: Person; kindLabel: string; icon: IconName };
+type SearchHit = (typeof LIVE_SEARCHES)[number];
 
 @Component({
   selector: 'app-topbar',
@@ -64,7 +60,6 @@ export class TopbarComponent {
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly people = inject(PeopleStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly layout = inject(LayoutService);
   protected readonly scope = inject(CountryScopeService);
@@ -85,17 +80,8 @@ export class TopbarComponent {
   protected readonly term = signal('');
   protected readonly searchFocused = signal(false);
   protected readonly activeIndex = signal(0);
-  /** Server-searched lists first, then matching (mock) drivers. */
-  protected readonly results = computed<SearchHit[]>(() => {
-    const q = this.term().trim().toLowerCase();
-    if (q.length < 2) return [];
-    const drivers: SearchHit[] = this.scope
-      .filter(this.people.list('drivers')())
-      .filter((p) => p.name.toLowerCase().includes(q) || p.phone.includes(q) || p.id.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map((p) => ({ type: 'person', id: p.id, person: p, kindLabel: PEOPLE_CONFIG[p.kind].singular, icon: PEOPLE_CONFIG[p.kind].icon }));
-    return [...LIVE_SEARCHES.map((s): SearchHit => ({ type: 'search', id: s.route, ...s })), ...drivers];
-  });
+  /** Every accounts list searches on the server — the hits hand the term to the chosen list. */
+  protected readonly results = computed<readonly SearchHit[]>(() => (this.term().trim().length < 2 ? [] : LIVE_SEARCHES));
   protected readonly showResults = computed(() => this.searchFocused() && this.term().trim().length >= 2);
 
   // ── Menus ──
@@ -152,8 +138,7 @@ export class TopbarComponent {
     this.term.set('');
     this.searchFocused.set(false);
     this.searchInput()?.nativeElement.blur();
-    if (hit.type === 'search') this.router.navigate([hit.route], { queryParams: { q } });
-    else this.router.navigate(['/', hit.person.kind, hit.person.id]);
+    this.router.navigate([hit.route], { queryParams: { q } });
   }
 
   protected onSearchBlur(): void {

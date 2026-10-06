@@ -1,0 +1,30 @@
+:host { display: block; }
+
+.dtable { transition: opacity 0.2s; }
+.dtable.is-stale { opacity: 0.55; pointer-events: none; }
+.th-actions { text-align: end !important; }
+.muted { color: var(--txt3); font-size: 12.5px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.who { display: flex; align-items: center; gap: 10px; }
+.who__txt {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  strong { font-weight: 600; color: var(--black); white-space: nowrap; }
+  span { font-size: 12px; color: var(--txt3); white-space: nowrap; }
+}
+.with-flag { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.period { display: inline-flex; align-items: center; gap: 4px; font-weight: 500 !important; app-icon { color: var(--txt3); } }
+
+.left {
+  display: grid;
+  gap: 4px;
+  min-width: 110px;
+  span { font-size: 12px; font-weight: 600; }
+  .bar { height: 5px; }
+  &.is-expiring .bar__fill { background: #f59e0b; }
+}
+
+.skel-row { animation: none !important; }
+.skel-row td { padding-block: 16px; }

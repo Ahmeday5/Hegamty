@@ -1,9 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { PersonHistory } from '../people/people.models';
 import { generateHistory } from '../people/people.mock';
-import { PeopleStore } from '../people/people.store';
-import { DemoSubscriptionsStore } from '../packages/demo-subscriptions.store';
-import { SubscriptionSummary } from '../packages/packages.models';
 import { hash, int, rng } from '../../shared/utils/random.util';
 
 export type PreviewKind = 'customers' | 'technicians';
@@ -22,15 +19,13 @@ export interface ActivityPreview {
 
 /**
  * Demo data for account sections the backend doesn't serve yet (bookings /
- * sessions, reviews, notifications, subscription). Seeded by the real account
+ * sessions, reviews, notifications). Seeded by the real account
  * id, so a profile shows the same figures on every visit. Every view of it is
  * labelled "قيد التطوير" — replace each method with an API call as its
  * endpoint lands, then delete this service.
  */
 @Injectable({ providedIn: 'root' })
 export class AccountPreviewService {
-  private readonly people = inject(PeopleStore);
-  private readonly packages = inject(DemoSubscriptionsStore);
   private readonly cache = new Map<string, ActivityPreview>();
 
   activity(kind: PreviewKind, accountId: string): ActivityPreview {
@@ -41,13 +36,6 @@ export class AccountPreviewService {
       this.cache.set(key, preview);
     }
     return preview;
-  }
-
-  /** A demo subscription borrowed from a seeded technician. */
-  subscription(technicianId: string): SubscriptionSummary {
-    const subscribed = this.people.list('technicians')().filter((t) => !!this.packages.latestFor(t.id));
-    const donor = subscribed.length ? subscribed[hash(`technicians:${technicianId}`) % subscribed.length] : null;
-    return this.packages.summaryFor(donor?.id ?? '');
   }
 
   private generate(kind: PreviewKind, seed: string): ActivityPreview {

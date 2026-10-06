@@ -1,47 +1,38 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
-import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 import { KpiCardComponent } from '../../../../shared/components/kpi-card/kpi-card.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
-import { DevBadgeComponent } from '../../../../shared/components/dev-status/dev-badge.component';
-import { PreviewNoticeComponent } from '../../../../shared/components/dev-status/preview-notice.component';
 import { FORMAT_PIPES } from '../../../../shared/pipes/format.pipes';
 import { DialogService } from '../../../../core/services/dialog.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
-import { PeopleStore } from '../../../people/people.store';
 import { ALL_COUNTRIES, CountryScopeService } from '../../../countries/country-scope.service';
 import { CountryFlagComponent } from '../../../countries/country-flag.component';
 import { COUNTRY_PIPES } from '../../../countries/country.pipes';
 import { PackageFormComponent } from '../../components/package-form/package-form.component';
+import { SubscriptionsPanelComponent } from '../../components/subscriptions-panel/subscriptions-panel.component';
 import { PackagesStore } from '../../packages.store';
-import { DemoSubscriptionsStore } from '../../demo-subscriptions.store';
 import {
   PACKAGE_STATUS_FILTER,
   PackageFilter,
   PackageStatusFilter,
   QUARTERS,
-  SUB_STATE_META,
-  SubscriptionState,
   TechPackage,
   durationMeta,
 } from '../../packages.models';
 
-type SubFilter = 'all' | SubscriptionState;
-
 const SEARCH_DEBOUNCE_MS = 350;
 const PAGE_SIZES = [12, 24, 48] as const;
-const SUBS_PAGE_SIZE = 10;
 const STATUS_TABS = Object.keys(PACKAGE_STATUS_FILTER) as PackageStatusFilter[];
 
 /**
  * Technician packages, server-driven: search, status and the header's
- * country go to `/admin/packages` with paging. Below, the subscriptions
- * table is demo data until its endpoint exists (labelled as such).
+ * country go to `/admin/packages` with paging. Below, the technicians'
+ * subscriptions (their own panel, same country scope).
  */
 @Component({
   selector: 'app-packages-page',
@@ -50,12 +41,10 @@ const STATUS_TABS = Object.keys(PACKAGE_STATUS_FILTER) as PackageStatusFilter[];
   imports: [
     RouterLink,
     IconComponent,
-    AvatarComponent,
     KpiCardComponent,
     PaginationComponent,
-    DevBadgeComponent,
-    PreviewNoticeComponent,
     PackageFormComponent,
+    SubscriptionsPanelComponent,
     CountryFlagComponent,
     ...FORMAT_PIPES,
     ...COUNTRY_PIPES,
@@ -65,17 +54,13 @@ const STATUS_TABS = Object.keys(PACKAGE_STATUS_FILTER) as PackageStatusFilter[];
 })
 export class PackagesPageComponent {
   private readonly store = inject(PackagesStore);
-  private readonly demo = inject(DemoSubscriptionsStore);
-  private readonly people = inject(PeopleStore);
   private readonly dialog = inject(DialogService);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly scope = inject(CountryScopeService);
 
   protected readonly quarters = QUARTERS;
   protected readonly pageSizes = PAGE_SIZES;
-  protected readonly subMeta = SUB_STATE_META;
   protected readonly skeletons = [0, 1, 2, 3];
 
   // ── Catalog (API) ──
@@ -140,57 +125,6 @@ export class PackagesPageComponent {
   // ── Form ──
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<TechPackage | null>(null);
-
-  // ── Subscriptions (demo) ──
-  protected readonly subFilter = signal<SubFilter>('all');
-  protected readonly subSearch = signal('');
-  protected readonly subPage = signal(1);
-  protected readonly subPageSize = SUBS_PAGE_SIZE;
-
-  /** Latest subscription per technician in scope, joined with names. */
-  private readonly subRows = computed(() => {
-    const techs = new Map(this.people.list('technicians')().map((t) => [t.id, t]));
-    return this.scope
-      .filter(this.demo.subscriptions())
-      .filter((s) => techs.has(s.technicianId) && this.demo.latestFor(s.technicianId)?.id === s.id)
-      .map((s) => {
-        const pkg = this.demo.byId(s.packageId);
-        const left = this.demo.daysLeft(s);
-        return {
-          sub: s,
-          tech: techs.get(s.technicianId)!,
-          pkg,
-          state: this.demo.stateOf(s) as SubscriptionState,
-          left,
-          pct: pkg ? Math.max(0, Math.min(100, Math.round((left / pkg.durationDays) * 100))) : 0,
-        };
-      })
-      .sort((a, b) => a.left - b.left);
-  });
-
-  protected readonly subTabs = computed(() => {
-    const rows = this.subRows();
-    return [
-      { id: 'all' as SubFilter, label: 'الكل', count: rows.length },
-      ...(['active', 'expiring', 'expired'] as SubscriptionState[]).map((s) => ({
-        id: s as SubFilter,
-        label: SUB_STATE_META[s].label,
-        count: rows.filter((r) => r.state === s).length,
-      })),
-    ];
-  });
-
-  protected readonly subFiltered = computed(() => {
-    const f = this.subFilter();
-    const term = this.subSearch().trim().toLowerCase();
-    return this.subRows()
-      .filter((r) => f === 'all' || r.state === f)
-      .filter((r) => !term || r.tech.name.toLowerCase().includes(term) || r.tech.phone.includes(term) || (r.pkg?.name ?? '').includes(term));
-  });
-  protected readonly subTotalPages = computed(() => Math.max(1, Math.ceil(this.subFiltered().length / SUBS_PAGE_SIZE)));
-  protected readonly subPageRows = computed(() =>
-    this.subFiltered().slice((this.subPage() - 1) * SUBS_PAGE_SIZE, this.subPage() * SUBS_PAGE_SIZE),
-  );
 
   constructor() {
     this.store.expireCounts();
@@ -280,21 +214,5 @@ export class PackagesPageComponent {
           this.toast.error(message, { title: `تعذّر حذف "${p.name}"` });
         },
       });
-  }
-
-  // ── Subscriptions (demo) ──
-
-  protected setSubFilter(f: SubFilter): void {
-    this.subFilter.set(f);
-    this.subPage.set(1);
-  }
-
-  protected onSubSearch(v: string): void {
-    this.subSearch.set(v);
-    this.subPage.set(1);
-  }
-
-  protected openTech(id: string): void {
-    this.router.navigate(['/technicians', id]);
   }
 }

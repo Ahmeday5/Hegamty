@@ -1,0 +1,61 @@
+<div class="panel">
+  <div class="panel__head">
+    <div>
+      <h2 class="panel__title">اشتراكات الفنيين</h2>
+      <p class="panel__sub">
+        كل باقة اشتراها فني من التطبيق
+        @if (scope.country(); as c) { — في <strong>{{ c.name }}</strong> }
+      </p>
+    </div>
+    <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث الاشتراكات"
+      [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+      <app-icon name="refresh" [size]="16" />
+    </button>
+  </div>
+
+  <div class="sp-toolbar">
+    <label class="search sp-search">
+      <app-icon name="search" [size]="16" />
+      <input type="search" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="ابحث باسم الفني…" aria-label="بحث في الاشتراكات" />
+    </label>
+    <div class="seg" role="tablist" aria-label="حالة الاشتراك">
+      @for (t of statusTabs(); track t.id) {
+        <button type="button" class="seg__btn" role="tab" [class.is-on]="statusFilter() === t.id" [attr.aria-selected]="statusFilter() === t.id"
+          (click)="setStatus(t.id)">
+          {{ t.label }} @if (t.count !== undefined) { <span class="seg__count">{{ t.count | num }}</span> }
+        </button>
+      }
+    </div>
+    @if (hasFilters()) {
+      <button type="button" class="btn btn-ghost btn-sm" (click)="resetFilters()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
+    }
+    <span class="sp-count" aria-live="polite">
+      @if (firstLoad()) { جارٍ التحميل… } @else if (status() !== 'error') { {{ pageMeta().count | num }} اشتراك }
+    </span>
+  </div>
+
+  @if (status() === 'error') {
+    <div class="empty">
+      <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+      <p class="empty__title">تعذّر تحميل الاشتراكات</p>
+      <p class="empty__text">{{ loadError() }}</p>
+      <button type="button" class="btn btn-soft btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+    </div>
+  } @else {
+    <app-subscriptions-table [rows]="rows()" [showCountry]="scope.isAll()" [loading]="firstLoad()"
+      [stale]="status() === 'loading' && !firstLoad()" [emptyTitle]="emptyTitle()" [emptyText]="emptyText()"
+      (openSpecialist)="openSpecialist($event)">
+      @if (hasFilters()) {
+        <button emptyActions type="button" class="btn btn-soft btn-sm" (click)="resetFilters()">مسح الفلاتر</button>
+      }
+    </app-subscriptions-table>
+
+    @if (pageMeta().count > pageSizes[0]) {
+      <div class="table-foot">
+        <app-pagination [pageIndex]="pageMeta().pageIndex" [pageSize]="pageMeta().pageSize" [count]="pageMeta().count"
+          [totalPages]="pageMeta().totalPages" [pageSizeOptions]="pageSizes" [disabled]="status() === 'loading'"
+          (pageChange)="goToPage($event)" (pageSizeChange)="changePageSize($event)" />
+      </div>
+    }
+  }
+</div>

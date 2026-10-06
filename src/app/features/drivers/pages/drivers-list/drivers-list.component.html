@@ -1,0 +1,192 @@
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">السائقون</span>
+      </nav>
+      <h1 class="page-head__title">السائقون</h1>
+      <p class="page-head__sub">حسابات السائقين المسجلين من التطبيق وبيانات مركباتهم، وإدارة حظر الحسابات</p>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث القائمة"
+        [disabled]="status() === 'loading'" [class.is-spinning]="status() === 'loading'" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" (click)="exportCsv()" [disabled]="exporting() || !pageMeta().count">
+        @if (exporting()) { <span class="spinner-border spinner-border-sm btn-spin" aria-hidden="true"></span> جارٍ التصدير… }
+        @else { <app-icon name="download" [size]="16" /> تصدير Excel }
+      </button>
+    </div>
+  </header>
+
+  @if (country(); as c) {
+    <div class="scope-bar fx" style="--d: 1" role="status">
+      <app-icon name="globe" [size]="20" />
+      <p>ربط السائقين بالدول قيد التطوير — القائمة تعرض <strong>كل السائقين</strong> وليس سائقي {{ c.name }} فقط.</p>
+      <button type="button" class="btn btn-sm scope-bar__btn" (click)="showAllCountries()"><app-icon name="globe" [size]="14" /> كل الدول</button>
+    </div>
+  }
+
+  <div class="grid grid--4">
+    <app-kpi-card class="fx" style="--d: 1" label="إجمالي السائقين" [value]="kpis().all" icon="car" tone="green" hint="المسجلون من التطبيق" />
+    <app-kpi-card class="fx" style="--d: 2" label="الحسابات النشطة" [value]="kpis().active" icon="check-circle" tone="blue"
+      [hint]="kpis().activeShare + '% من الإجمالي'" />
+    <app-kpi-card class="fx" style="--d: 3" label="الحسابات غير النشطة" [value]="kpis().inactive" icon="clock" tone="amber" />
+    <app-kpi-card class="fx" style="--d: 4" label="الحسابات المحظورة" [value]="kpis().banned" icon="ban" tone="red" />
+  </div>
+
+  <div class="panel fx acc-panel" style="--d: 5">
+    <div class="toolbar">
+      <label class="search toolbar__grow">
+        <app-icon name="search" [size]="17" />
+        <input type="search" [value]="list.search()" (input)="list.search.set($any($event.target).value)"
+          placeholder="ابحث باسم السائق أو رقم الجوال…" aria-label="بحث في السائقين" />
+      </label>
+      <span class="filter-hint" data-tip="فلترة السائقين حسب الدولة والمحافظة قيد التطوير">
+        <app-icon name="map-pin" [size]="15" /> الدولة والمحافظة <app-dev-badge size="sm" />
+      </span>
+      @if (list.hasFilters()) {
+        <button type="button" class="btn btn-ghost btn-sm" (click)="list.reset()"><app-icon name="x" [size]="14" /> مسح الفلاتر</button>
+      }
+    </div>
+
+    <div class="status-bar">
+      <div class="seg" role="tablist" aria-label="الحالة">
+        @for (t of statusTabs(); track t.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="list.status() === t.id" [attr.aria-selected]="list.status() === t.id"
+            (click)="list.setStatus(t.id)">
+            {{ t.label }} @if (t.count !== undefined) { <span class="seg__count">{{ t.count | num }}</span> }
+          </button>
+        }
+      </div>
+      <div class="seg" role="tablist" aria-label="الحظر">
+        @for (t of banTabs; track t.id) {
+          <button type="button" class="seg__btn" role="tab" [class.is-on]="list.ban() === t.id" [attr.aria-selected]="list.ban() === t.id"
+            (click)="list.setBan(t.id)">{{ t.label }}</button>
+        }
+      </div>
+      <span class="result-count" aria-live="polite">
+        @if (firstLoad()) { جارٍ التحميل… } @else if (status() !== 'error') { {{ pageMeta().count | num }} نتيجة }
+      </span>
+    </div>
+
+    <div class="dtable-wrap" [attr.aria-busy]="status() === 'loading'">
+      <table class="dtable" [class.is-stale]="status() === 'loading' && !firstLoad()">
+        <thead>
+          <tr>
+            <th>السائق</th>
+            <th>رقم الجوال</th>
+            <th>المركبة</th>
+            <th><span class="th">الدولة <app-dev-badge size="sm" /></span></th>
+            <th><span class="th">الرحلات <app-dev-badge size="sm" /></span></th>
+            <th><span class="th">التقييم <app-dev-badge size="sm" /></span></th>
+            <th>الحالة</th>
+            <th>الحظر</th>
+            <th>تاريخ التسجيل</th>
+            <th class="th-actions">الإجراءات</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @if (firstLoad()) {
+            @for (r of skeletonRows; track r) {
+              <tr class="skel-row" aria-hidden="true">
+                <td>
+                  <div class="person">
+                    <span class="skel skel--circle" style="width: 34px; height: 34px"></span>
+                    <div class="person__txt"><span class="skel" style="width: 130px"></span><span class="skel" style="width: 90px; height: 9px"></span></div>
+                  </div>
+                </td>
+                @for (c of skeletonCells; track c) {
+                  <td><span class="skel" [style.width.px]="40 + ((r * 13 + c * 17) % 40)"></span></td>
+                }
+                <td></td>
+              </tr>
+            }
+          } @else if (status() === 'error') {
+            <tr>
+              <td [attr.colspan]="columns">
+                <div class="empty">
+                  <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+                  <p class="empty__title">تعذّر تحميل السائقين</p>
+                  <p class="empty__text">{{ loadError() }}</p>
+                  <button type="button" class="btn btn-soft btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (d of rows(); track d.id; let i = $index) {
+              <tr class="is-link" [style.--d]="i" (click)="openDetails(d)">
+                <td>
+                  <div class="person">
+                    <app-avatar [name]="d.fullName" [src]="d.photoUrl" [size]="34" />
+                    <div class="person__txt">
+                      <strong>{{ d.fullName }} @if (isNew(d)) { <span class="chip chip--amber chip--xs">جديد</span> }</strong>
+                      <span>#{{ d.id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><bdi class="ltr">{{ d.phone || '—' }}</bdi></td>
+                <td>
+                  <div class="person__txt">
+                    <strong class="vehicle">{{ d.vehicle | vehicle }}</strong>
+                    @if (d.vehicle.plate) { <span class="plate"><bdi>{{ d.vehicle.plate }}</bdi></span> }
+                  </div>
+                </td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td>
+                  <div class="state">
+                    <span class="chip chip--dot {{ activityMeta[activityOf(d)].chip }}">{{ activityMeta[activityOf(d)].label }}</span>
+                    <small [class.is-on]="d.available">{{ availabilityMeta[availabilityOf(d)].label }}</small>
+                  </div>
+                </td>
+                <td>
+                  @if (d.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
+                  @else { <span class="chip chip--slate">غير محظور</span> }
+                </td>
+                <td class="muted">{{ d.createdAt | arDate }}</td>
+                <td (click)="$event.stopPropagation()">
+                  <div class="actions">
+                    <button type="button" class="icon-btn icon-btn--blue" data-tip="التفاصيل" aria-label="التفاصيل" (click)="openDetails(d)">
+                      <app-icon name="eye" [size]="16" />
+                    </button>
+                    <button type="button" class="icon-btn" [class.icon-btn--red]="!d.banned" [class.icon-btn--green]="d.banned"
+                      [attr.data-tip]="d.banned ? 'رفع الحظر' : 'حظر'" [attr.aria-label]="d.banned ? 'رفع الحظر' : 'حظر'"
+                      [disabled]="busy().has(d.id)" (click)="toggleBan(d)">
+                      <app-icon [name]="d.banned ? 'unlock' : 'ban'" [size]="16" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td [attr.colspan]="columns">
+                  <div class="empty">
+                    <span class="empty__icon"><app-icon name="search" [size]="26" /></span>
+                    <p class="empty__title">لا توجد نتائج</p>
+                    <p class="empty__text">
+                      @if (list.hasFilters()) { جرّب تعديل البحث أو إزالة الفلاتر. } @else { لم يسجّل أي سائق من التطبيق بعد. }
+                    </p>
+                    @if (list.hasFilters()) { <button type="button" class="btn btn-soft btn-sm" (click)="list.reset()">مسح الفلاتر</button> }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (status() !== 'error' && pageMeta().count) {
+      <div class="table-foot">
+        <app-pagination [pageIndex]="pageMeta().pageIndex" [pageSize]="pageMeta().pageSize" [count]="pageMeta().count"
+          [totalPages]="pageMeta().totalPages" [pageSizeOptions]="pageSizes" [disabled]="status() === 'loading'"
+          (pageChange)="goToPage($event)" (pageSizeChange)="list.changePageSize($event)" />
+      </div>
+    }
+  </div>
+</section>

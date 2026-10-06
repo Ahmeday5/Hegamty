@@ -1,16 +1,15 @@
 import { DestroyRef, Signal, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, of, switchMap } from 'rxjs';
-import { AccountLocationFilter, locationKey } from './account-profile';
 
 /**
- * Totals behind an accounts list's KPIs and tabs, for one location scope at
+ * Totals behind a list's KPIs and tabs, for one scope (country, search…) at
  * a time. A new request cancels the one in flight; totals of another scope
- * are cleared rather than shown under the wrong country.
+ * are cleared rather than shown under the wrong filter.
  */
-export class ScopedCounts<C> {
+export class ScopedCounts<C, S> {
   private readonly totals = signal<C | null>(null);
-  private readonly requests = new Subject<AccountLocationFilter>();
+  private readonly requests = new Subject<S>();
   /** Scope the current totals belong to. */
   private shownFor: string | null = null;
   private fresh = false;
@@ -18,26 +17,30 @@ export class ScopedCounts<C> {
   /** `null` while loading, or when the last refresh failed. */
   readonly value: Signal<C | null> = this.totals.asReadonly();
 
-  constructor(fetch: (location: AccountLocationFilter) => Observable<C>, destroyRef: DestroyRef) {
+  constructor(
+    fetch: (scope: S) => Observable<C>,
+    private readonly keyOf: (scope: S) => string,
+    destroyRef: DestroyRef,
+  ) {
     this.requests
       .pipe(
-        switchMap((location) => fetch(location).pipe(catchError(() => of(null)))),
+        switchMap((scope) => fetch(scope).pipe(catchError(() => of(null)))),
         takeUntilDestroyed(destroyRef),
       )
       .subscribe((c) => this.totals.set(c));
   }
 
-  /** Fetches unless the totals are already current for `location`. */
-  ensure(location: AccountLocationFilter): void {
-    if (!this.fresh || locationKey(location) !== this.shownFor) this.refresh(location);
+  /** Fetches unless the totals are already current for `scope`. */
+  ensure(scope: S): void {
+    if (!this.fresh || this.keyOf(scope) !== this.shownFor) this.refresh(scope);
   }
 
-  refresh(location: AccountLocationFilter): void {
-    const key = locationKey(location);
+  refresh(scope: S): void {
+    const key = this.keyOf(scope);
     if (key !== this.shownFor) this.totals.set(null);
     this.shownFor = key;
     this.fresh = true;
-    this.requests.next(location);
+    this.requests.next(scope);
   }
 
   /** The next `ensure()` refetches (e.g. when the list page is opened again). */

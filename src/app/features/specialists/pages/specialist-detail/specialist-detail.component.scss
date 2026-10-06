@@ -1,8 +1,20 @@
 @use '../../../accounts/styles/account-detail';
 
-/* ── Subscription (demo) ── */
+/* ── Current package ── */
 .sub-card {
   &.is-off .tile { filter: grayscale(1); }
+  .panel__head .btn { display: inline-flex; align-items: center; gap: 4px; }
+  &__skel-tile { width: 40px; height: 40px; border-radius: 12px; flex: none; }
+  &__main .skel { display: block; }
+  &__error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--re);
+  }
   &__main {
     display: flex;
     align-items: center;
@@ -17,6 +29,9 @@
   margin-top: 14px;
   &__head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; font-size: 12.5px; color: var(--txt2); }
   strong { color: var(--pr); }
+  strong.is-warn { color: #d97706; }
+  strong.is-over { color: var(--re); }
+  .bar.is-warn .bar__fill { background: #f59e0b; }
 }
 
 /* ── Services ── */

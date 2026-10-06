@@ -94,7 +94,7 @@ export const routes: Routes = [
       {
         path: 'drivers',
         title: 'السائقون · HiCan',
-        loadChildren: () => import('./features/people/people.routes').then((m) => m.peopleRoutes('drivers')),
+        loadChildren: () => import('./features/drivers/drivers.routes').then((m) => m.driversRoutes),
       },
       // Guard a feature with permissions like:
       //   canActivate: [permissionGuard('Users.Manage')]

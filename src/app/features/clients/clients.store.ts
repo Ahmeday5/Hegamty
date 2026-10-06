@@ -2,9 +2,9 @@ import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Page, PageRequest } from '../../core/models/page.model';
 import { PagedQuery } from '../../core/utils/paged-query';
-import { AccountLocationFilter } from '../accounts/account-profile';
+import { AccountLocationFilter, locationKey } from '../accounts/account-profile';
 import { BanFilteredPages, byBan } from '../accounts/ban-filtered-pages';
-import { ScopedCounts } from '../accounts/scoped-counts';
+import { ScopedCounts } from '../../core/utils/scoped-counts';
 import { ClientsApi } from './clients.api';
 import { Client, ClientCounts, ClientFilter, NO_CLIENT_FILTER } from './clients.models';
 
@@ -31,7 +31,7 @@ export class ClientsStore {
     destroyRef: this.destroyRef,
   });
 
-  private readonly totals = new ScopedCounts<ClientCounts>((loc) => this.api.counts(loc), this.destroyRef);
+  private readonly totals = new ScopedCounts<ClientCounts, AccountLocationFilter>((loc) => this.api.counts(loc), locationKey, this.destroyRef);
 
   readonly items = this.list.items;
   readonly page = this.list.page;

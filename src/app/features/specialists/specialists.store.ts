@@ -2,9 +2,9 @@ import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Page, PageRequest } from '../../core/models/page.model';
 import { PagedQuery } from '../../core/utils/paged-query';
-import { AccountLocationFilter } from '../accounts/account-profile';
+import { AccountLocationFilter, locationKey } from '../accounts/account-profile';
 import { BanFilteredPages, byBan } from '../accounts/ban-filtered-pages';
-import { ScopedCounts } from '../accounts/scoped-counts';
+import { ScopedCounts } from '../../core/utils/scoped-counts';
 import { SpecialistsApi } from './specialists.api';
 import { NO_SPECIALIST_FILTER, Specialist, SpecialistCounts, SpecialistFilter, SpecialistStatus } from './specialists.models';
 
@@ -32,7 +32,7 @@ export class SpecialistsStore {
     destroyRef: this.destroyRef,
   });
 
-  private readonly totals = new ScopedCounts<SpecialistCounts>((loc) => this.api.counts(loc), this.destroyRef);
+  private readonly totals = new ScopedCounts<SpecialistCounts, AccountLocationFilter>((loc) => this.api.counts(loc), locationKey, this.destroyRef);
 
   readonly items = this.list.items;
   readonly page = this.list.page;

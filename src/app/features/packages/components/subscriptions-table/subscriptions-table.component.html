@@ -1,0 +1,100 @@
+<div class="dtable-wrap" [attr.aria-busy]="loading() || stale()">
+  <table class="dtable" [class.is-stale]="stale()">
+    <thead>
+      <tr>
+        @if (showSpecialist()) { <th>الفني</th> }
+        @if (showCountry()) { <th>الدولة</th> }
+        <th>الباقة</th>
+        <th>المبلغ</th>
+        <th>فترة الاشتراك</th>
+        <th>المتبقي</th>
+        <th>الحالة</th>
+        @if (showSpecialist()) { <th class="th-actions"><span class="sr-only">الفني</span></th> }
+      </tr>
+    </thead>
+
+    <tbody>
+      @if (loading() && !rows().length) {
+        @for (r of skeletonRows; track r) {
+          <tr class="skel-row" aria-hidden="true">
+            @for (c of skeletonCells(); track c) {
+              <td><span class="skel" [style.width.px]="46 + ((r * 11 + c * 19) % 44)"></span></td>
+            }
+          </tr>
+        }
+      } @else {
+        @for (v of view(); track v.sub.id; let i = $index) {
+          <tr [class.is-link]="showSpecialist()" [style.--d]="i" (click)="open(v.sub)">
+            @if (showSpecialist()) {
+              <td>
+                <div class="who">
+                  <app-avatar [name]="v.sub.specialistName" [size]="32" />
+                  <div class="who__txt">
+                    <strong>{{ v.sub.specialistName }}</strong>
+                    <span><bdi>{{ v.sub.specialistPhone || '—' }}</bdi></span>
+                  </div>
+                </div>
+              </td>
+            }
+            @if (showCountry()) {
+              <td>
+                <span class="with-flag"><app-country-flag [countryId]="v.sub.countryId" [name]="v.sub.countryName" [size]="20" /> {{ v.sub.countryName || '—' }}</span>
+              </td>
+            }
+            <td>
+              <div class="who__txt">
+                <strong>{{ v.sub.packageName }}</strong>
+                <span>#{{ v.sub.id }}</span>
+              </div>
+            </td>
+            <td class="num"><strong>{{ v.sub.price | money: v.sub.currency }}</strong></td>
+            <td>
+              <div class="who__txt">
+                <strong class="period">{{ v.sub.startedAt | arDate }} <app-icon name="chevron-left" [size]="12" /> {{ v.sub.endsAt | arDate }}</strong>
+                <span>{{ v.time.totalDays ? (v.time.totalDays | packageDuration) : '—' }}</span>
+              </div>
+            </td>
+            <td>
+              @switch (v.time.state) {
+                @case ('expired') {
+                  <span class="muted">انتهت {{ v.sub.endsAt | relTime }}</span>
+                }
+                @case ('upcoming') {
+                  <span class="muted">تبدأ {{ v.sub.startedAt | relTime }}</span>
+                }
+                @default {
+                  <div class="left" [class.is-expiring]="v.time.state === 'expiring'">
+                    <span>{{ v.time.daysLeft | num }} يوم</span>
+                    <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="v.time.remainingPct"></span></div>
+                  </div>
+                }
+              }
+            </td>
+            <td><span class="chip chip--dot {{ stateMeta[v.time.state].chip }}">{{ stateMeta[v.time.state].label }}</span></td>
+            @if (showSpecialist()) {
+              <td (click)="$event.stopPropagation()">
+                <div class="actions">
+                  <button type="button" class="icon-btn icon-btn--blue" data-tip="ملف الفني" [attr.aria-label]="'ملف الفني ' + v.sub.specialistName"
+                    (click)="open(v.sub)">
+                    <app-icon name="eye" [size]="16" />
+                  </button>
+                </div>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="columns()">
+              <div class="empty">
+                <span class="empty__icon"><app-icon name="award" [size]="26" /></span>
+                <p class="empty__title">{{ emptyTitle() }}</p>
+                @if (emptyText()) { <p class="empty__text">{{ emptyText() }}</p> }
+                <ng-content select="[emptyActions]" />
+              </div>
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

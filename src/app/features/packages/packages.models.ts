@@ -93,7 +93,22 @@ export const PACKAGE_STATUS_FILTER: Record<PackageStatusFilter, { label: string;
   inactive: { label: 'موقوفة', active: false },
 };
 
-// ─────────── subscriptions (demo until the endpoint exists) ───────────
+// ─────────── subscription states (shared by the API model and the demo) ───────────
+
+export type SubscriptionState = 'active' | 'expiring' | 'upcoming' | 'expired';
+
+export const SUB_STATE_META: Record<SubscriptionState | 'none', { label: string; chip: string }> = {
+  active: { label: 'سارية', chip: 'chip--green' },
+  expiring: { label: 'تنتهي قريبًا', chip: 'chip--amber' },
+  upcoming: { label: 'لم تبدأ بعد', chip: 'chip--blue' },
+  expired: { label: 'منتهية', chip: 'chip--red' },
+  none: { label: 'بدون باقة', chip: 'chip--slate' },
+};
+
+/** A valid subscription with ≤ this many days left counts as "expiring". */
+export const EXPIRING_DAYS = 7;
+
+// ─────────── demo subscriptions (dashboard / legacy people pages) ───────────
 
 export interface Subscription {
   id: string;
@@ -105,15 +120,6 @@ export interface Subscription {
   startedAt: string;
   endsAt: string;
 }
-
-export type SubscriptionState = 'active' | 'expiring' | 'expired';
-
-export const SUB_STATE_META: Record<SubscriptionState | 'none', { label: string; chip: string }> = {
-  active: { label: 'سارية', chip: 'chip--green' },
-  expiring: { label: 'تنتهي قريبًا', chip: 'chip--amber' },
-  expired: { label: 'منتهية', chip: 'chip--red' },
-  none: { label: 'بدون باقة', chip: 'chip--slate' },
-};
 
 /** A technician's current package at a glance (the "الباقة الحالية" card). */
 export interface SubscriptionSummary {
@@ -127,6 +133,3 @@ export interface SubscriptionSummary {
   /** Every subscription, newest first. */
   history: Subscription[];
 }
-
-/** A valid subscription with ≤ this many days left counts as "expiring". */
-export const EXPIRING_DAYS = 7;

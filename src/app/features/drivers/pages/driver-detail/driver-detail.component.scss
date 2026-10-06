@@ -1,0 +1,34 @@
+@use '../../../accounts/styles/account-detail';
+
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+
+/* Licence plate, set like the physical one. */
+.plate {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--brd);
+  background: var(--bg3);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.swatch-label { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.15); }
+
+/* Activity figures the backend doesn't serve yet. */
+.dev-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  > div {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px dashed var(--brd);
+  }
+  small { font-size: 12px; color: var(--txt3); }
+  strong { font-size: 18px; color: var(--txt3); }
+}
+.dev-note { margin: 12px 0 0; font-size: 12.5px; color: var(--txt3); }

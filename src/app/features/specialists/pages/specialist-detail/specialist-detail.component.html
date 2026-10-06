@@ -146,34 +146,58 @@
             <app-activity-summary class="fx" style="--d: 2" [stats]="bookingStats.value()" [statsError]="bookingStats.state() === 'error'" [reviews]="reviews.value()"
               ratingLabel="متوسط تقييم الفني" (open)="selectTab($event)" (retry)="bookingStats.reload()" />
 
-            @if (subscription(); as sub) {
-              <div class="panel sub-card fx" style="--d: 2" [class.is-off]="sub.state === 'expired' || sub.state === 'none'">
-                <div class="panel__head">
-                  <h3 class="panel__title">الباقة الحالية</h3>
-                  <app-dev-badge tip="بيانات تجريبية للعرض فقط" />
-                </div>
-                <div class="panel__body">
-                  @if (sub.sub && sub.pkg) {
-                    <div class="sub-card__main">
-                      <span class="tile tile--brand"><app-icon name="award" [size]="20" /></span>
-                      <div>
-                        <strong>{{ sub.pkg.name }} <span class="chip {{ subMeta[sub.state].chip }}">{{ subMeta[sub.state].label }}</span></strong>
-                        <span>{{ sub.sub.price | cmoney: sub.sub.countryId }} · {{ sub.pkg.durationDays | packageDuration }}</span>
-                      </div>
-                    </div>
-                    <div class="rate">
-                      <div class="rate__head">
-                        <span>{{ sub.sub.startedAt | arDate }} ← {{ sub.sub.endsAt | arDate }}</span>
-                        <strong>{{ sub.left }} يوم متبقي</strong>
-                      </div>
-                      <div class="bar bar--brand"><span class="bar__fill" [style.width.%]="sub.pct"></span></div>
-                    </div>
-                  } @else {
-                    <p class="sub-card__none">لم يشترك هذا الفني في أي باقة بعد، ولن يستقبل طلبات حتى يشترك من التطبيق.</p>
-                  }
-                </div>
+            <div class="panel sub-card fx" style="--d: 2" [class.is-off]="currentPackage()?.sub === null || currentPackage()?.time?.state === 'expired'">
+              <div class="panel__head">
+                <h3 class="panel__title">الباقة الحالية</h3>
+                @if (subscriptions.value()?.length) {
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="selectTab('subscriptions')">
+                    كل الاشتراكات <app-icon name="chevron-left" [size]="14" />
+                  </button>
+                }
               </div>
-            }
+              <div class="panel__body">
+                @switch (subscriptions.state()) {
+                  @case ('loading') {
+                    <div class="sub-card__main" aria-busy="true">
+                      <span class="skel sub-card__skel-tile"></span>
+                      <div><span class="skel" style="width: 140px; height: 14px"></span><span class="skel" style="width: 100px"></span></div>
+                    </div>
+                  }
+                  @case ('error') {
+                    <div class="sub-card__error">
+                      <span>{{ subscriptions.error() }}</span>
+                      <button type="button" class="btn btn-soft btn-sm" (click)="subscriptions.reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+                    </div>
+                  }
+                  @default {
+                    @if (currentPackage(); as cur) {
+                      @if (cur.sub && cur.time) {
+                        <div class="sub-card__main">
+                          <span class="tile tile--brand"><app-icon name="award" [size]="20" /></span>
+                          <div>
+                            <strong>{{ cur.sub.packageName }} <span class="chip {{ subMeta[cur.time.state].chip }}">{{ subMeta[cur.time.state].label }}</span></strong>
+                            <span>{{ cur.sub.price | money: cur.sub.currency }} @if (cur.time.totalDays) { · {{ cur.time.totalDays | packageDuration }} }</span>
+                          </div>
+                        </div>
+                        <div class="rate">
+                          <div class="rate__head">
+                            <span>{{ cur.sub.startedAt | arDate }} ← {{ cur.sub.endsAt | arDate }}</span>
+                            @switch (cur.time.state) {
+                              @case ('expired') { <strong class="is-over">انتهت {{ cur.sub.endsAt | relTime }}</strong> }
+                              @case ('upcoming') { <strong>تبدأ {{ cur.sub.startedAt | relTime }}</strong> }
+                              @default { <strong [class.is-warn]="cur.time.state === 'expiring'">{{ cur.time.daysLeft | num }} يوم متبقي</strong> }
+                            }
+                          </div>
+                          <div class="bar bar--brand" [class.is-warn]="cur.time.state === 'expiring'"><span class="bar__fill" [style.width.%]="cur.time.remainingPct"></span></div>
+                        </div>
+                      } @else {
+                        <p class="sub-card__none">لم يشترك هذا الفني في أي باقة بعد، ولن يستقبل طلبات حتى يشترك من التطبيق.</p>
+                      }
+                    }
+                  }
+                }
+              </div>
+            </div>
           </div>
         </div>
 
@@ -254,6 +278,28 @@
       <div class="tab-pane">
         <app-account-bookings party="specialist" [ownerId]="s.id" [ownerCountryId]="s.workPlace.country?.id ?? null" [bookings]="bookings.value()" [state]="bookings.state()"
           [error]="bookings.error()" (retry)="bookings.reload()" />
+      </div>
+    }
+
+    @case ('subscriptions') {
+      <div class="tab-pane panel">
+        <div class="panel__head">
+          <div>
+            <h3 class="panel__title">سجل الاشتراكات</h3>
+            <p class="panel__sub">كل باقة اشتراها الفني من التطبيق، الأحدث أولًا</p>
+          </div>
+        </div>
+        @if (subscriptions.state() === 'error') {
+          <div class="empty">
+            <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="24" /></span>
+            <p class="empty__title">تعذّر تحميل الاشتراكات</p>
+            <p class="empty__text">{{ subscriptions.error() }}</p>
+            <button type="button" class="btn btn-soft btn-sm" (click)="subscriptions.reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+          </div>
+        } @else {
+          <app-subscriptions-table [rows]="subscriptionHistory()" [showSpecialist]="false" [loading]="subscriptions.state() === 'loading'"
+            emptyTitle="لم يشترك الفني في أي باقة بعد" emptyText="تظهر هنا الباقات التي يشتريها الفني من التطبيق." />
+        }
       </div>
     }
 

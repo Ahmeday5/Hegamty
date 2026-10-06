@@ -1,0 +1,196 @@
+@if (driver(); as d) {
+<section class="page">
+  <header class="page-head fx">
+    <div>
+      <nav class="crumbs" aria-label="مسار التنقل">
+        <a routerLink="/dashboard">الرئيسية</a>
+        <span class="crumbs__sep">/</span>
+        <a routerLink="/drivers">السائقون</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__current">{{ d.fullName }}</span>
+      </nav>
+      <h1 class="page-head__title">{{ d.fullName }}</h1>
+    </div>
+    <div class="page-head__actions">
+      <button type="button" class="icon-btn icon-btn--outline icon-btn--green" data-tip="تحديث" aria-label="تحديث البيانات"
+        [disabled]="record.loading()" [class.is-spinning]="record.loading()" (click)="reload()">
+        <app-icon name="refresh" [size]="16" />
+      </button>
+      <button type="button" class="btn" disabled data-tip="قيد التطوير"><app-icon name="bell" [size]="16" /> إرسال إشعار</button>
+      @if (d.banned) {
+        <button type="button" class="btn btn-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="unlock" [size]="16" /> رفع الحظر</button>
+      } @else {
+        <button type="button" class="btn btn-danger-soft" [disabled]="busy()" (click)="toggleBan()"><app-icon name="ban" [size]="16" /> حظر الحساب</button>
+      }
+    </div>
+  </header>
+
+  @if (d.banned) {
+    <div class="banner banner--red fx">
+      <app-icon name="ban" [size]="18" />
+      <span>هذا الحساب محظور ولا يمكنه استخدام التطبيق أو استقبال الرحلات.</span>
+      <div class="banner__actions">
+        <button type="button" class="btn btn-sm" [disabled]="busy()" (click)="toggleBan()">رفع الحظر</button>
+      </div>
+    </div>
+  } @else if (!d.active) {
+    <div class="banner banner--slate fx">
+      <app-icon name="clock" [size]="18" />
+      <span>هذا الحساب غير نشط حاليًا.</span>
+    </div>
+  }
+
+  <app-account-hero class="fx" style="--d: 1" [name]="d.fullName" [photoUrl]="d.photoUrl" [stats]="heroStats()">
+    <ng-container heroMeta>
+      <span><app-icon name="phone" [size]="14" /> <bdi>{{ d.phone || '—' }}</bdi></span>
+      <span><app-icon name="user" [size]="14" /> #{{ d.id }}</span>
+      @if (d.vehicle.model) { <span><app-icon name="car" [size]="14" /> {{ d.vehicle.model }}</span> }
+    </ng-container>
+    <ng-container heroChips>
+      <span class="chip chip--dot {{ activityMeta[activityOf(d)].chip }}">{{ activityMeta[activityOf(d)].label }}</span>
+      <span class="chip chip--dot {{ availabilityMeta[availabilityOf(d)].chip }}">{{ availabilityMeta[availabilityOf(d)].label }}</span>
+      @if (d.banned) { <span class="chip chip--red"><app-icon name="ban" [size]="12" /> محظور</span> }
+    </ng-container>
+  </app-account-hero>
+
+  <app-account-tabs class="fx" style="--d: 2" [tabs]="tabs" [active]="activeTab()" (select)="selectTab($event)" />
+
+  @switch (activeTab()) {
+    @case ('overview') {
+      <div class="tab-pane">
+        <div class="grid grid--2">
+          <div class="col">
+            <div class="panel fx" style="--d: 0">
+              <div class="panel__head"><h3 class="panel__title">البيانات الشخصية</h3></div>
+              <div class="panel__body">
+                <div class="kv"><span class="kv__k">الاسم الكامل</span><span class="kv__v">{{ d.fullName }}</span></div>
+                <div class="kv"><span class="kv__k">رقم الجوال</span><span class="kv__v"><bdi>{{ d.phone || '—' }}</bdi></span></div>
+                <div class="kv"><span class="kv__k">الرقم القومي</span><span class="kv__v"><bdi class="mono">{{ d.nationalIdNumber || '—' }}</bdi></span></div>
+                <div class="kv"><span class="kv__k">الدولة</span><span class="kv__v"><app-dev-badge /></span></div>
+                <div class="kv"><span class="kv__k">المحافظة</span><span class="kv__v"><app-dev-badge /></span></div>
+              </div>
+            </div>
+
+            <div class="panel fx" style="--d: 1">
+              <div class="panel__head"><h3 class="panel__title">بيانات المركبة</h3></div>
+              <div class="panel__body">
+                <div class="kv"><span class="kv__k">الموديل</span><span class="kv__v">{{ d.vehicle.model || '—' }}</span></div>
+                <div class="kv">
+                  <span class="kv__k">اللون</span>
+                  <span class="kv__v">
+                    @if (d.vehicle.color) {
+                      <span class="swatch-label">
+                        @if (colorSwatch(d.vehicle.color); as sw) { <span class="swatch" [style.background]="sw" aria-hidden="true"></span> }
+                        {{ d.vehicle.color | vehicleColor }}
+                      </span>
+                    } @else { — }
+                  </span>
+                </div>
+                <div class="kv"><span class="kv__k">نوع المركبة</span><span class="kv__v">{{ d.vehicle.type || '—' }}</span></div>
+                <div class="kv">
+                  <span class="kv__k">رقم اللوحة</span>
+                  <span class="kv__v">@if (d.vehicle.plate) { <bdi class="plate">{{ d.vehicle.plate }}</bdi> } @else { — }</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="panel fx" style="--d: 1">
+              <div class="panel__head"><h3 class="panel__title">الحساب</h3></div>
+              <div class="panel__body">
+                <div class="kv">
+                  <span class="kv__k">حالة الحساب</span>
+                  <span class="kv__v"><span class="chip chip--dot {{ activityMeta[activityOf(d)].chip }}">{{ activityMeta[activityOf(d)].label }}</span></span>
+                </div>
+                <div class="kv">
+                  <span class="kv__k">استقبال الرحلات</span>
+                  <span class="kv__v"><span class="chip chip--dot {{ availabilityMeta[availabilityOf(d)].chip }}">{{ availabilityMeta[availabilityOf(d)].label }}</span></span>
+                </div>
+                <div class="kv">
+                  <span class="kv__k">الحظر</span>
+                  <span class="kv__v">
+                    @if (d.banned) { <span class="chip chip--red">محظور</span> } @else { <span class="chip chip--green">غير محظور</span> }
+                  </span>
+                </div>
+                <div class="kv"><span class="kv__k">تاريخ التسجيل</span><span class="kv__v">{{ d.createdAt | arDate: true }}</span></div>
+                <div class="kv"><span class="kv__k">آخر نشاط</span><span class="kv__v"><app-dev-badge /></span></div>
+              </div>
+            </div>
+
+            <div class="panel fx" style="--d: 2">
+              <div class="panel__head">
+                <h3 class="panel__title">ملخص النشاط</h3>
+                <app-dev-badge />
+              </div>
+              <div class="panel__body">
+                <div class="dev-stats">
+                  <div><small>إجمالي الرحلات</small><strong>—</strong></div>
+                  <div><small>المكتملة</small><strong>—</strong></div>
+                  <div><small>الملغاة</small><strong>—</strong></div>
+                  <div><small>متوسط التقييم</small><strong>—</strong></div>
+                </div>
+                <p class="dev-note">ستظهر هنا رحلات السائق وتقييماته بعد ربطها بالخادم.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <app-account-documents class="fx spaced" style="--d: 3" [docs]="documents()" [owner]="d.fullName" />
+      </div>
+    }
+
+    @case ('trips') {
+      <div class="tab-pane panel">
+        <app-dev-section icon="car" title="رحلات السائق" text="سجل الرحلات التي نفّذها السائق لتوصيل الفنيين، مع حالتها ومواعيدها." />
+      </div>
+    }
+
+    @case ('reviews') {
+      <div class="tab-pane panel">
+        <app-dev-section icon="star" title="تقييمات السائق" text="تقييمات الفنيين للسائق بعد كل رحلة ومتوسط تقييمه." />
+      </div>
+    }
+
+    @case ('notifications') {
+      <div class="tab-pane panel">
+        <app-dev-section icon="bell" title="إشعارات الحساب" text="الإشعارات التي وصلت إلى السائق داخل التطبيق، وإرسال إشعار جديد له." />
+      </div>
+    }
+  }
+</section>
+} @else {
+  <section class="page">
+    @switch (record.state()) {
+      @case ('loading') {
+        <div class="panel hero-skel fx" aria-busy="true" aria-label="جارٍ التحميل">
+          <span class="skel skel--circle" style="width: 72px; height: 72px"></span>
+          <div><span class="skel" style="width: 180px; height: 16px"></span><span class="skel" style="width: 120px"></span></div>
+        </div>
+        <div class="grid grid--2">
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2, 3, 4]; track r) { <span class="skel kv-skel"></span> }</div></div>
+          <div class="panel"><div class="panel__body">@for (r of [0, 1, 2]; track r) { <span class="skel kv-skel"></span> }</div></div>
+        </div>
+      }
+      @case ('error') {
+        <div class="panel empty fx">
+          <span class="empty__icon empty__icon--red"><app-icon name="alert" [size]="26" /></span>
+          <p class="empty__title">تعذّر تحميل بيانات السائق</p>
+          <p class="empty__text">{{ record.error() }}</p>
+          <div class="state-actions">
+            <button type="button" class="btn btn-pr btn-sm" (click)="reload()"><app-icon name="refresh" [size]="14" /> إعادة المحاولة</button>
+            <a class="btn btn-ghost btn-sm" routerLink="/drivers">العودة إلى السائقين</a>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="panel empty fx">
+          <span class="empty__icon"><app-icon name="car" [size]="26" /></span>
+          <p class="empty__title">السائق غير موجود</p>
+          <p class="empty__text">ربما تم حذف هذا الحساب أو أن الرابط غير صحيح.</p>
+          <a class="btn btn-pr btn-sm" routerLink="/drivers">العودة إلى السائقين</a>
+        </div>
+      }
+    }
+  </section>
+}

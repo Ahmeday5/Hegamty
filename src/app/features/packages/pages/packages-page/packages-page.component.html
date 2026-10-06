@@ -150,70 +150,8 @@
     }
   </div>
 
-  <!-- ── Subscriptions (demo) ── -->
-  <div class="panel fx mt-3" style="--d: 6">
-    <div class="panel__head">
-      <div>
-        <h2 class="panel__title">اشتراكات الفنيين <app-dev-badge size="sm" /></h2>
-        <p class="panel__sub">آخر اشتراك لكل فني مرتبًا حسب الأقرب انتهاءً</p>
-      </div>
-      <label class="search sub-search">
-        <app-icon name="search" [size]="16" />
-        <input type="search" [value]="subSearch()" (input)="onSubSearch($any($event.target).value)" placeholder="ابحث باسم الفني أو الباقة…" aria-label="بحث في الاشتراكات" />
-      </label>
-    </div>
-    <div class="sub-notice">
-      <app-preview-notice>الاشتراكات قيد التطوير — البيانات المعروضة تجريبية للعرض فقط ولا ترتبط بالباقات أعلاه.</app-preview-notice>
-    </div>
-    <div class="status-bar">
-      <div class="seg">
-        @for (t of subTabs(); track t.id) {
-          <button type="button" class="seg__btn" [class.is-on]="subFilter() === t.id" (click)="setSubFilter(t.id)">{{ t.label }} <span class="seg__count">{{ t.count }}</span></button>
-        }
-      </div>
-    </div>
-    <div class="dtable-wrap">
-      <table class="dtable">
-        <thead>
-          <tr><th>الفني</th>@if (scope.isAll()) { <th>الدولة</th> }<th>الباقة</th><th>المبلغ</th><th>البداية</th><th>النهاية</th><th>المتبقي</th><th>الحالة</th></tr>
-        </thead>
-        <tbody>
-          @for (r of subPageRows(); track r.sub.id; let i = $index) {
-            <tr class="is-link" [style.--d]="i" (click)="openTech(r.tech.id)">
-              <td>
-                <div class="who">
-                  <app-avatar [name]="r.tech.name" [size]="32" />
-                  <div class="who__txt"><strong>{{ r.tech.name }}</strong><span><bdi>{{ r.tech.phone }}</bdi></span></div>
-                </div>
-              </td>
-              @if (scope.isAll()) { <td><app-country-flag [countryId]="r.sub.countryId" [size]="20" /></td> }
-              <td>{{ r.pkg?.name ?? '—' }}</td>
-              <td class="num">{{ r.sub.price | cmoney: r.sub.countryId }}</td>
-              <td class="muted">{{ r.sub.startedAt | arDate }}</td>
-              <td class="muted">{{ r.sub.endsAt | arDate }}</td>
-              <td>
-                @if (r.left > 0) {
-                  <div class="left">
-                    <span>{{ r.left }} يوم</span>
-                    <div class="bar" [class.bar--brand]="r.state === 'active'"><span class="bar__fill" [style.width.%]="r.pct"
-                      [style.background]="r.state === 'expiring' ? '#f59e0b' : null"></span></div>
-                  </div>
-                } @else { <span class="muted">انتهت {{ r.sub.endsAt | relTime }}</span> }
-              </td>
-              <td><span class="chip chip--dot {{ subMeta[r.state].chip }}">{{ subMeta[r.state].label }}</span></td>
-            </tr>
-          } @empty {
-            <tr><td [attr.colspan]="scope.isAll() ? 8 : 7"><div class="empty"><span class="empty__icon"><app-icon name="award" [size]="24" /></span><p class="empty__title">لا توجد اشتراكات</p></div></td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    @if (subFiltered().length > subPageSize) {
-      <div class="table-foot">
-        <app-pagination [pageIndex]="subPage()" [pageSize]="subPageSize" [count]="subFiltered().length" [totalPages]="subTotalPages()" [showPageSize]="false" (pageChange)="subPage.set($event)" />
-      </div>
-    }
-  </div>
+  <!-- ── Subscriptions ── -->
+  <app-subscriptions-panel class="fx mt-3" style="--d: 6" />
 
   <app-package-form [open]="formOpen()" [pkg]="editing()" [countryId]="scope.country()?.id ?? null" (closed)="formOpen.set(false)" />
 </section>
